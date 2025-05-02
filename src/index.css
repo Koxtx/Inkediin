@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 .active {
-  @apply text-red-500;
+  @apply bg-gray-700;
 }
 
 @layer base {
@@ -27,4 +27,5 @@
   --color-silver: #ecebff;
   --color-bubble-gum: #ff77e9;
   --color-bermuda: #78dcca;
+  --color-prim: #121212;
 }
