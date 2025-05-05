@@ -9,6 +9,9 @@ import Exploration from "./pages/Exploration/Exploration";
 import Messagerie from "./pages/Messagerie/Messagerie";
 import Notification from "./pages/notifications/Notification";
 import Conversation from "./pages/Messagerie/components/Conversation";
+import Wishlist from "./pages/Wishlist/Wishlist";
+import ProfilTatoueur from "./pages/ProfilTatoueur/ProfilTatoueur";
+import ProfilClient from "./pages/ProfilClient/ProfilClient";
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +42,18 @@ export const router = createBrowserRouter([
       {
         path: "/conversation",
         element: <Conversation />,
+      },
+      {
+        path: "/wishlist",
+        element: <Wishlist />,
+      },
+      {
+        path: "/profiltatoueur",
+        element: <ProfilTatoueur />,
+      },
+      {
+        path: "/profilclient",
+        element: <ProfilClient />,
       },
     ],
   },

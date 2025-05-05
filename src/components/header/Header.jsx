@@ -16,7 +16,7 @@ import {
 import { ThemeContext } from "../../context/ThemeContext";
 import { FaMoon } from "react-icons/fa";
 import { FaSun } from "react-icons/fa";
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -72,30 +72,24 @@ export default function Header() {
             <span>Messages</span>
           </NavLink>
           <NavLink
-            to={"/"}
+            to={"/wishlist"}
             className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
           >
             <Bookmark size={24} />
             <span>Signets</span>
           </NavLink>
-          <NavLink
-            to={"/"}
-            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-          >
+          <NavLink className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
             <Users size={24} />
             <span>Communautés</span>
           </NavLink>
           <NavLink
-            to={"/"}
+            to={"/profiltatoueur"}
             className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
           >
             <User size={24} />
             <span>Profil</span>
           </NavLink>
-          <NavLink
-            to={"/"}
-            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
-          >
+          <NavLink className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
             <MoreHorizontal size={24} />
             <span>Plus</span>
           </NavLink>
@@ -115,15 +109,18 @@ export default function Header() {
         </div>
 
         {/* Profil utilisateur */}
-        <div className="mt-6 flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer">
-          <div className="flex items-center gap-3">
+        <div
+          
+          className="mt-6 flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer"
+        >
+          <Link to={"/profiltatoueur"} className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
               <User size={20} />
             </div>
             <div>
               <p className="font-semibold">Nom Utilisateur</p>
             </div>
-          </div>
+          </Link>
           <MoreHorizontal size={20} />
         </div>
       </div>
@@ -165,7 +162,10 @@ export default function Header() {
           </div>
 
           <div className="py-2">
-            <NavLink className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <NavLink
+              to={"/profiltatoueur"}
+              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
               <User size={24} />
               Profil
             </NavLink>
@@ -174,7 +174,10 @@ export default function Header() {
               Communautés
             </NavLink>
 
-            <NavLink className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <NavLink
+              to={"/wishlist"}
+              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
               <Bookmark size={24} />
               singets
             </NavLink>
