@@ -43,35 +43,59 @@ export default function Header() {
             <Home size={24} />
             <span>Accueil</span>
           </NavLink>
-          <NavLink to={"/feed"} className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/feed"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <Image size={24} />
             <span>Feed</span>
           </NavLink>
-          <NavLink to={"/exploration"} className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/exploration"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <Search size={24} />
             <span>Explorer</span>
           </NavLink>
-          <NavLink className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/notification"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <Bell size={24} />
             <span>Notifications</span>
           </NavLink>
-          <NavLink to={"/messagerie"} className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/messagerie"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <MessageSquare size={24} />
             <span>Messages</span>
           </NavLink>
-          <NavLink to={"/notification"} className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <Bookmark size={24} />
             <span>Signets</span>
           </NavLink>
-          <NavLink className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <Users size={24} />
             <span>Communautés</span>
           </NavLink>
-          <NavLink className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <User size={24} />
             <span>Profil</span>
           </NavLink>
-          <NavLink className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <MoreHorizontal size={24} />
             <span>Plus</span>
           </NavLink>
@@ -175,19 +199,31 @@ export default function Header() {
           <Home size={24} />
           <span className="text-xs mt-1">Accueil</span>
         </NavLink>
-        <NavLink to={"/feed"} className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1">
+        <NavLink
+          to={"/feed"}
+          className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1"
+        >
           <Image size={24} />
           <span>Feed</span>
         </NavLink>
-        <NavLink to={"/exploration"} className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1">
+        <NavLink
+          to={"/exploration"}
+          className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1"
+        >
           <Search size={24} />
           <span className="text-xs mt-1">Explorer</span>
         </NavLink>
-        <NavLink to={"/notification"} className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1">
+        <NavLink
+          to={"/notification"}
+          className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1"
+        >
           <Bell size={24} />
           <span className="text-xs mt-1">Notif.</span>
         </NavLink>
-        <NavLink to={"/messagerie"} className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1">
+        <NavLink
+          to={"/messagerie"}
+          className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1"
+        >
           <MessageSquare size={24} />
           <span className="text-xs mt-1">Messages</span>
         </NavLink>

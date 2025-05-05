@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 .active {
-  @apply bg-gray-700;
+  @apply bg-gray-200 dark:bg-gray-700;
 }
 
 @layer base {

@@ -8,6 +8,7 @@ import Feed from "./pages/Feed/Feed";
 import Exploration from "./pages/Exploration/Exploration";
 import Messagerie from "./pages/Messagerie/Messagerie";
 import Notification from "./pages/notifications/Notification";
+import Conversation from "./pages/Messagerie/components/Conversation";
 
 export const router = createBrowserRouter([
   {
@@ -34,6 +35,10 @@ export const router = createBrowserRouter([
       {
         path: "/notification",
         element: <Notification />,
+      },
+      {
+        path: "/conversation",
+        element: <Conversation />,
       },
     ],
   },
