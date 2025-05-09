@@ -17,6 +17,8 @@ import { ThemeContext } from "../../context/ThemeContext";
 import { FaMoon } from "react-icons/fa";
 import { FaSun } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
+import logo from "../../assets/logo_inkedin_noir.png";
+import logoWhite from "../../assets/logo_inkedin_blanc.png";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -31,7 +33,15 @@ export default function Header() {
       {/* Desktop Header  */}
       <div className="hidden md:flex flex-col fixed h-screen w-64 bg-white dark:bg-prim dark:border-gray-700 p-4 border-r border-gray-200 z-50">
         <div className="mb-6">
-          <div className="text-red-500 font-bold text-2xl">Logo</div>
+          {theme === "dark" ? (
+            <Link to="/">
+              <img src={logoWhite} alt="logo blanc inkediin" className="w-52" />
+            </Link>
+          ) : (
+            <Link to="/">
+              <img src={logo} alt="logo inkediin" className="w-52" />
+            </Link>
+          )}
         </div>
 
         {/* Navigation Desktop */}
@@ -124,7 +134,19 @@ export default function Header() {
 
       {/* Mobile Header (en haut) */}
       <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-prim sticky top-0 z-20 w-full">
-        <div className="text-red-500 font-bold text-2xl">Logo</div>
+        {theme === "dark" ? (
+          <Link to="/">
+            <img
+              src={logoWhite}
+              alt="logo blanc inkediin"
+              className="w-18 h-18"
+            />
+          </Link>
+        ) : (
+          <Link to="/">
+            <img src={logo} alt="logo inkediin" className="w-18 h-18" />
+          </Link>
+        )}
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-4 mr-2">

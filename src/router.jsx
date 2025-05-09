@@ -12,6 +12,8 @@ import Conversation from "./pages/Messagerie/components/Conversation";
 import Wishlist from "./pages/Wishlist/Wishlist";
 import ProfilTatoueur from "./pages/ProfilTatoueur/ProfilTatoueur";
 import ProfilClient from "./pages/ProfilClient/ProfilClient";
+import SignUp from "./pages/Auth/SignUp";
+import SignIn from "./pages/Auth/SignIn";
 
 export const router = createBrowserRouter([
   {
@@ -20,40 +22,93 @@ export const router = createBrowserRouter([
     element: <App />,
     children: [
       {
+        path: "/signup",
+        element: (
+          <UserNotConnected>
+            <SignUp />
+          </UserNotConnected>
+        ),
+      },
+      {
+        path: "/signin",
+        element: (
+          <UserNotConnected>
+            <SignIn />
+          </UserNotConnected>
+        ),
+      },
+
+      {
         path: "/",
-        element: <Homepage />,
+        element: (
+          <UserConnected>
+            <Homepage />
+          </UserConnected>
+        ),
       },
       {
         path: "/feed",
-        element: <Feed />,
+        element: (
+          <UserConnected>
+            <Feed />
+          </UserConnected>
+        ),
       },
       {
         path: "/exploration",
-        element: <Exploration />,
+        element: (
+          <UserConnected>
+            <Exploration />
+          </UserConnected>
+        ),
       },
       {
         path: "/messagerie",
-        element: <Messagerie />,
+        element: (
+          <UserConnected>
+            <Messagerie />
+          </UserConnected>
+        ),
       },
       {
         path: "/notification",
-        element: <Notification />,
+        element: (
+          <UserConnected>
+            <Notification />
+          </UserConnected>
+        ),
       },
       {
         path: "/conversation",
-        element: <Conversation />,
+        element: (
+          <UserConnected>
+            <Conversation />
+          </UserConnected>
+        ),
       },
       {
         path: "/wishlist",
-        element: <Wishlist />,
+        element: (
+          <UserConnected>
+            <Wishlist />
+          </UserConnected>
+        ),
       },
       {
         path: "/profiltatoueur",
-        element: <ProfilTatoueur />,
+        element: (
+          <UserConnected>
+            <ProfilTatoueur />
+          </UserConnected>
+        ),
       },
       {
         path: "/profilclient",
-        element: <ProfilClient />,
+        element: (
+          <UserConnected>
+            <ProfilClient />
+          </UserConnected>
+        ),
       },
     ],
   },

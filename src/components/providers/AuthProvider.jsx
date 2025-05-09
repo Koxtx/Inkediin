@@ -10,13 +10,18 @@ export default function AuthProvider({ children }) {
     setUser(credentials);
     localStorage.setItem("user", JSON.stringify(credentials));
   };
+  const registerUser = (data) => {
+    console.log("Register values:", data);
+    saveSession(data);
+    setConnectedUser(true);
+  };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("user");
   };
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, registerUser }}>
       {children}
     </AuthContext.Provider>
   );
