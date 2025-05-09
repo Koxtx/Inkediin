@@ -109,10 +109,7 @@ export default function Header() {
         </div>
 
         {/* Profil utilisateur */}
-        <div
-          
-          className="mt-6 flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer"
-        >
+        <div className="mt-6 flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer">
           <Link to={"/profiltatoueur"} className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
               <User size={20} />
@@ -146,10 +143,10 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Menu déroulant mobile */}
+      {/* Menu latéral mobile */}
       {isMenuOpen && (
-        <div className="md:hidden fixed top-16 right-4 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg z-30">
-          <div className="mt-6 flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer">
+        <div className="md:hidden fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 overflow-y-auto">
+          <div className="mt-6 flex items-center justify-between p-4 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
                 <User size={20} />
@@ -161,36 +158,44 @@ export default function Header() {
             <MoreHorizontal size={20} />
           </div>
 
-          <div className="py-2">
+          <div className="py-4">
             <NavLink
               to={"/profiltatoueur"}
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <User size={24} />
-              Profil
+              <span>Profil</span>
             </NavLink>
-            <NavLink className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <NavLink className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
               <Users size={24} />
-              Communautés
+              <span>Communautés</span>
             </NavLink>
 
             <NavLink
               to={"/wishlist"}
-              className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <Bookmark size={24} />
-              singets
+              <span>Signets</span>
             </NavLink>
-            <NavLink className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <NavLink className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
               <Wrench size={24} />
-              paramétre et conf...
+              <span>Paramètres et conf...</span>
             </NavLink>
-            <NavLink className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700">
+            <NavLink className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
               <LogOut size={24} />
-              déconnexion
+              <span>Déconnexion</span>
             </NavLink>
           </div>
         </div>
+      )}
+
+      {/* Overlay pour fermer le menu en cliquant en dehors */}
+      {isMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setIsMenuOpen(false)}
+        />
       )}
 
       {/* Navigation mobile (en bas) */}
