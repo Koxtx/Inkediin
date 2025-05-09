@@ -39,7 +39,7 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "/",
+        path: "/tatoueur",
         element: (
           <UserConnected>
             <Homepage />
@@ -47,7 +47,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "/feed",
+        path: "/",
         element: (
           <UserConnected>
             <Feed />

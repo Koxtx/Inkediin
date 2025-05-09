@@ -19,7 +19,7 @@ export default function Notification() {
   const tabs = [
     "Toutes",
     "Messages",
-    "Rendez-vous",
+    
     "Promotions",
     "Mentions J'aime",
     "Système",
@@ -28,7 +28,7 @@ export default function Notification() {
   // Mapping des types de notifications avec leurs icônes
   const notificationIcons = {
     message: <MessageSquare className="text-blue-500" size={20} />,
-    appointment: <Calendar className="text-green-500" size={20} />,
+   
     like: <Heart className="text-red-500" size={20} />,
     promo: <Tag className="text-purple-500" size={20} />,
     comment: <MessageSquare className="text-orange-500" size={20} />,
@@ -51,20 +51,7 @@ export default function Notification() {
         { label: "Marquer comme lu", primary: false },
       ],
     },
-    {
-      id: 2,
-      type: "appointment",
-      title: "Rappel de rendez-vous",
-      content:
-        "Votre rendez-vous avec TattooArtist2 est confirmé pour demain à 14h00.",
-      time: "Il y a 2 heures",
-      date: "Aujourd'hui",
-      read: false,
-      actions: [
-        { label: "Voir détails", primary: true },
-        { label: "Marquer comme lu", primary: false },
-      ],
-    },
+   
     {
       id: 3,
       type: "like",
@@ -146,9 +133,7 @@ export default function Notification() {
           (notif) => notif.type === "message" || notif.type === "comment"
         )
       : activeTab === "Rendez-vous"
-      ? notifications.filter((notif) => notif.type === "appointment")
-      : activeTab === "Promotions"
-      ? notifications.filter((notif) => notif.type === "promo")
+      ?notifications.filter((notif) => notif.type === "promo")
       : activeTab === "Mentions J'aime"
       ? notifications.filter((notif) => notif.type === "like")
       : notifications.filter(

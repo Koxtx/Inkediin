@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, ScrollRestoration } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import ThemeProvider from "./components/providers/ThemeProvider";
 import AuthProvider from "./components/providers/AuthProvider";
@@ -17,6 +17,7 @@ function App() {
               </main>
             </div>
           </div>
+          <ScrollRestoration />
         </AuthProvider>
       </ThemeProvider>
       <Toaster />

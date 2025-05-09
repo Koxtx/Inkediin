@@ -54,11 +54,11 @@ export default function Header() {
             <span>Accueil</span>
           </NavLink>
           <NavLink
-            to={"/feed"}
+            to={"/tatoueur"}
             className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
           >
             <Image size={24} />
-            <span>Feed</span>
+            <span>Tatoueur</span>
           </NavLink>
           <NavLink
             to={"/exploration"}
@@ -93,7 +93,7 @@ export default function Header() {
             <span>Communautés</span>
           </NavLink>
           <NavLink
-            to={"/profiltatoueur"}
+            to={"/profilclient"}
             className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
           >
             <User size={24} />
@@ -230,11 +230,11 @@ export default function Header() {
           <span className="text-xs mt-1">Accueil</span>
         </NavLink>
         <NavLink
-          to={"/feed"}
+          to={"/tatoueur"}
           className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1"
         >
           <Image size={24} />
-          <span>Feed</span>
+          <span>Tatoueur</span>
         </NavLink>
         <NavLink
           to={"/exploration"}
@@ -248,7 +248,7 @@ export default function Header() {
           className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1"
         >
           <Bell size={24} />
-          <span className="text-xs mt-1">Notif.</span>
+          <span className="text-xs mt-1">Notif</span>
         </NavLink>
         <NavLink
           to={"/messagerie"}
