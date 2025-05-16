@@ -1,64 +1,20 @@
-import React, { useState } from "react";
+import React, { useContext } from "react";
 import { Link } from "react-router-dom";
+import { MessagerieContext } from "../../context/MessagerieContext";
 
 export default function Messagerie() {
-  const [activeTab, setActiveTab] = useState("Tous");
+  const {
+    activeTab,
+    setActiveTab,
+    tabs,
+    searchTerm,
+    setSearchTerm,
+    getFilteredMessages,
+    setActiveConversation,
+    markAsRead,
+  } = useContext(MessagerieContext);
 
-  const tabs = ["Tous", "Clients", "Tatoueurs", "Non lus"];
-
-  const messages = [
-    {
-      initials: "JS",
-      name: "Julie S.",
-      time: "10:25",
-      message:
-        "Super, je voudrais réserver le flash de rose que vous avez posté.",
-      unread: 2,
-      type: "Clients",
-    },
-    {
-      initials: "TA",
-      name: "TattooArtist3",
-      time: "hier",
-      message:
-        "Merci pour les conseils sur la coloration, ça m'a beaucoup aidé !",
-      unread: 0,
-      type: "Tatoueurs",
-    },
-    {
-      initials: "LM",
-      name: "Lucas M.",
-      time: "hier",
-      message: "Est-ce que le flash avec le serpent est toujours disponible ?",
-      unread: 0,
-      type: "Clients",
-    },
-    {
-      initials: "CM",
-      name: "Camille M.",
-      time: "20/04",
-      message:
-        "Le tatouage est super, merci encore ! Je vous enverrai une photo quand...",
-      unread: 0,
-      type: "Clients",
-    },
-    {
-      initials: "IN",
-      name: "Inkediin Support",
-      time: "18/04",
-      message:
-        "Bonjour, nous avons bien reçu votre demande concernant le paiement...",
-      unread: 0,
-      type: "Tatoueurs",
-    },
-  ];
-
-  const filteredMessages =
-    activeTab === "Tous"
-      ? messages
-      : activeTab === "Non lus"
-      ? messages.filter((msg) => msg.unread > 0)
-      : messages.filter((msg) => msg.type === activeTab);
+  const filteredMessages = getFilteredMessages();
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8">
@@ -75,6 +31,8 @@ export default function Messagerie() {
           type="text"
           className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-300 transition-colors"
           placeholder="Rechercher dans les messages..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
@@ -112,9 +70,13 @@ export default function Messagerie() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden divide-y divide-gray-200 dark:divide-gray-700">
         {filteredMessages.map((msg, index) => (
           <Link
-            to={`/conversation`}
+            to={`/conversation/${msg.initials}`}
             key={index}
             className="flex items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            onClick={() => {
+              setActiveConversation(msg.initials);
+              markAsRead(msg.initials);
+            }}
           >
             {/* Avatar avec initiales */}
             <div className="w-10 h-10 flex-shrink-0 rounded-full bg-red-400 text-white flex items-center justify-center font-medium">

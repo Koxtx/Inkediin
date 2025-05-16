@@ -1,71 +1,46 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useContext, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { MessagerieContext } from '../../../context/MessagerieContext';
 
 export default function Conversation() {
-  const [newMessage, setNewMessage] = useState('');
+  const { id } = useParams(); // Récupère l'ID de la conversation depuis l'URL
+  const { 
+    conversations, 
+    newMessage, 
+    setNewMessage, 
+    activeConversation, 
+    setActiveConversation,
+    sendMessage,
+    markAsRead
+  } = useContext(MessagerieContext);
   
-  // Sample data for conversation
-  const contactInfo = {
-    initials: "JS",
-    name: "Julie S.",
-    status: "En ligne"
-  };
-  
-  const messages = [
-    {
-      content: "Bonjour ! J'ai vu votre flash de rose old school et je suis intéressée.",
-      time: "09:42",
-      sent: false
-    },
-    {
-      content: "Bonjour Julie ! Merci pour votre intérêt. La rose est toujours disponible.",
-      time: "09:45",
-      sent: true
-    },
-    {
-      content: "Super ! J'aimerais la réserver pour le mois prochain si possible.",
-      time: "09:48",
-      sent: false
-    },
-    {
-      content: "Bien sûr, voici le design dont nous parlons :",
-      time: "09:50",
-      sent: true
-    },
-    {
-      isProduct: true,
-      title: "Rose Old School",
-      price: "150 €",
-      sent: true
-    },
-    {
-      content: "J'ai des disponibilités les 15, 16 et 20 mai. Est-ce qu'une de ces dates vous conviendrait ?",
-      time: "09:51",
-      sent: true
-    },
-    {
-      content: "Le 16 mai serait parfait pour moi. Comment procède-t-on pour la réservation ?",
-      time: "10:15",
-      sent: false
-    },
-    {
-      content: "Et est-ce qu'il y a un acompte à verser ?",
-      time: "10:15",
-      sent: false
-    },
-    {
-      content: "Parfait ! Je vais bloquer le 16 mai pour vous. Oui, il y a un acompte de 50€ pour confirmer la réservation. Vous pouvez le régler directement via l'application en cliquant sur le bouton de réservation du flash.",
-      time: "10:20",
-      sent: true
+  // S'assurer que la bonne conversation est active
+  useEffect(() => {
+    if (id && id !== activeConversation) {
+      setActiveConversation(id);
+      markAsRead(id);
     }
-  ];
+  }, [id, activeConversation, setActiveConversation, markAsRead]);
+  
+  // Gérer le cas où la conversation n'existe pas
+  if (!activeConversation || !conversations[activeConversation]) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">Conversation non trouvée</p>
+        <Link 
+          to="/messagerie" 
+          className="px-4 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500 transition-colors"
+        >
+          Retour à la messagerie
+        </Link>
+      </div>
+    );
+  }
+  
+  const { contactInfo, messages } = conversations[activeConversation];
 
   const handleSendMessage = () => {
-    if (newMessage.trim() !== '') {
-      // Here you would add the message to your messages array
-      // and clear the input field
-      setNewMessage('');
-    }
+    sendMessage(activeConversation, newMessage);
   };
 
   const handleKeyDown = (e) => {
@@ -76,7 +51,7 @@ export default function Conversation() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-prim">
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 shadow-md px-4 py-3 flex items-center">
         <Link to="/messagerie" className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 mr-4 text-xl">
