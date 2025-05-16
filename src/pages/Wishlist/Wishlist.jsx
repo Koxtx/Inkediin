@@ -1,44 +1,11 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { FlashContext } from "../../context/FlashContext";
 
 export default function Wishlist() {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
+  const { savedFlashes } = useContext(FlashContext);
   
   const categories = ["Tous", "Flash", "Réaliste", "Old School", "Géométrique"];
-  
-  const savedFlashes = [
-    { 
-      id: 1, 
-      title: "Rose Traditionnelle", 
-      artist: "TattooArtist1", 
-      category: "Old School", 
-      comments: 3, 
-      views: 145 
-    },
-    { 
-      id: 2, 
-      title: "Dragon Japonais", 
-      artist: "TattooArtist3", 
-      category: "Réaliste", 
-      comments: 12, 
-      views: 289 
-    },
-    { 
-      id: 3, 
-      title: "Mandala", 
-      artist: "TattooArtist2", 
-      category: "Géométrique", 
-      comments: 7, 
-      views: 201 
-    },
-    { 
-      id: 4, 
-      title: "Fleur de Lotus", 
-      artist: "TattooArtist4", 
-      category: "Flash", 
-      comments: 5, 
-      views: 167 
-    },
-  ];
   
   const filteredFlashes = selectedCategory === "Tous" 
     ? savedFlashes 

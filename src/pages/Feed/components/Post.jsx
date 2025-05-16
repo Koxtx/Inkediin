@@ -1,18 +1,14 @@
-import React, { useState } from "react";
+import React, { useContext } from "react";
 import { Bookmark, Heart, MessageCircle, Share } from "lucide-react";
+import { FlashContext } from "../../../context/FlashContext";
 
-export default function Post({ username, time, likes, caption, comments }) {
-  const [liked, setLiked] = useState(false);
-  const [savedToBookmarks, setSavedToBookmarks] = useState(false);
+export default function Post({ id, username, time, likes, caption, comments, isLiked, isSaved }) {
+  const { toggleLikePost } = useContext(FlashContext);
   
   const handleLike = () => {
-    setLiked(!liked);
+    toggleLikePost(id);
   };
   
-  const handleBookmark = () => {
-    setSavedToBookmarks(!savedToBookmarks);
-  };
-
   return (
     <article className="mb-6 border-b border-gray-700">
       <div className="flex items-center p-4">
@@ -28,13 +24,13 @@ export default function Post({ username, time, likes, caption, comments }) {
 
       <div className="flex items-center p-4">
         <button className="mr-4 text-xl" onClick={handleLike}>
-          <Heart fill={liked ? "#ef4444" : "none"} color={liked ? "#ef4444" : "currentColor"} />
+          <Heart fill={isLiked ? "#ef4444" : "none"} color={isLiked ? "#ef4444" : "currentColor"} />
         </button>
         <button className="mr-4 text-xl">
           <MessageCircle />
         </button>
-        <button className="ml-auto text-xl" onClick={handleBookmark}>
-          <Bookmark fill={savedToBookmarks ? "#ef4444" : "none"} color={savedToBookmarks ? "#ef4444" : "currentColor"} />
+        <button className="ml-auto text-xl">
+          <Bookmark fill={isSaved ? "#ef4444" : "none"} color={isSaved ? "#ef4444" : "currentColor"} />
         </button>
       </div>
 

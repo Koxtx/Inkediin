@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Heart, Calendar, Info } from 'lucide-react';
+import React, { useContext } from 'react';
+import { Heart, Info } from 'lucide-react';
+import { FlashContext } from "../../../context/FlashContext";
 
-export default function FlashCard({ title, artist, price }) {
-  const [liked, setLiked] = useState(false);
+export default function FlashCard({ id, title, artist, price }) {
+  const { isFlashSaved, toggleSaveFlash } = useContext(FlashContext);
+  const liked = isFlashSaved(id);
   
   const handleLike = () => {
-    setLiked(!liked);
+    toggleSaveFlash({ id, title, artist, price, category: "Flash", comments: 0, views: 0 });
   };
   
   return (
