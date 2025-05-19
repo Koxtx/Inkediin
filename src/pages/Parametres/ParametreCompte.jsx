@@ -73,7 +73,7 @@ export default function ParametreCompte() {
 
       <Section title="Paramètres de confidentialité">
         <OptionWithArrow text="Visibilité du profil" />
-        <OptionWithArrow text="Qui peut vous contacter" />
+        <OptionWithArrow text="Qui pouvez vous contacter" />
       </Section>
 
       <Section title="Options de sécurité">

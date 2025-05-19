@@ -1,36 +1,49 @@
 import React from "react";
+import { ProfilContext } from "../../context/ProfilContext";
+import { useContext } from "react";
 
 export default function ProfilTatoueur() {
+  const { userProfile, stats } = useContext(ProfilContext);
+
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8">
       {/* En-tête du profil */}
       <div className="flex flex-col items-center mb-8">
         <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-red-400 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold mb-4">
-          TA
+          {userProfile?.avatar || "TA"}
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-1">TattooArtist</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-1">
+          {userProfile?.username || "TattooArtist"}
+        </h1>
         <p className="text-gray-600 dark:text-gray-300 mb-2">
-          Tatoueur Réaliste & Old School
+          {userProfile?.specialty || "Tatoueur"}
         </p>
         <p className="flex items-center text-gray-500 dark:text-gray-400">
-          <span className="mr-1">📍</span> Paris, France
+          <span className="mr-1">📍</span>{" "}
+          {userProfile?.location || "Non spécifié"}
         </p>
       </div>
 
       {/* Statistiques */}
       <div className="flex justify-center gap-6 sm:gap-12 mb-8">
         <div className="flex flex-col items-center">
-          <div className="text-xl sm:text-2xl font-bold">128</div>
+          <div className="text-xl sm:text-2xl font-bold">
+            {stats?.realizations || 0}
+          </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             Réalisations
           </div>
         </div>
         <div className="flex flex-col items-center">
-          <div className="text-xl sm:text-2xl font-bold">45</div>
+          <div className="text-xl sm:text-2xl font-bold">
+            {stats?.flashes || 0}
+          </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">Flashs</div>
         </div>
         <div className="flex flex-col items-center">
-          <div className="text-xl sm:text-2xl font-bold">1.2k</div>
+          <div className="text-xl sm:text-2xl font-bold">
+            {stats?.followers || 0}
+          </div>
           <div className="text-sm text-gray-500 dark:text-gray-400">
             Abonnés
           </div>
@@ -51,10 +64,7 @@ export default function ProfilTatoueur() {
       <div className="mb-8">
         <h2 className="text-xl font-bold mb-3">Bio</h2>
         <p className="text-gray-700 dark:text-gray-300">
-          Tatoueur professionnel depuis 5 ans, spécialisé dans le réalisme et
-          l'old school. Je travaille au studio Ink Vibes à Paris. Passionné par
-          l'art du tatouage et toujours à la recherche de nouveaux défis
-          créatifs.
+          {userProfile?.bio || "Aucune biographie disponible."}
         </p>
       </div>
 
@@ -62,18 +72,18 @@ export default function ProfilTatoueur() {
       <div className="mb-8">
         <h2 className="text-xl font-bold mb-3">Styles</h2>
         <div className="flex flex-wrap gap-2">
-          <span className="px-3 py-1 bg-red-400 text-white text-sm rounded-full">
-            Réaliste
-          </span>
-          <span className="px-3 py-1 bg-red-400 text-white text-sm rounded-full">
-            Old School
-          </span>
-          <span className="px-3 py-1 bg-red-400 text-white text-sm rounded-full">
-            Blackwork
-          </span>
-          <span className="px-3 py-1 bg-red-400 text-white text-sm rounded-full">
-            Géométrique
-          </span>
+          {userProfile?.styles?.map((style, index) => (
+            <span
+              key={index}
+              className="px-3 py-1 bg-red-400 text-white text-sm rounded-full"
+            >
+              {style}
+            </span>
+          )) || (
+            <span className="text-gray-600 dark:text-gray-400">
+              Aucun style spécifié
+            </span>
+          )}
         </div>
       </div>
 

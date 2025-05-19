@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { NotifContext } from "../context/NotifContext";
-import { ToastContainer } from "../components/notifications/ToastContainer";
+import { NotifContext } from "../../context/NotifContext";
+import { ToastContainer } from "../../pages/notifications/components/ToastContainer";
 
-export const NotifProvider = ({ children }) => {
+export default function NotifProvider  ({ children }) {
   const [toasts, setToasts] = useState([]);
   const [toastIdCounter, setToastIdCounter] = useState(0);
   const [notifications, setNotifications] = useState([
@@ -101,7 +101,7 @@ export const NotifProvider = ({ children }) => {
   const addToast = (type, message, duration = 5000) => {
     const newId = toastIdCounter;
     setToastIdCounter(toastIdCounter + 1);
-    
+
     setToasts((prevToasts) => [
       ...prevToasts,
       { id: newId, type, message, duration },
@@ -146,20 +146,21 @@ export const NotifProvider = ({ children }) => {
 
   // Ajouter une nouvelle notification
   const addNotification = (notification) => {
-    const newId = notifications.length > 0 
-      ? Math.max(...notifications.map(n => n.id)) + 1 
-      : 1;
-    
-    setNotifications(prev => [
+    const newId =
+      notifications.length > 0
+        ? Math.max(...notifications.map((n) => n.id)) + 1
+        : 1;
+
+    setNotifications((prev) => [
       {
         id: newId,
         date: "Aujourd'hui",
         read: false,
         ...notification,
       },
-      ...prev
+      ...prev,
     ]);
-    
+
     // Ajouter aussi un toast pour alerter l'utilisateur
     addToast(notification.type, notification.title);
   };

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { MessagerieContext } from "../context/MessagerieContext";
+import { MessagerieContext } from "../../context/MessagerieContext";
 
 export default function MessagerieProvider({ children }) {
   // État pour les onglets
