@@ -88,7 +88,7 @@ export default function Header() {
             <Bookmark size={24} />
             <span>Signets</span>
           </NavLink>
-          <NavLink className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink to={"/mentionlegal"} className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
             <Users size={24} />
             <span>Communautés</span>
           </NavLink>
