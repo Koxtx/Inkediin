@@ -11,12 +11,107 @@ import {
   MapPin,
   RefreshCw,
   Check,
+  Trash2,
+  Archive,
+  Star,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { NotifContext } from "../../../context/NotifContext";
 
+const NotificationDropdown = ({ notification, onClose }) => {
+  const {
+    markAsRead,
+    deleteNotification,
+    archiveNotification,
+    starNotification,
+  } = useContext(NotifContext);
+
+  const handleAction = (action, e) => {
+    e.stopPropagation();
+    switch (action) {
+      case "toggleRead":
+        markAsRead(notification.id, notification.read);
+        break;
+      case "star":
+        starNotification(notification.id);
+        break;
+      case "archive":
+        archiveNotification(notification.id);
+        break;
+      case "delete":
+        deleteNotification(notification.id);
+        break;
+    }
+    onClose();
+  };
+
+  return (
+    <div className="absolute right-2 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 min-w-48">
+      <div className="py-1">
+        <button
+          onClick={(e) => handleAction("toggleRead", e)}
+          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          {notification.read ? (
+            <>
+              <EyeOff size={16} className="mr-3" />
+              Marquer comme non lu
+            </>
+          ) : (
+            <>
+              <Eye size={16} className="mr-3" />
+              Marquer comme lu
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={(e) => handleAction("star", e)}
+          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <Star
+            size={16}
+            className={`mr-3 ${
+              notification.starred ? "text-yellow-500 fill-current" : ""
+            }`}
+          />
+          {notification.starred ? "Retirer des favoris" : "Ajouter aux favoris"}
+        </button>
+
+        <button
+          onClick={(e) => handleAction("archive", e)}
+          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <Archive size={16} className="mr-3" />
+          {notification.archived ? "Désarchiver" : "Archiver"}
+        </button>
+
+        <hr className="my-1 border-gray-200 dark:border-gray-700" />
+
+        <button
+          onClick={(e) => handleAction("delete", e)}
+          className="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+        >
+          <Trash2 size={16} className="mr-3" />
+          Supprimer
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export const NotificationList = () => {
   const [activeTab, setActiveTab] = useState("Toutes");
-  const { notifications, markAsRead, markAllAsRead } = useContext(NotifContext);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const {
+    notifications,
+    markAsRead,
+    markAllAsRead,
+    getUnreadCount,
+    getStarredCount,
+    getArchivedCount,
+  } = useContext(NotifContext);
 
   const tabs = [
     "Toutes",
@@ -39,17 +134,25 @@ export const NotificationList = () => {
   // Filtrage des notifications en fonction de l'onglet actif
   const filteredNotifications =
     activeTab === "Toutes"
-      ? notifications
+      ? notifications.filter((notif) => !notif.archived)
       : activeTab === "Messages"
       ? notifications.filter(
-          (notif) => notif.type === "message" || notif.type === "comment"
+          (notif) =>
+            (notif.type === "message" || notif.type === "comment") &&
+            !notif.archived
         )
       : activeTab === "Promotions"
-      ? notifications.filter((notif) => notif.type === "promo")
+      ? notifications.filter(
+          (notif) => notif.type === "promo" && !notif.archived
+        )
       : activeTab === "Mentions J'aime"
-      ? notifications.filter((notif) => notif.type === "like")
+      ? notifications.filter(
+          (notif) => notif.type === "like" && !notif.archived
+        )
       : notifications.filter(
-          (notif) => notif.type === "system" || notif.type === "newArtist"
+          (notif) =>
+            (notif.type === "system" || notif.type === "newArtist") &&
+            !notif.archived
         );
 
   // Regroupement des notifications par date
@@ -65,7 +168,19 @@ export const NotificationList = () => {
     {}
   );
 
-  const unreadCount = notifications.filter((notif) => !notif.read).length;
+  const unreadCount = getUnreadCount();
+
+  // Fermer le dropdown quand on clique ailleurs
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".dropdown-container")) {
+        setOpenDropdown(null);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-8">
@@ -75,21 +190,42 @@ export const NotificationList = () => {
 
       {/* En-tête avec compteur et bouton "tout marquer comme lu" */}
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
+        <div className="flex items-center space-x-4">
           <span className="font-medium">
             Toutes les notifications
-            <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-              {unreadCount}
-            </span>
+            {unreadCount > 0 && (
+              <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                {unreadCount}
+              </span>
+            )}
           </span>
+
+          {/* Compteurs additionnels */}
+          <div className="hidden sm:flex items-center space-x-3 text-sm text-gray-500">
+            {getStarredCount() > 0 && (
+              <span className="flex items-center">
+                <Star size={14} className="mr-1 text-yellow-500" />
+                {getStarredCount()}
+              </span>
+            )}
+            {getArchivedCount() > 0 && (
+              <span className="flex items-center">
+                <Archive size={14} className="mr-1 text-gray-400" />
+                {getArchivedCount()}
+              </span>
+            )}
+          </div>
         </div>
-        <button
-          onClick={markAllAsRead}
-          className="text-sm text-red-500 hover:text-red-600 flex items-center"
-        >
-          <Check size={16} className="mr-1" />
-          Tout marquer comme lu
-        </button>
+
+        {unreadCount > 0 && (
+          <button
+            onClick={markAllAsRead}
+            className="text-sm text-red-500 hover:text-red-600 flex items-center"
+          >
+            <Check size={16} className="mr-1" />
+            Tout marquer comme lu
+          </button>
+        )}
       </div>
 
       {/* Tabs - version mobile (dropdown) */}
@@ -138,13 +274,20 @@ export const NotificationList = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden
-                    ${!notification.read ? "border-l-4 border-red-500" : ""}`}
+                  className={`bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-all duration-200
+                    ${!notification.read ? "border-l-4 border-red-500" : ""}
+                    ${notification.starred ? "ring-2 ring-yellow-300" : ""}`}
                 >
                   <div className="p-4 sm:p-5 flex">
                     {/* Icon */}
-                    <div className="flex-shrink-0 mr-4 bg-gray-100 dark:bg-gray-700 rounded-full p-2">
+                    <div className="flex-shrink-0 mr-4 bg-gray-100 dark:bg-gray-700 rounded-full p-2 relative">
                       {notificationIcons[notification.type]}
+                      {notification.starred && (
+                        <Star
+                          size={12}
+                          className="absolute -top-1 -right-1 text-yellow-500 fill-current"
+                        />
+                      )}
                     </div>
 
                     {/* Content */}
@@ -170,10 +313,8 @@ export const NotificationList = () => {
                               }`}
                             onClick={() => {
                               if (!action.primary) {
-                                // Si ce n'est pas l'action principale, c'est probablement "marquer comme lu/non lu"
                                 markAsRead(notification.id, notification.read);
                               }
-                              // Autres actions spécifiques à implémenter selon les besoins
                             }}
                           >
                             {action.label}
@@ -183,10 +324,27 @@ export const NotificationList = () => {
                     </div>
 
                     {/* More options dropdown */}
-                    <div className="flex-shrink-0 self-start">
-                      <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                    <div className="flex-shrink-0 self-start relative dropdown-container">
+                      <button
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors duration-200"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdown(
+                            openDropdown === notification.id
+                              ? null
+                              : notification.id
+                          );
+                        }}
+                      >
                         <MoreVertical size={20} className="text-gray-500" />
                       </button>
+
+                      {openDropdown === notification.id && (
+                        <NotificationDropdown
+                          notification={notification}
+                          onClose={() => setOpenDropdown(null)}
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

@@ -20,17 +20,15 @@ function App() {
               <FlashProvider>
                 <MessagerieProvider>
                   <PromotionProvider>
-                    <SearchProvider>
-                      <div className="w-full flex flex-col md:flex-row">
-                        <Header />
-                        <div className="flex flex-col flex-1 w-full md:ml-64  md:mt-0 pb-20 md:pb-0">
-                          <main className="flex-1 w-full">
-                            <Outlet />
-                          </main>
-                        </div>
+                    <div className="w-full flex flex-col md:flex-row">
+                      <Header />
+                      <div className="flex flex-col flex-1 w-full md:ml-64  md:mt-0 pb-20 md:pb-0">
+                        <main className="flex-1 w-full">
+                          <Outlet />
+                        </main>
                       </div>
-                      <ScrollRestoration />
-                    </SearchProvider>
+                    </div>
+                    <ScrollRestoration />
                   </PromotionProvider>
                 </MessagerieProvider>
               </FlashProvider>

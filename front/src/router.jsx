@@ -27,6 +27,7 @@ import ProfilTatoueur from "./pages/ProfilTatoueur/ProfilTatoueur";
 import ProfilClient from "./pages/ProfilClient/ProfilClient";
 import SignUp from "./pages/Auth/SignUp";
 import SignIn from "./pages/Auth/SignIn";
+import ParametreCompte from "./pages/Parametres/ParametreCompte";
 
 export const router = createBrowserRouter([
   {
@@ -174,6 +175,10 @@ export const router = createBrowserRouter([
       {
         path: "/support",
         element: <Support />,
+      },
+        {
+        path: "/param",
+        element: <ParametreCompte />,
       },
     ],
   },

@@ -9,7 +9,12 @@ export default function Feed() {
   const [recommendedContent, setRecommendedContent] = useState([]);
 
   // Utilisation du contexte
-  const { followedPosts, recommendedPosts, followedFlashes, recommendedFlashes } = useContext(FlashContext);
+  const {
+    followedPosts,
+    recommendedPosts,
+    followedFlashes,
+    recommendedFlashes,
+  } = useContext(FlashContext);
 
   useEffect(() => {
     // Mettre à jour le contenu en fonction de l'onglet actif
@@ -20,7 +25,13 @@ export default function Feed() {
       setFollowedContent(followedFlashes);
       setRecommendedContent(recommendedFlashes);
     }
-  }, [activeTab, followedPosts, recommendedPosts, followedFlashes, recommendedFlashes]);
+  }, [
+    activeTab,
+    followedPosts,
+    recommendedPosts,
+    followedFlashes,
+    recommendedFlashes,
+  ]);
 
   return (
     <div className="min-h-screen pb-16">
@@ -52,9 +63,12 @@ export default function Feed() {
         {/* Contenu des tatoueurs suivis */}
         <section>
           <h2 className="p-4 text-lg font-bold">
-            {activeTab === "publication" ? "Publications récentes" : "Flashs récents"} des tatoueurs suivis
+            {activeTab === "publication"
+              ? "Publications récentes"
+              : "Flashs récents"}{" "}
+            des tatoueurs suivis
           </h2>
-          
+
           {activeTab === "publication" ? (
             // Publications des tatoueurs suivis
             <div className="mt-2">
@@ -64,7 +78,7 @@ export default function Feed() {
             </div>
           ) : (
             // Flashs des tatoueurs suivis
-            <div className="px-4 pb-4 flex overflow-x-auto gap-4">
+            <div className="px-4 pb-4 flex-col-reverse  gap-4">
               {followedContent.map((flash) => (
                 <FlashCard key={flash.id} {...flash} />
               ))}
@@ -75,9 +89,11 @@ export default function Feed() {
         {/* Contenu recommandé */}
         <section className="mt-8">
           <h2 className="p-4 text-lg font-bold">
-            {activeTab === "publication" ? "Publications recommandées" : "Flashs recommandés"}
+            {activeTab === "publication"
+              ? "Publications recommandées"
+              : "Flashs recommandés"}
           </h2>
-          
+
           {activeTab === "publication" ? (
             // Publications recommandées
             <div className="mt-2">
@@ -87,7 +103,7 @@ export default function Feed() {
             </div>
           ) : (
             // Flashs recommandés
-            <div className="px-4 pb-4 flex overflow-x-auto gap-4">
+            <div className="px-4 pb-4 flex-col-reverse gap-4">
               {recommendedContent.map((flash) => (
                 <FlashCard key={flash.id} {...flash} />
               ))}

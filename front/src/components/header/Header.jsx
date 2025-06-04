@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useRef, useEffect } from "react";
 import {
   Home,
   Search,
@@ -12,6 +12,15 @@ import {
   Wrench,
   LogOut,
   Image,
+  Settings,
+  HelpCircle,
+  Shield,
+  UserCog,
+  Palette,
+  Globe,
+  Volume2,
+  Download,
+  Info
 } from "lucide-react";
 import { ThemeContext } from "../../context/ThemeContext";
 import { FaMoon } from "react-icons/fa";
@@ -22,11 +31,43 @@ import logoWhite from "../../assets/logo_inkedin_blanc.png";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { theme, toggleTheme } = useContext(ThemeContext);
+  
+  const plusMenuRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  const togglePlusMenu = () => {
+    setIsPlusMenuOpen(!isPlusMenuOpen);
+    setIsUserMenuOpen(false); // Fermer l'autre menu
+  };
+
+  const toggleUserMenu = () => {
+    setIsUserMenuOpen(!isUserMenuOpen);
+    setIsPlusMenuOpen(false); // Fermer l'autre menu
+  };
+
+  // Fermer les menus quand on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (plusMenuRef.current && !plusMenuRef.current.contains(event.target)) {
+        setIsPlusMenuOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -99,10 +140,71 @@ export default function Header() {
             <User size={24} />
             <span>Profil</span>
           </NavLink>
-          <NavLink className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
-            <MoreHorizontal size={24} />
-            <span>Plus</span>
-          </NavLink>
+          
+          {/* Menu Plus avec dropdown */}
+          <div className="relative" ref={plusMenuRef}>
+            <button 
+              onClick={togglePlusMenu}
+              className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full w-full text-left"
+            >
+              <MoreHorizontal size={24} />
+              <span>Plus</span>
+            </button>
+            
+            {isPlusMenuOpen && (
+              <div className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-60">
+                <NavLink
+                  to={"/parametres"}
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                >
+                  <Settings size={20} />
+                  <span>Paramètres et confidentialité</span>
+                </NavLink>
+                <NavLink
+                  to={"/aide"}
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                >
+                  <HelpCircle size={20} />
+                  <span>Centre d'aide</span>
+                </NavLink>
+                <NavLink
+                  to={"/securite"}
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                >
+                  <Shield size={20} />
+                  <span>Sécurité</span>
+                </NavLink>
+                <NavLink
+                  to={"/accessibilite"}
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                >
+                  <Volume2 size={20} />
+                  <span>Accessibilité</span>
+                </NavLink>
+                <NavLink
+                  to={"/langue"}
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                >
+                  <Globe size={20} />
+                  <span>Langue</span>
+                </NavLink>
+                <NavLink
+                  to={"/telechargements"}
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                >
+                  <Download size={20} />
+                  <span>Téléchargements</span>
+                </NavLink>
+                <NavLink
+                  to={"/a-propos"}
+                  className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+                >
+                  <Info size={20} />
+                  <span>À propos</span>
+                </NavLink>
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Bouton Poster */}
@@ -118,17 +220,47 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Profil utilisateur */}
-        <div className="mt-6 flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer">
-          <Link to={"/profiltatoueur"} className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-              <User size={20} />
+        {/* Profil utilisateur avec menu */}
+        <div className="mt-6 relative" ref={userMenuRef}>
+          <div className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer">
+            <Link to={"/profiltatoueur"} className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
+                <User size={20} />
+              </div>
+              <div>
+                <p className="font-semibold">Nom Utilisateur</p>
+              </div>
+            </Link>
+            <button onClick={toggleUserMenu}>
+              <MoreHorizontal size={20} />
+            </button>
+          </div>
+          
+          {isUserMenuOpen && (
+            <div className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-60">
+              <NavLink
+                to={"/param"}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+              >
+                <UserCog size={20} />
+                <span>Modifier le profil</span>
+              </NavLink>
+              <NavLink
+                to={"/apparence"}
+                className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm"
+              >
+                <Palette size={20} />
+                <span>Apparence</span>
+              </NavLink>
+              <hr className="my-2 border-gray-200 dark:border-gray-700" />
+              <button
+                className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm w-full text-left text-red-600 dark:text-red-400"
+              >
+                <LogOut size={20} />
+                <span>Déconnexion</span>
+              </button>
             </div>
-            <div>
-              <p className="font-semibold">Nom Utilisateur</p>
-            </div>
-          </Link>
-          <MoreHorizontal size={20} />
+          )}
         </div>
       </div>
 
@@ -168,19 +300,21 @@ export default function Header() {
       {/* Menu latéral mobile */}
       {isMenuOpen && (
         <div className="md:hidden fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 overflow-y-auto">
+          {/* En-tête du menu avec profil utilisateur */}
           <div className="mt-6 flex items-center justify-between p-4 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
-            <div className="flex items-center gap-3">
+            <Link to={"/profiltatoueur"} className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
                 <User size={20} />
               </div>
               <div>
                 <p className="font-semibold">Nom Utilisateur</p>
               </div>
-            </div>
+            </Link>
             <MoreHorizontal size={20} />
           </div>
 
           <div className="py-4">
+            {/* Options principales du profil */}
             <NavLink
               to={"/profiltatoueur"}
               className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -188,11 +322,52 @@ export default function Header() {
               <User size={24} />
               <span>Profil</span>
             </NavLink>
-            <NavLink className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
-              <Users size={24} />
-              <span>Communautés</span>
+            <NavLink
+              to={"/param"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <UserCog size={24} />
+              <span>Modifier le profil</span>
             </NavLink>
 
+            <hr className="my-4 border-gray-200 dark:border-gray-700" />
+
+            {/* Navigation principale */}
+            <NavLink
+              to={"/"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Home size={24} />
+              <span>Accueil</span>
+            </NavLink>
+            <NavLink
+              to={"/tatoueur"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Image size={24} />
+              <span>Tatoueur</span>
+            </NavLink>
+            <NavLink
+              to={"/exploration"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Search size={24} />
+              <span>Explorer</span>
+            </NavLink>
+            <NavLink
+              to={"/notification"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Bell size={24} />
+              <span>Notifications</span>
+            </NavLink>
+            <NavLink
+              to={"/messagerie"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <MessageSquare size={24} />
+              <span>Messages</span>
+            </NavLink>
             <NavLink
               to={"/wishlist"}
               className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -200,14 +375,70 @@ export default function Header() {
               <Bookmark size={24} />
               <span>Signets</span>
             </NavLink>
-            <NavLink className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
-              <Wrench size={24} />
-              <span>Paramètres et conf...</span>
+            <NavLink 
+              to={"/mentionlegal"} 
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Users size={24} />
+              <span>Communautés</span>
             </NavLink>
-            <NavLink className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
+
+            <hr className="my-4 border-gray-200 dark:border-gray-700" />
+
+            {/* Menu Plus - Options supplémentaires */}
+            <div className="px-4 py-2">
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Plus d'options</p>
+            </div>
+            <NavLink
+              to={"/parametres"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Settings size={24} />
+              <span>Paramètres et confidentialité</span>
+            </NavLink>
+            <NavLink
+              to={"/aide"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <HelpCircle size={24} />
+              <span>Centre d'aide</span>
+            </NavLink>
+            <NavLink
+              to={"/securite"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Shield size={24} />
+              <span>Sécurité</span>
+            </NavLink>
+            <NavLink
+              to={"/accessibilite"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Volume2 size={24} />
+              <span>Accessibilité</span>
+            </NavLink>
+            <NavLink
+              to={"/langue"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Globe size={24} />
+              <span>Langue</span>
+            </NavLink>
+            <NavLink
+              to={"/apparence"}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              <Palette size={24} />
+              <span>Apparence</span>
+            </NavLink>
+
+            <hr className="my-4 border-gray-200 dark:border-gray-700" />
+
+            {/* Déconnexion */}
+            <button className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left text-red-600 dark:text-red-400">
               <LogOut size={24} />
               <span>Déconnexion</span>
-            </NavLink>
+            </button>
           </div>
         </div>
       )}

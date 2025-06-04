@@ -70,7 +70,7 @@ export default function Messagerie() {
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden divide-y divide-gray-200 dark:divide-gray-700">
         {filteredMessages.map((msg, index) => (
           <Link
-            to={`/conversation/${msg.initials}`}
+            to={`/conversation`}
             key={index}
             className="flex items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             onClick={() => {

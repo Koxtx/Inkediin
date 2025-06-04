@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { ProfilContext } from "../../context/ProfilContext";
 import { useContext } from "react";
+import { Link } from "lucide-react";
 
 export default function ProfilClient() {
   const [activeTab, setActiveTab] = useState("preferences");
-  const { userProfile, preferences, wishlist, followedArtists } = useContext(ProfilContext);
+  const { userProfile, preferences, wishlist, followedArtists } =
+    useContext(ProfilContext);
 
   // Contenu des onglets avec données provenant du contexte
   const tabContents = {
@@ -22,7 +24,10 @@ export default function ProfilClient() {
             <div className="p-4">
               <div className="flex flex-wrap gap-2">
                 {preferences.favoriteStyles.map((style, index) => (
-                  <span key={index} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm">
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm"
+                  >
                     {style}
                   </span>
                 ))}
@@ -37,7 +42,10 @@ export default function ProfilClient() {
             <div className="p-4">
               <div className="flex flex-wrap gap-2">
                 {preferences.preferredLocations.map((location, index) => (
-                  <span key={index} className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm">
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-sm"
+                  >
                     {location}
                   </span>
                 ))}
@@ -51,19 +59,26 @@ export default function ProfilClient() {
             </div>
             <div className="p-4">
               <ul className="divide-y dark:divide-gray-700">
-                {Object.entries(preferences.criteria).map(([criterion, rating], index) => (
-                  <li key={index} className="py-2 flex justify-between items-center">
-                    <span>{criterion}</span>
-                    <span className="text-yellow-500">{"⭐".repeat(rating)}</span>
-                  </li>
-                ))}
+                {Object.entries(preferences.criteria).map(
+                  ([criterion, rating], index) => (
+                    <li
+                      key={index}
+                      className="py-2 flex justify-between items-center"
+                    >
+                      <span>{criterion}</span>
+                      <span className="text-yellow-500">
+                        {"⭐".repeat(rating)}
+                      </span>
+                    </li>
+                  )
+                )}
               </ul>
             </div>
           </div>
         </div>
       </>
     ),
-    
+
     wishlist: (
       <>
         <div className="mb-5">
@@ -86,7 +101,7 @@ export default function ProfilClient() {
         </div>
       </>
     ),
-    
+
     followed: (
       <>
         <div className="mb-5">
@@ -131,9 +146,12 @@ export default function ProfilClient() {
         <p className="text-gray-600 dark:text-gray-300 text-center max-w-md mb-4">
           {userProfile?.bio || "Aucune biographie"}
         </p>
-        <button className="px-4 py-2 border border-red-500 text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900 dark:hover:bg-opacity-30 transition-colors">
+        <Link
+          to={"/param"}
+          className="px-4 py-2 border border-red-500 text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900 dark:hover:bg-opacity-30 transition-colors"
+        >
           Modifier le profil
-        </button>
+        </Link>
       </div>
 
       {/* Onglets */}
