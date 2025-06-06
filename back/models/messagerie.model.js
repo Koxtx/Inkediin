@@ -1,30 +1,37 @@
 const mongoose = require('mongoose');
 
 const messagerieSchema = new mongoose.Schema({
+  conversationId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conversation',
+    required: true
+  },
   expediteurId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    refPath: 'expediteurType'
-  },
-  expediteurType: {
-    type: String,
-    required: true,
-    enum: ['Tatoueur', 'Client']
+    ref: 'User',
+    required: true
   },
   destinataireId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
-    refPath: 'destinataireType'
-  },
-  destinataireType: {
-    type: String,
-    required: true,
-    enum: ['Tatoueur', 'Client']
+    ref: 'User',
+    required: true
   },
   contenu: {
     type: String,
     required: true,
     maxlength: 2000
+  },
+  type: {
+    type: String,
+    enum: ['message', 'reservation_flash'],
+    default: 'message'
+  },
+  flashId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Flash',
+    required: function() {
+      return this.type === 'reservation_flash';
+    }
   },
   dateEnvoi: {
     type: Date,
@@ -34,9 +41,8 @@ const messagerieSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  archivage: {
-    type: String,
-    default: null
+  dateLecture: {
+    type: Date
   }
 }, {
   timestamps: true

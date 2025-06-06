@@ -3,14 +3,19 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const path = require("path");
+const cookieParser = require("cookie-parser");
+const {serverHttp,app}=require("./socket/socket")
+
+
 const __DIRNAME = path.resolve();
 
-const app = express();
+
 
 app.use(express.static(path.join(__DIRNAME, "/front/dist")));
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 const feedRoutes = require("./routes/feed.routes");
 const flashRoutes = require("./routes/flash.routes");
