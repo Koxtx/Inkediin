@@ -21,7 +21,7 @@ const createTokenEmail = (email) => {
 const signup = async (req, res) => {
   console.log(req.body);
   try {
-    const {  email, password } = req.body;
+    const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: "Déjà inscrit" });
@@ -115,12 +115,27 @@ const signin = async (req, res) => {
 const updateUser = async (req, res) => {
   console.log(req.body);
   try {
-    const { username, email } = req.body;
+    const {
+      email,
+      nom,
+      
+      localisation,
+      bio,
+      styles,
+      portfolio,
+      followers,
+    } = req.body;
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       {
-        username,
         email,
+        nom,
+       
+        localisation,
+        bio,
+        styles,
+        portfolio,
+        followers,
       },
       {
         new: true,
@@ -136,12 +151,12 @@ const updateUser = async (req, res) => {
 const updateAvatar = async (req, res) => {
   console.log(req.body);
   try {
-    const { avatar } = req.body;
+    const { photoProfil } = req.body;
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
       {
-        avatar,
+        photoProfil,
       },
       {
         new: true,
