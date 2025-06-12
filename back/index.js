@@ -4,14 +4,13 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 const path = require("path");
 const cookieParser = require("cookie-parser");
-const {serverHttp,app}=require("./socket/socket")
+const { serverHttp, app } = require("./socket/socket");
 
+// const __DIRNAME = path.resolve();
 
-const __DIRNAME = path.resolve();
+const PORT = process.env.API_URL;
 
-
-
-app.use(express.static(path.join(__DIRNAME, "/front/dist")));
+// app.use(express.static(path.join(__DIRNAME, "/front/dist")));
 app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
 
 app.use(express.json());
@@ -31,13 +30,11 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/users", userRoutes);
 
-app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.join(__DIRNAME, "front", "dist", "index.html"));
-});
+// app.get(/(.*)/, (req, res) => {
+//   res.sendFile(path.join(__DIRNAME, "front", "dist", "index.html"));
+// });
 
 mongoose.connect(process.env.MONGO_URL).then(() => {
   console.log("✅ MongoDB connected");
-  app.listen(process.env.PORT, () =>
-    console.log("🚀 Server on http://localhost:3000")
-  );
+  app.listen(process.env.PORT, () => console.log(`🚀 Server on ${PORT}`));
 });

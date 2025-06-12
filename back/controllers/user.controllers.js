@@ -14,7 +14,7 @@ const SECRET_KEY = process.env.SECRET_KEY;
 
 const createTokenEmail = (email) => {
   return jsonwebtoken.sign({ email }, process.env.SECRET_KEY, {
-    expiresIn: "60s",
+    expiresIn: "1h",
   });
 };
 
@@ -35,7 +35,7 @@ const signup = async (req, res) => {
     });
     await tempUser.save();
     res.status(201).json({
-      messageOk:
+      message:
         "Veulliez confirmer votre en inscription en consultant votre boite mail",
     });
   } catch (error) {
@@ -118,7 +118,7 @@ const updateUser = async (req, res) => {
     const {
       email,
       nom,
-      
+userType,
       localisation,
       bio,
       styles,
@@ -130,7 +130,7 @@ const updateUser = async (req, res) => {
       {
         email,
         nom,
-       
+userType,
         localisation,
         bio,
         styles,
@@ -186,46 +186,73 @@ const logoutUser = async (req, res) => {
 };
 
 const forgotMyPassword = async (req, res) => {
-  console.log(req.body); // {email: "john@test.fr"}
+  console.log("📧 ForgotPassword - Body reçu:", req.body);
   const { email } = req.body;
   try {
     const user = await User.findOne({ email });
+    console.log("👤 Utilisateur trouvé pour forgot password:", user ? "OUI" : "NON");
+    
     if (user) {
       const token = createTokenEmail(email);
+      console.log("🔑 Token généré:", token);
+      
       await sendForgotPasswordEmail(email, token);
-      await User.updateOne(
+      console.log("📧 Email envoyé");
+      
+      const updateResult = await User.updateOne(
         { email },
         {
           resetToken: token,
         }
       );
+      console.log("💾 Résultat de la mise à jour:", updateResult);
+      
+      // Vérifier que le token a bien été sauvegardé
+      const updatedUser = await User.findOne({ email });
+      console.log("🔍 Token sauvegardé en base:", updatedUser.resetToken);
     }
     res.json({ message: "Si un compte est associé, vous recevrez un mail" });
   } catch (error) {
-    console.log(error);
+    console.log("❌ Erreur dans forgotMyPassword:", error);
   }
 };
-
 const resetPassword = async (req, res) => {
-  console.log(req.body); // afficher mot de passe et token
-
+  console.log("🔐 Reset password - Body reçu:", req.body);
+  
   const { password, token } = req.body;
   try {
+    console.log("🔍 Vérification du token:", token);
+    
     // 1- Vérifier le token
     let decodedToken = jsonwebtoken.verify(token, process.env.SECRET_KEY);
+    console.log("✅ Token décodé:", decodedToken);
+    
     // 3- Trouvez l'utilisateur qui a ce token
     const user = await User.findOne({ resetToken: token });
+    console.log("👤 Utilisateur trouvé:", user ? "OUI" : "NON");
+    
+    if (!user) {
+      console.log("❌ Aucun utilisateur avec ce token");
+      return res.status(400).json({ message: "Token invalide ou utilisateur introuvable" });
+    }
+    
     // 4- hashé le nouveau mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
+    
     // 5- Modifier mot de passe en BDD et passer resetToken à null
     user.password = hashedPassword;
     user.resetToken = null;
     await user.save();
+    
+    console.log("✅ Mot de passe mis à jour avec succès");
+    
     // 6- Envoyer mail "mot de passe modifié"
     await validateNewPassword(user.email);
+    
     // 7- Feedback réussite
     res.status(200).json({ messageOk: "Mot de passe mis à jour avec succès" });
   } catch (error) {
+    console.log("❌ Erreur dans resetPassword:", error.message);
     // 2- Gestion de l'erreur
     res.status(400).json({ message: "Jeton d'authentification invalide" });
   }

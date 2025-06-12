@@ -23,21 +23,21 @@ router.post("/", signup);
 router.post("/login", signin);
 router.post("/forgotPassword", forgotMyPassword);
 router.post("/resetPassword", resetPassword);
-router.post("/changePassword", auth,changePassword);
-router.post("/completeProfile",auth,completeProfile);
+router.post("/changePassword", auth, changePassword);
+router.post("/completeProfile", auth, completeProfile);
 
 // UPDATE
 
-router.put("/",auth, updateUser);
-router.put("/avatar",auth, updateAvatar);
+router.put("/", auth, updateUser);
+router.put("/avatar", auth, updateAvatar);
 
 // GET
 
-router.get("/currentUser",auth, currentUser);
+router.get("/currentUser", auth, currentUser);
 router.get("/verifyMail/:token", verifyMail);
 
 // DELETE
 
-router.delete("/deleteToken",auth, logoutUser);
+router.delete("/deleteToken", auth, logoutUser);
 
 module.exports = router;
