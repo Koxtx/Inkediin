@@ -11,21 +11,27 @@ import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
 
 export default function SignIn() {
   const [rememberMe, setRememberMe] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-  const [showPassword, setShowPassword] = useState(false);
 
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
 
   const schema = yup.object({
     email: yup
       .string()
-      .email()
-      .required("Le champ est obligatoire")
+      .email("Format de votre email non valide")
+      .required("Le champ email est obligatoire")
       .matches(
-        /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/g,
+       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/g,
         "Format de votre email non valide"
       ),
+    password: yup
+      .string()
+      .required("Le champ mot de passe est obligatoire")
+      .min(1, "Le mot de passe est requis")
   });
 
   const defaultValues = {
@@ -44,10 +50,39 @@ export default function SignIn() {
     mode: "onChange",
   });
 
-  const submit = (values) => {
-    login(values);
-    window.dispatchEvent(new Event("storage"));
-    navigate("/");
+  const submit = async (values) => {
+    setIsSubmitting(true);
+    
+    try {
+      console.log("🔐 Tentative de connexion avec:", { email: values.email });
+      
+      const result = await login(values);
+      console.log("📨 Résultat de connexion:", result);
+      
+      if (result.success) {
+        // Déclencher l'événement storage pour mettre à jour l'état global
+        window.dispatchEvent(new Event("storage"));
+        
+        // Attendre un petit délai pour s'assurer que l'état est mis à jour
+        setTimeout(() => {
+          if (result.isFirstLogin) {
+            console.log("🔄 Redirection vers setup profil");
+            navigate("/setupprofil");
+          } else {
+            console.log("🔄 Redirection vers accueil");
+            navigate("/");
+          }
+        }, 100);
+      } else {
+        console.log("❌ Échec de la connexion:", result.message);
+        // Les erreurs sont déjà gérées dans le contexte avec toast
+      }
+    } catch (error) {
+      console.error("💥 Erreur lors de la soumission:", error);
+      toast.error("Une erreur inattendue s'est produite");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -77,10 +112,11 @@ export default function SignIn() {
               id="email"
               className="w-full pl-10 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="votre@email.com"
+              disabled={isSubmitting}
             />
           </div>
           {errors.email && (
-            <p className="text-red-500">{errors.email.message}</p>
+            <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
           )}
         </div>
 
@@ -99,19 +135,21 @@ export default function SignIn() {
               {...register("password")}
               type={showPassword ? "text" : "password"}
               id="password"
-              className="w-full pl-10 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="w-full pl-10 pr-10 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               placeholder="••••••••"
+              disabled={isSubmitting}
             />
             <button
               type="button"
               onClick={togglePasswordVisibility}
               className="absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-300"
+              disabled={isSubmitting}
             >
               {showPassword ? <FaRegEye /> : <FaRegEyeSlash />}
             </button>
           </div>
           {errors.password && (
-            <p className="text-red-500">{errors.password.message}</p>
+            <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
           )}
         </div>
 
@@ -123,6 +161,7 @@ export default function SignIn() {
               checked={rememberMe}
               onChange={() => setRememberMe(!rememberMe)}
               className="w-4 h-4 accent-red-500"
+              disabled={isSubmitting}
             />
             <label
               htmlFor="remember"
@@ -141,10 +180,11 @@ export default function SignIn() {
 
         <button
           type="submit"
-          className="w-full bg-red-500 hover:bg-red-600 text-white py-3 px-4 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 flex items-center justify-center"
+          disabled={isSubmitting}
+          className="w-full bg-red-500 hover:bg-red-600 disabled:bg-red-300 disabled:cursor-not-allowed text-white py-3 px-4 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-300 flex items-center justify-center"
         >
           <User size={18} className="mr-2" />
-          Se connecter
+          {isSubmitting ? "Connexion..." : "Se connecter"}
         </button>
 
         <div className="text-center mt-6">

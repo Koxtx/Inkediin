@@ -20,7 +20,7 @@ import {
   Globe,
   Volume2,
   Download,
-  Info
+  Info,
 } from "lucide-react";
 import { ThemeContext } from "../../context/ThemeContext";
 import { FaMoon } from "react-icons/fa";
@@ -28,13 +28,15 @@ import { FaSun } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
 import logo from "../../assets/logo_inkedin_noir.png";
 import logoWhite from "../../assets/logo_inkedin_blanc.png";
+import { AuthContext } from "../../context/AuthContext";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { theme, toggleTheme } = useContext(ThemeContext);
-  
+  const { logout, user } = useContext(AuthContext);
+
   const plusMenuRef = useRef(null);
   const userMenuRef = useRef(null);
 
@@ -63,11 +65,35 @@ export default function Header() {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Fonction pour obtenir les initiales de l'utilisateur
+  const getInitials = (name) => {
+    if (!name) return "U";
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  // Fonction pour afficher l'image de profil ou les initiales
+  const getProfileImage = () => {
+    if (user?.photoProfil && user.photoProfil.startsWith('data:image')) {
+      return (
+        <img 
+          src={user.photoProfil} 
+          alt="Profil" 
+          className="w-full h-full object-cover"
+        />
+      );
+    }
+    return (
+      <span className="text-sm font-bold">
+        {getInitials(user?.nom)}
+      </span>
+    );
+  };
 
   return (
     <>
@@ -129,28 +155,31 @@ export default function Header() {
             <Bookmark size={24} />
             <span>Signets</span>
           </NavLink>
-          <NavLink to={"/mentionlegal"} className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+          <NavLink
+            to={"/mentionlegal"}
+            className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
+          >
             <Users size={24} />
             <span>Communautés</span>
           </NavLink>
           <NavLink
-            to={"/profilclient"}
+            to={"/profil"}
             className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
           >
             <User size={24} />
             <span>Profil</span>
           </NavLink>
-          
+
           {/* Menu Plus avec dropdown */}
           <div className="relative" ref={plusMenuRef}>
-            <button 
+            <button
               onClick={togglePlusMenu}
               className="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full w-full text-left"
             >
               <MoreHorizontal size={24} />
               <span>Plus</span>
             </button>
-            
+
             {isPlusMenuOpen && (
               <div className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-60">
                 <NavLink
@@ -223,19 +252,24 @@ export default function Header() {
         {/* Profil utilisateur avec menu */}
         <div className="mt-6 relative" ref={userMenuRef}>
           <div className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer">
-            <Link to={"/profiltatoueur"} className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                <User size={20} />
+            <Link to={"/profil"} className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden">
+                {getProfileImage()}
               </div>
               <div>
-                <p className="font-semibold">Nom Utilisateur</p>
+                <p className="font-semibold">{user?.nom || "Utilisateur"}</p>
+                {user?.userType && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                    {user.userType}
+                  </p>
+                )}
               </div>
             </Link>
             <button onClick={toggleUserMenu}>
               <MoreHorizontal size={20} />
             </button>
           </div>
-          
+
           {isUserMenuOpen && (
             <div className="absolute left-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-60">
               <NavLink
@@ -255,6 +289,7 @@ export default function Header() {
               <hr className="my-2 border-gray-200 dark:border-gray-700" />
               <button
                 className="flex items-center gap-3 px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-sm w-full text-left text-red-600 dark:text-red-400"
+                onClick={logout}
               >
                 <LogOut size={20} />
                 <span>Déconnexion</span>
@@ -290,8 +325,8 @@ export default function Header() {
             </button>
           </div>
           <div className="relative cursor-pointer" onClick={toggleMenu}>
-            <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-              <User size={20} />
+            <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden">
+              {getProfileImage()}
             </div>
           </div>
         </div>
@@ -302,12 +337,17 @@ export default function Header() {
         <div className="md:hidden fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 overflow-y-auto">
           {/* En-tête du menu avec profil utilisateur */}
           <div className="mt-6 flex items-center justify-between p-4 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
-            <Link to={"/profiltatoueur"} className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                <User size={20} />
+            <Link to={"/profil"} className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden">
+                {getProfileImage()}
               </div>
               <div>
-                <p className="font-semibold">Nom Utilisateur</p>
+                <p className="font-semibold">{user?.nom || "Utilisateur"}</p>
+                {user?.userType && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                    {user.userType}
+                  </p>
+                )}
               </div>
             </Link>
             <MoreHorizontal size={20} />
@@ -316,7 +356,7 @@ export default function Header() {
           <div className="py-4">
             {/* Options principales du profil */}
             <NavLink
-              to={"/profiltatoueur"}
+              to={"/profil"}
               className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <User size={24} />
@@ -375,8 +415,8 @@ export default function Header() {
               <Bookmark size={24} />
               <span>Signets</span>
             </NavLink>
-            <NavLink 
-              to={"/mentionlegal"} 
+            <NavLink
+              to={"/mentionlegal"}
               className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <Users size={24} />
@@ -387,7 +427,9 @@ export default function Header() {
 
             {/* Menu Plus - Options supplémentaires */}
             <div className="px-4 py-2">
-              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">Plus d'options</p>
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">
+                Plus d'options
+              </p>
             </div>
             <NavLink
               to={"/parametres"}
@@ -435,7 +477,10 @@ export default function Header() {
             <hr className="my-4 border-gray-200 dark:border-gray-700" />
 
             {/* Déconnexion */}
-            <button className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left text-red-600 dark:text-red-400">
+            <button
+              onClick={logout}
+              className="flex items-center gap-3 px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left text-red-600 dark:text-red-400"
+            >
               <LogOut size={24} />
               <span>Déconnexion</span>
             </button>
@@ -465,7 +510,7 @@ export default function Header() {
           className="flex flex-col items-center text-gray-600 dark:text-gray-300 hover:text-red-500 p-1"
         >
           <Image size={24} />
-          <span>Tatoueur</span>
+          <span className="text-xs mt-1">Tatoueur</span>
         </NavLink>
         <NavLink
           to={"/exploration"}

@@ -4,6 +4,7 @@ import Homepage from "./pages/Homepage/Homepage";
 import ErrorPage from "./pages/ErrorPages";
 import UserConnected from "./components/ProtectedRoutes/UserConnected";
 import UserNotConnected from "./components/ProtectedRoutes/UserNotConnected";
+import ProtectedSetupRoute from "./components/ProtectedRoutes/ProtectedSetupRoute";
 import Feed from "./pages/Feed/Feed";
 import Exploration from "./pages/Exploration/Exploration";
 import Messagerie from "./pages/Messagerie/Messagerie";
@@ -23,11 +24,14 @@ import Reservation from "./pages/Réservation/Reservation";
 import historiqueReserve from "./pages/Réservation/historiqueReserve";
 import FlashDetail from "./pages/flash/FlashDetail";
 import FlashUploadPage from "./pages/flash/FlashUploadPage";
-import ProfilTatoueur from "./pages/ProfilTatoueur/ProfilTatoueur";
-import ProfilClient from "./pages/ProfilClient/ProfilClient";
+import Profil from "./pages/Profil/Profil";
+
 import SignUp from "./pages/Auth/SignUp";
 import SignIn from "./pages/Auth/SignIn";
 import ParametreCompte from "./pages/Parametres/ParametreCompte";
+import SetupProfil from "./pages/Auth/SetupProfil";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
+import ResetPassword from "./pages/Auth/ResetPassword";
 
 export const router = createBrowserRouter([
   {
@@ -51,7 +55,32 @@ export const router = createBrowserRouter([
           </UserNotConnected>
         ),
       },
-
+      {
+        path: "/forgotpassword",
+        element: (
+          <UserNotConnected>
+            <ForgotPassword />
+          </UserNotConnected>
+        ),
+      },
+      {
+        path: "/resetpassword/:token",
+        element: (
+          <UserNotConnected>
+            <ResetPassword />
+          </UserNotConnected>
+        ),
+      },
+      // Route protégée pour le setup de profil
+      {
+        path: "/setupprofil",
+        element: (
+          <ProtectedSetupRoute>
+            <SetupProfil />
+          </ProtectedSetupRoute>
+        ),
+      },
+      // Toutes les autres routes nécessitent un profil complet
       {
         path: "/tatoueur",
         element: (
@@ -109,76 +138,133 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "/profiltatoueur",
+        path: "/profil",
         element: (
           <UserConnected>
-            <ProfilTatoueur />
+            <Profil />
           </UserConnected>
         ),
       },
       {
-        path: "/profilclient",
+        path: "/profil/:id",
         element: (
           <UserConnected>
-            <ProfilClient />
+            <Profil />
           </UserConnected>
         ),
       },
+
       {
         path: "/tag",
-        element: <Tag />,
+        element: (
+          <UserConnected>
+            <Tag />
+          </UserConnected>
+        ),
       },
       {
         path: "/stat",
-        element: <StatTatoueur />,
+        element: (
+          <UserConnected>
+            <StatTatoueur />
+          </UserConnected>
+        ),
       },
       {
         path: "/mentionlegal",
-        element: <MentionLegal />,
+        element: (
+          <UserConnected>
+            <MentionLegal />
+          </UserConnected>
+        ),
       },
       {
         path: "/customprojet",
-        element: <CustomProjet />,
+        element: (
+          <UserConnected>
+            <CustomProjet />
+          </UserConnected>
+        ),
       },
       {
         path: "/portfoliomanage",
-        element: <PortFolioManagement />,
+        element: (
+          <UserConnected>
+            <PortFolioManagement />
+          </UserConnected>
+        ),
       },
       {
         path: "/promotion",
-        element: <Promotion />,
+        element: (
+          <UserConnected>
+            <Promotion />
+          </UserConnected>
+        ),
       },
       {
         path: "/recoperso",
-        element: <RecommandationPerso />,
+        element: (
+          <UserConnected>
+            <RecommandationPerso />
+          </UserConnected>
+        ),
       },
       {
         path: "/tips",
-        element: <Tips />,
+        element: (
+          <UserConnected>
+            <Tips />
+          </UserConnected>
+        ),
       },
       {
         path: "/reservation",
-        element: <Reservation />,
+        element: (
+          <UserConnected>
+            <Reservation />
+          </UserConnected>
+        ),
       },
       {
         path: "/historiquereserve",
-        element: <historiqueReserve />,
+        element: (
+          <UserConnected>
+            <historiqueReserve />
+          </UserConnected>
+        ),
       },
       {
         path: "/flashdetail",
-        element: <FlashDetail />,
+        element: (
+          <UserConnected>
+            <FlashDetail />
+          </UserConnected>
+        ),
       },
       {
         path: "/flashupload",
-        element: <FlashUploadPage />,
+        element: (
+          <UserConnected>
+            <FlashUploadPage />
+          </UserConnected>
+        ),
       },
       {
         path: "/support",
-        element: <Support />,
+        element: (
+          <UserConnected>
+            <Support />
+          </UserConnected>
+        ),
       },
-        {
+      {
         path: "/param",
-        element: <ParametreCompte />,
+        element: (
+          <UserConnected>
+            <ParametreCompte />
+          </UserConnected>
+        ),
       },
     ],
   },

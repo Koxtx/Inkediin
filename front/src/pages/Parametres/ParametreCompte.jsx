@@ -1,34 +1,66 @@
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
+import ModifierProfil from "./components/ModifierProfil";
+import ChangerMotDePasse from "./components/ChangerMotDePasse";
+import GererTypeCompte from "./components/GererTypeCompte";
 
 export default function ParametreCompte() {
+  const [currentView, setCurrentView] = useState("main");
   const [toggleStates, setToggleStates] = useState({
     messages: true,
     nouveauxTatoueurs: false,
     reservations: true,
-    deuxFacteurs: false
+    deuxFacteurs: false,
   });
 
   const handleToggle = (key) => {
-    setToggleStates(prev => ({
+    setToggleStates((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
   };
 
+  const handleNavigation = (view) => {
+    setCurrentView(view);
+  };
+
+  const handleBack = () => {
+    setCurrentView("main");
+  };
+
+  // Affichage conditionnel basé sur la vue actuelle
+  if (currentView === "modifierProfil") {
+    return <ModifierProfil onBack={handleBack} />;
+  }
+
+  if (currentView === "changerMotDePasse") {
+    return <ChangerMotDePasse onBack={handleBack} />;
+  }
+
+  if (currentView === "gererTypeCompte") {
+    return <GererTypeCompte onBack={handleBack} />;
+  }
+
   const Toggle = ({ isOn, onToggle }) => (
-    <div 
-      className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors duration-300 ${isOn ? 'bg-red-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+    <div
+      className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors duration-300 ${
+        isOn ? "bg-red-500" : "bg-gray-300 dark:bg-gray-600"
+      }`}
       onClick={onToggle}
     >
-      <div 
-        className={`absolute w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 top-0.5 ${isOn ? 'translate-x-6' : 'translate-x-0.5'}`} 
+      <div
+        className={`absolute w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 top-0.5 ${
+          isOn ? "translate-x-6" : "translate-x-0.5"
+        }`}
       />
     </div>
   );
 
-  const OptionWithArrow = ({ text }) => (
-    <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
+  const OptionWithArrow = ({ text, onClick }) => (
+    <div
+      className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+      onClick={onClick}
+    >
       <div className="font-medium text-gray-800 dark:text-gray-200">{text}</div>
       <ChevronRight className="w-5 h-5 text-gray-400 dark:text-gray-500" />
     </div>
@@ -37,9 +69,9 @@ export default function ParametreCompte() {
   const OptionWithToggle = ({ text, stateKey }) => (
     <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors">
       <div className="font-medium text-gray-800 dark:text-gray-200">{text}</div>
-      <Toggle 
-        isOn={toggleStates[stateKey]} 
-        onToggle={() => handleToggle(stateKey)} 
+      <Toggle
+        isOn={toggleStates[stateKey]}
+        onToggle={() => handleToggle(stateKey)}
       />
     </div>
   );
@@ -60,14 +92,26 @@ export default function ParametreCompte() {
       </h1>
 
       <Section title="Informations personnelles">
-        <OptionWithArrow text="Modifier le profil" />
-        <OptionWithArrow text="Changer de mot de passe" />
-        <OptionWithArrow text="Gérer votre type de compte" />
+        <OptionWithArrow
+          text="Modifier le profil"
+          onClick={() => handleNavigation("modifierProfil")}
+        />
+        <OptionWithArrow
+          text="Changer de mot de passe"
+          onClick={() => handleNavigation("changerMotDePasse")}
+        />
+        <OptionWithArrow
+          text="Gérer votre type de compte"
+          onClick={() => handleNavigation("gererTypeCompte")}
+        />
       </Section>
 
       <Section title="Notifications">
         <OptionWithToggle text="Messages" stateKey="messages" />
-        <OptionWithToggle text="Nouveaux tatoueurs" stateKey="nouveauxTatoueurs" />
+        <OptionWithToggle
+          text="Nouveaux tatoueurs"
+          stateKey="nouveauxTatoueurs"
+        />
         <OptionWithToggle text="Réservations" stateKey="reservations" />
       </Section>
 
@@ -77,7 +121,10 @@ export default function ParametreCompte() {
       </Section>
 
       <Section title="Options de sécurité">
-        <OptionWithToggle text="Authentification à deux facteurs" stateKey="deuxFacteurs" />
+        <OptionWithToggle
+          text="Authentification à deux facteurs"
+          stateKey="deuxFacteurs"
+        />
         <OptionWithArrow text="Appareils connectés" />
       </Section>
 
