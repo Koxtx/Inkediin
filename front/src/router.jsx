@@ -32,6 +32,10 @@ import ParametreCompte from "./pages/Parametres/ParametreCompte";
 import SetupProfil from "./pages/Auth/SetupProfil";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
 import ResetPassword from "./pages/Auth/ResetPassword";
+import PublicationUploadPage from "./pages/Feed/PublicationUploadPage";
+import FlashEdit from "./pages/flash/FlashEdit";
+import FlashManagementPage from "./pages/Profil/components/FlashManagement";
+import ModifierProfil from "./pages/Parametres/components/ModifierProfil";
 
 export const router = createBrowserRouter([
   {
@@ -263,6 +267,39 @@ export const router = createBrowserRouter([
         element: (
           <UserConnected>
             <ParametreCompte />
+          </UserConnected>
+        ),
+      },
+
+      {
+        path: "/uploadpublication",
+        element: (
+          <UserConnected>
+            <PublicationUploadPage />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/flashedit/:flashId",
+        element: (
+          <UserConnected>
+            <FlashEdit />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/flashs",
+        element: (
+          <UserConnected>
+            <FlashManagementPage />
+          </UserConnected>
+        ),
+      },
+          {
+        path: "/modifierprofil",
+        element: (
+          <UserConnected>
+            <ModifierProfil />
           </UserConnected>
         ),
       },

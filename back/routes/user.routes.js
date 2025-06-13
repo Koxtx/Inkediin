@@ -12,6 +12,7 @@ const {
   resetPassword,
   completeProfile,
   changePassword,
+  fetchTatoueur,
 } = require("../controllers/user.controllers");
 const auth = require("../middlewares/auth");
 
@@ -35,6 +36,7 @@ router.put("/avatar", auth, updateAvatar);
 
 router.get("/currentUser", auth, currentUser);
 router.get("/verifyMail/:token", verifyMail);
+router.get("/tattooers", fetchTatoueur);
 
 // DELETE
 

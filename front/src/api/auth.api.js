@@ -355,3 +355,272 @@ export async function changePassword(values) {
     };
   }
 }
+
+const determineExperience = (createdAt) => {
+  if (!createdAt) return "Non spécifié";
+  
+  const now = new Date();
+  const created = new Date(createdAt);
+  const years = (now - created) / (1000 * 60 * 60 * 24 * 365);
+  
+  if (years < 1) return "Junior (0-3 ans)";
+  if (years < 3) return "Intermédiaire (3-7 ans)";
+  return "Expert (7+ ans)";
+};
+
+// Fonction pour générer un prix aléatoire (temporaire)
+const generateRandomPrice = () => {
+  return Math.floor(Math.random() * 400) + 80; // Entre 80 et 480€
+};
+
+// Fonction pour générer une note aléatoire (temporaire)
+const generateRandomRating = () => {
+  return Math.round((Math.random() * 2 + 3) * 10) / 10; // Entre 3.0 et 5.0
+};
+
+// Fonction pour obtenir les coordonnées approximatives d'une ville
+const getCoordinatesFromLocation = (location) => {
+  if (!location) return { lat: 48.8566, lng: 2.3522 }; // Paris par défaut
+  
+  const coordinates = {
+    "Paris": { lat: 48.8566, lng: 2.3522 },
+    "Lyon": { lat: 45.7578, lng: 4.832 },
+    "Marseille": { lat: 43.2965, lng: 5.3698 },
+    "Bordeaux": { lat: 44.8378, lng: -0.5792 },
+    "Lille": { lat: 50.6292, lng: 3.0573 },
+    "Toulouse": { lat: 43.6047, lng: 1.4442 },
+    "Strasbourg": { lat: 48.5734, lng: 7.7521 },
+    "Nantes": { lat: 47.2184, lng: -1.5536 },
+    "Montpellier": { lat: 43.6110, lng: 3.8767 },
+    "Nice": { lat: 43.7102, lng: 7.2620 },
+    "Rennes": { lat: 49.7439, lng: -1.6806 },
+    "Dijon": { lat: 47.3220, lng: 5.0415 },
+    "Angers": { lat: 47.4784, lng: -0.5632 },
+    "Saint-Étienne": { lat: 45.4397, lng: 4.3872 },
+    "Le Havre": { lat: 49.4944, lng: 0.1079 },
+    "Grenoble": { lat: 45.1885, lng: 5.7245 },
+    "Toulon": { lat: 43.1242, lng: 5.9280 },
+    "Annecy": { lat: 45.8992, lng: 6.1294 },
+    "Metz": { lat: 49.1193, lng: 6.1757 },
+    "Besançon": { lat: 47.2380, lng: 6.0243 }
+  };
+  
+  // Recherche exacte d'abord
+  if (coordinates[location]) {
+    return coordinates[location];
+  }
+  
+  // Recherche approximative (contient)
+  const locationLower = location.toLowerCase();
+  for (const [city, coords] of Object.entries(coordinates)) {
+    if (city.toLowerCase().includes(locationLower) || locationLower.includes(city.toLowerCase())) {
+      return coords;
+    }
+  }
+  
+  return { lat: 48.8566, lng: 2.3522 }; // Paris par défaut
+};
+
+// Fonction principale pour récupérer les tatoueurs
+export async function getTattooers() {
+  try {
+    const response = await fetch(`${BASE_URL}/users/tattooers`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log("Données reçues du backend:", data);
+    
+    // Transformer les données du backend pour correspondre à l'interface
+    const transformedArtists = data.map(user => {
+      const coordinates = getCoordinatesFromLocation(user.localisation);
+      
+      return {
+        _id: user._id,
+        name: user.nom || "Nom non renseigné",
+        category: user.styles ? user.styles.split(',')[0].trim() : "Non spécifié",
+        location: user.localisation || "Non renseigné",
+        experience: determineExperience(user.createdAt),
+        price: generateRandomPrice(), // À remplacer par vraies données quand disponibles
+        rating: generateRandomRating(), // À remplacer par vraies données quand disponibles
+        availability: Math.random() > 0.3 ? "Disponible" : "Complet", // À remplacer par vraies données
+        avatar: user.avatar || "/api/placeholder/150/150",
+        portfolio: user.portfolio?.[0] || "/api/placeholder/400/300",
+        bio: user.bio || "",
+        styles: user.styles || "",
+        followers: user.followers || 0,
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
+        distance: 0,
+        createdAt: user.createdAt,
+        email: user.email, // Utile pour le contact
+      };
+    });
+
+    console.log("Artistes transformés:", transformedArtists);
+    
+    return {
+      success: true,
+      data: transformedArtists,
+      count: transformedArtists.length
+    };
+    
+  } catch (error) {
+    console.error("Erreur lors de la récupération des artistes:", error);
+    return {
+      success: false,
+      message: error.message || "Impossible de charger les artistes. Veuillez réessayer.",
+      data: []
+    };
+  }
+}
+
+// Fonction pour récupérer un tatoueur spécifique par ID
+export async function getTattooerById(id) {
+  try {
+    const response = await fetch(`${BASE_URL}/users/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+    }
+
+    const user = await response.json();
+    
+    // Transformer les données
+    const coordinates = getCoordinatesFromLocation(user.localisation);
+    
+    const transformedArtist = {
+      _id: user._id,
+      name: user.nom || "Nom non renseigné",
+      category: user.styles ? user.styles.split(',')[0].trim() : "Non spécifié",
+      location: user.localisation || "Non renseigné",
+      experience: determineExperience(user.createdAt),
+      price: generateRandomPrice(),
+      rating: generateRandomRating(),
+      availability: Math.random() > 0.3 ? "Disponible" : "Complet",
+      avatar: user.avatar || "/api/placeholder/150/150",
+      portfolio: user.portfolio || [],
+      bio: user.bio || "",
+      styles: user.styles || "",
+      followers: user.followers || 0,
+      latitude: coordinates.lat,
+      longitude: coordinates.lng,
+      createdAt: user.createdAt,
+      email: user.email,
+      userType: user.userType
+    };
+
+    return {
+      success: true,
+      data: transformedArtist
+    };
+    
+  } catch (error) {
+    console.error("Erreur lors de la récupération du tatoueur:", error);
+    return {
+      success: false,
+      message: error.message || "Impossible de charger le tatoueur.",
+      data: null
+    };
+  }
+}
+
+// Fonction pour rechercher des tatoueurs avec filtres
+export async function searchTattooers(filters = {}) {
+  try {
+    // Construire les paramètres de requête
+    const queryParams = new URLSearchParams();
+    
+    if (filters.search) queryParams.append('search', filters.search);
+    if (filters.location) queryParams.append('location', filters.location);
+    if (filters.styles) queryParams.append('styles', filters.styles);
+    if (filters.minPrice) queryParams.append('minPrice', filters.minPrice);
+    if (filters.maxPrice) queryParams.append('maxPrice', filters.maxPrice);
+    
+    const url = `${BASE_URL}/users/tattooers/search?${queryParams.toString()}`;
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // Transformer les données
+    const transformedArtists = data.map(user => {
+      const coordinates = getCoordinatesFromLocation(user.localisation);
+      
+      return {
+        _id: user._id,
+        name: user.nom || "Nom non renseigné",
+        category: user.styles ? user.styles.split(',')[0].trim() : "Non spécifié",
+        location: user.localisation || "Non renseigné",
+        experience: determineExperience(user.createdAt),
+        price: generateRandomPrice(),
+        rating: generateRandomRating(),
+        availability: Math.random() > 0.3 ? "Disponible" : "Complet",
+        avatar: user.avatar || "/api/placeholder/150/150",
+        portfolio: user.portfolio?.[0] || "/api/placeholder/400/300",
+        bio: user.bio || "",
+        styles: user.styles || "",
+        followers: user.followers || 0,
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
+        distance: 0,
+        createdAt: user.createdAt,
+        email: user.email,
+      };
+    });
+
+    return {
+      success: true,
+      data: transformedArtists,
+      count: transformedArtists.length
+    };
+    
+  } catch (error) {
+    console.error("Erreur lors de la recherche:", error);
+    return {
+      success: false,
+      message: error.message || "Erreur lors de la recherche.",
+      data: []
+    };
+  }
+}
+
+// Fonction utilitaire pour calculer la distance entre deux points GPS
+export function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Rayon de la Terre en km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distance en km
+  return distance;
+}

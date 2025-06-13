@@ -1,3 +1,301 @@
+import React, { useState, useEffect, useMemo } from "react";
+import SearchBar from "./components/SearchBar";
+import FilterPanel from "./components/FilterPanel";
+import ArtistsGrid from "./components/ArtistsGrid";
+import LoadingSpinner from "./components/LoadingSpinner";
+import ErrorMessage from "./components/ErrorMessage";
+import { getTattooers, calculateDistance } from "../../api/auth.api";
+import { useNavigate } from "react-router-dom";
+
+// Constantes des filtres inline
+const categories = [
+  "Tous",
+  "Flash",
+  "Réaliste",
+  "Old School",
+  "Géométrique",
+  "Japonais",
+  "Tribal",
+  "Minimaliste",
+  "Blackwork",
+  "Watercolor",
+  "Neo-traditionnel",
+  "Biomécanique",
+];
+
+const locations = [
+  "Toutes",
+  "Paris",
+  "Lyon",
+  "Marseille",
+  "Bordeaux",
+  "Lille",
+  "Toulouse",
+  "Strasbourg",
+  "Nantes",
+  "Montpellier",
+  "Nice",
+];
+
+const experienceLevels = [
+  "Tous",
+  "Junior (0-3 ans)",
+  "Intermédiaire (3-7 ans)",
+  "Expert (7+ ans)",
+];
+
+export default function Homepage() {
+  const [showFilters, setShowFilters] = useState(false);
+   const navigate = useNavigate();
+
+  // Hook useArtistsData inline
+  const [artists, setArtists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchArtists = async () => {
+    setLoading(true);
+    setError(null);
+
+    const result = await getTattooers();
+
+    if (result.success) {
+      setArtists(result.data);
+    } else {
+      setError(result.message);
+    }
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchArtists();
+  }, []);
+
+  const refetch = fetchArtists;
+
+  // Hook useGeolocation inline
+  const [userLocation, setUserLocation] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [isNearbyMode, setIsNearbyMode] = useState(false);
+
+  const getUserLocation = () => {
+    setIsLocating(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setUserLocation({ latitude, longitude });
+          setIsNearbyMode(true);
+          setIsLocating(false);
+        },
+        (error) => {
+          console.error("Erreur de géolocalisation:", error);
+          alert(
+            "Impossible d'obtenir votre position. Veuillez vérifier vos paramètres de localisation."
+          );
+          setIsLocating(false);
+          setIsNearbyMode(false);
+        }
+      );
+    } else {
+      alert("La géolocalisation n'est pas supportée par votre navigateur.");
+      setIsLocating(false);
+      setIsNearbyMode(false);
+    }
+  };
+
+  const disableNearbyMode = () => {
+    setIsNearbyMode(false);
+    setUserLocation(null);
+  };
+
+  const toggleLocationMode = () => {
+    if (isNearbyMode) {
+      disableNearbyMode();
+    } else {
+      getUserLocation();
+    }
+  };
+
+  // Hook useArtistsFilter inline
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Tous");
+  const [selectedLocation, setSelectedLocation] = useState("Toutes");
+  const [selectedExperience, setSelectedExperience] = useState("Tous");
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(500);
+  const [locationRadius, setLocationRadius] = useState(20);
+
+  const filteredArtists = useMemo(() => {
+    if (artists.length === 0) return [];
+
+    let results = [...artists];
+
+    // Si mode "autour de moi" est activé, calculer les distances
+    if (isNearbyMode && userLocation) {
+      results = results.map((artist) => {
+        const distance = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          artist.latitude,
+          artist.longitude
+        );
+        return { ...artist, distance };
+      });
+
+      // Filtrer par rayon de distance
+      results = results.filter((artist) => artist.distance <= locationRadius);
+    }
+
+    // Filtre par recherche (nom)
+    if (searchTerm) {
+      results = results.filter((artist) =>
+        artist.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Filtre par catégorie (style)
+    if (selectedCategory !== "Tous") {
+      results = results.filter((artist) => {
+        if (!artist.styles) return false;
+        const artistStyles = artist.styles
+          .split(",")
+          .map((s) => s.trim().toLowerCase());
+        return artistStyles.some(
+          (style) =>
+            style.includes(selectedCategory.toLowerCase()) ||
+            selectedCategory.toLowerCase().includes(style)
+        );
+      });
+    }
+
+    // Filtre par localisation (si pas en mode "autour de moi")
+    if (selectedLocation !== "Toutes" && !isNearbyMode) {
+      results = results.filter((artist) =>
+        artist.location.toLowerCase().includes(selectedLocation.toLowerCase())
+      );
+    }
+
+    // Filtre par expérience
+    if (selectedExperience !== "Tous") {
+      results = results.filter(
+        (artist) => artist.experience === selectedExperience
+      );
+    }
+
+    // Filtre par prix
+    results = results.filter(
+      (artist) => artist.price >= minPrice && artist.price <= maxPrice
+    );
+
+    // Si en mode "autour de moi", trier par distance
+    if (isNearbyMode) {
+      results.sort((a, b) => a.distance - b.distance);
+    }
+
+    return results;
+  }, [
+    artists,
+    searchTerm,
+    selectedCategory,
+    selectedLocation,
+    selectedExperience,
+    minPrice,
+    maxPrice,
+    isNearbyMode,
+    userLocation,
+    locationRadius,
+  ]);
+
+  const resetFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("Tous");
+    setSelectedLocation("Toutes");
+    setSelectedExperience("Tous");
+    setMinPrice(0);
+    setMaxPrice(500);
+  };
+
+  // Gestionnaires d'événements
+  const handleContact = (artist) => {
+    console.log("Contacter", artist.name);
+    // Logique de contact
+  };
+
+ const handleViewProfile = (artistId) => {
+    console.log("🎯 Navigation vers profil avec ID:", artistId);
+    navigate(`/profil/${artistId}`); // Utilisation de navigate au lieu de window.location.href
+  };
+
+  const handleResetFilters = () => {
+    resetFilters();
+    // Autres actions de reset si nécessaire
+  };
+
+  // Affichage conditionnel
+  if (loading) {
+    return <LoadingSpinner message="Chargement des artistes..." />;
+  }
+
+  if (error) {
+    return <ErrorMessage error={error} onRetry={refetch} />;
+  }
+
+
+
+  return (
+    <div className="container mx-auto px-4 sm:px-6 py-8">
+      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-5">
+        Découvrez les artistes
+      </h2>
+
+      <SearchBar
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        isNearbyMode={isNearbyMode}
+        isLocating={isLocating}
+        onLocationToggle={toggleLocationMode}
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+      />
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        <FilterPanel
+          showFilters={showFilters}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          selectedLocation={selectedLocation}
+          setSelectedLocation={setSelectedLocation}
+          selectedExperience={selectedExperience}
+          setSelectedExperience={setSelectedExperience}
+          minPrice={minPrice}
+          setMinPrice={setMinPrice}
+          maxPrice={maxPrice}
+          setMaxPrice={setMaxPrice}
+          isNearbyMode={isNearbyMode}
+          locationRadius={locationRadius}
+          setLocationRadius={setLocationRadius}
+          onResetFilters={handleResetFilters}
+          categories={categories}
+          locations={locations}
+          experienceLevels={experienceLevels}
+        />
+
+        <ArtistsGrid
+          filteredArtists={filteredArtists}
+          artists={artists}
+          isNearbyMode={isNearbyMode}
+          onContact={handleContact}
+          onViewProfile={handleViewProfile}
+          onResetFilters={handleResetFilters}
+          loading={loading}
+        />
+      </div>
+    </div>
+  );
+}
+
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
@@ -639,3 +937,180 @@ export default function Profil() {
     </div>
   );
 }
+import React from "react";
+import ArtistCard from "./ArtistCard";
+
+const ArtistsGrid = ({
+  filteredArtists,
+  artists,
+  isNearbyMode,
+  onContact,
+  onViewProfile,
+  onResetFilters,
+  loading,
+}) => {
+  if (loading) {
+    return null; // Le loading est géré dans le composant parent
+  }
+
+  return (
+    <div className="lg:w-3/4">
+      {/* Résultats */}
+      <div className="text-sm text-gray-500 mb-4">
+        {filteredArtists.length}{" "}
+        {filteredArtists.length === 1 ? "résultat" : "résultats"} trouvés
+        {artists.length > 0 && (
+          <span>
+            {" "}
+            sur {artists.length} artiste{artists.length > 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
+      {/* Grille d'artistes */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredArtists.map((artist) => (
+          <ArtistCard
+            key={artist._id}
+            artist={artist}
+            isNearbyMode={isNearbyMode}
+            onContact={onContact}
+            onViewProfile={onViewProfile}
+          />
+        ))}
+      </div>
+
+      {/* Message si aucun artiste trouvé */}
+      {filteredArtists.length === 0 && artists.length > 0 && (
+        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+          <div className="text-lg font-medium mb-2">
+            Aucun artiste ne correspond à vos critères
+          </div>
+          <p className="text-sm mb-4">
+            Essayez d'ajuster vos filtres pour voir plus de résultats
+          </p>
+          <button
+            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+            onClick={onResetFilters}
+          >
+            Réinitialiser tous les filtres
+          </button>
+        </div>
+      )}
+
+      {/* Message si aucun artiste dans la base */}
+      {artists.length === 0 && (
+        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+          <div className="text-lg font-medium mb-2">
+            Aucun artiste disponible pour le moment
+          </div>
+          <p className="text-sm mb-4">
+            Revenez plus tard pour découvrir de nouveaux talents
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ArtistsGrid;
+
+import React from "react";
+import { MapPin } from "lucide-react";
+
+const ArtistCard = ({ artist, isNearbyMode, onContact, onViewProfile }) => {
+  const formatPrice = (price) => `${price} €`;
+
+  return (
+    <div
+      className="rounded-lg overflow-hidden flex flex-col shadow-lg transition-transform duration-300 hover:transform hover:scale-105 cursor-pointer"
+      onClick={() => onViewProfile(artist._id)}
+    >
+      <div className="bg-red-400 p-3 flex items-center gap-3">
+        <img
+          src={artist.avatar}
+          alt={artist.name}
+          className="w-10 h-10 rounded-full object-cover"
+          onError={(e) => {
+            e.target.src = "/api/placeholder/150/150";
+          }}
+        />
+        <div className="flex-1">
+          <div className="font-bold truncate text-white">{artist.name}</div>
+          <div className="text-xs text-white flex items-center">
+            <MapPin size={12} className="mr-1" />
+            {artist.location}
+          </div>
+        </div>
+        <div
+          className={`text-xs font-medium px-2 py-1 rounded-full ${
+            artist.availability === "Disponible"
+              ? "bg-green-100 text-green-800"
+              : "bg-gray-100 text-gray-800"
+          }`}
+        >
+          {artist.availability}
+        </div>
+      </div>
+
+      <div className="h-48 bg-gray-200 relative">
+        <img
+          src={artist.portfolio}
+          alt={`Portfolio de ${artist.name}`}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.target.src = "/api/placeholder/400/300";
+          }}
+        />
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
+          <div className="flex justify-between items-center">
+            <div className="text-white text-sm font-medium">
+              {artist.category}
+            </div>
+            <div className="text-white text-sm font-bold">
+              {formatPrice(artist.price)}
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center">
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <span
+                    key={i}
+                    className={`text-xs ${
+                      i < Math.floor(artist.rating)
+                        ? "text-yellow-400"
+                        : "text-gray-400"
+                    }`}
+                  >
+                    ★
+                  </span>
+                ))}
+              </div>
+              <span className="text-white text-xs ml-1">{artist.rating}</span>
+            </div>
+            {isNearbyMode && artist.distance !== undefined && (
+              <div className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">
+                {artist.distance.toFixed(1)} km
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="p-2">
+        <button
+          className="w-full py-2 bg-red-500 hover:bg-red-600 transition-colors text-white rounded-md text-sm font-medium"
+          onClick={(e) => {
+            e.stopPropagation();
+            onContact(artist);
+          }}
+        >
+          Prendre contact
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ArtistCard;

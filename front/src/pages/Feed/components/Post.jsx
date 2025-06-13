@@ -1,6 +1,7 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
 import { Bookmark, Heart, MessageCircle, Share, MoreVertical, Flag, Trash2, X } from "lucide-react";
 import { FlashContext } from "../../../context/FlashContext";
+import { PublicationContext } from "../../../context/PublicationContext";
 
 export default function Post({ 
   id, 
@@ -13,9 +14,12 @@ export default function Post({
   isSaved, 
   isOwnPost = false,
   commentsData = [],
-  currentUser = "current_user"
+  currentUser = "current_user",
+  onLike,
+  onSave
 }) {
   const { toggleLikePost } = useContext(FlashContext);
+  const { deletePost, addComment } = useContext(PublicationContext);
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -24,13 +28,29 @@ export default function Post({
   const [localComments, setLocalComments] = useState(commentsData);
   const [localLikes, setLocalLikes] = useState(likes);
   const [localIsLiked, setLocalIsLiked] = useState(isLiked);
+  const [localIsSaved, setLocalIsSaved] = useState(isSaved);
   const menuRef = useRef(null);
   
   const handleLike = () => {
     const wasLiked = localIsLiked;
     setLocalIsLiked(!wasLiked);
     setLocalLikes(prevLikes => wasLiked ? prevLikes - 1 : prevLikes + 1);
-    toggleLikePost && toggleLikePost(id);
+    
+    // Utiliser le callback du Feed si disponible, sinon le context
+    if (onLike) {
+      onLike();
+    } else if (toggleLikePost) {
+      toggleLikePost(id);
+    }
+  };
+
+  const handleSave = () => {
+    setLocalIsSaved(!localIsSaved);
+    
+    // Utiliser le callback du Feed si disponible
+    if (onSave) {
+      onSave();
+    }
   };
 
   const handleCommentLike = (commentId, isReply = false, parentCommentId = null) => {
@@ -81,6 +101,16 @@ export default function Post({
       };
       setLocalComments(prev => [...prev, comment]);
       setNewComment("");
+      
+      // Aussi ajouter via le context si disponible
+      if (addComment) {
+        addComment(id, {
+          userId: "current_user",
+          userType: "Tatoueur",
+          username: currentUser,
+          contenu: newComment.trim()
+        });
+      }
     }
   };
 
@@ -131,8 +161,9 @@ export default function Post({
 
   const handleDeletePost = () => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce post ?")) {
-      // Logique de suppression du post
-      console.log("Suppression du post", id);
+      if (deletePost) {
+        deletePost(id);
+      }
       setShowMenu(false);
     }
   };
@@ -214,8 +245,14 @@ export default function Post({
         >
           <MessageCircle />
         </button>
-        <button className="ml-auto text-xl hover:scale-110 transition-transform">
-          <Bookmark fill={isSaved ? "#ef4444" : "none"} color={isSaved ? "#ef4444" : "currentColor"} />
+        <button 
+          className="ml-auto text-xl hover:scale-110 transition-transform"
+          onClick={handleSave}
+        >
+          <Bookmark 
+            fill={localIsSaved ? "#ef4444" : "none"} 
+            color={localIsSaved ? "#ef4444" : "currentColor"} 
+          />
         </button>
       </div>
 

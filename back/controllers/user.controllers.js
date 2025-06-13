@@ -118,7 +118,7 @@ const updateUser = async (req, res) => {
     const {
       email,
       nom,
-userType,
+      userType,
       localisation,
       bio,
       styles,
@@ -130,7 +130,7 @@ userType,
       {
         email,
         nom,
-userType,
+        userType,
         localisation,
         bio,
         styles,
@@ -190,15 +190,18 @@ const forgotMyPassword = async (req, res) => {
   const { email } = req.body;
   try {
     const user = await User.findOne({ email });
-    console.log("👤 Utilisateur trouvé pour forgot password:", user ? "OUI" : "NON");
-    
+    console.log(
+      "👤 Utilisateur trouvé pour forgot password:",
+      user ? "OUI" : "NON"
+    );
+
     if (user) {
       const token = createTokenEmail(email);
       console.log("🔑 Token généré:", token);
-      
+
       await sendForgotPasswordEmail(email, token);
       console.log("📧 Email envoyé");
-      
+
       const updateResult = await User.updateOne(
         { email },
         {
@@ -206,7 +209,7 @@ const forgotMyPassword = async (req, res) => {
         }
       );
       console.log("💾 Résultat de la mise à jour:", updateResult);
-      
+
       // Vérifier que le token a bien été sauvegardé
       const updatedUser = await User.findOne({ email });
       console.log("🔍 Token sauvegardé en base:", updatedUser.resetToken);
@@ -218,37 +221,39 @@ const forgotMyPassword = async (req, res) => {
 };
 const resetPassword = async (req, res) => {
   console.log("🔐 Reset password - Body reçu:", req.body);
-  
+
   const { password, token } = req.body;
   try {
     console.log("🔍 Vérification du token:", token);
-    
+
     // 1- Vérifier le token
     let decodedToken = jsonwebtoken.verify(token, process.env.SECRET_KEY);
     console.log("✅ Token décodé:", decodedToken);
-    
+
     // 3- Trouvez l'utilisateur qui a ce token
     const user = await User.findOne({ resetToken: token });
     console.log("👤 Utilisateur trouvé:", user ? "OUI" : "NON");
-    
+
     if (!user) {
       console.log("❌ Aucun utilisateur avec ce token");
-      return res.status(400).json({ message: "Token invalide ou utilisateur introuvable" });
+      return res
+        .status(400)
+        .json({ message: "Token invalide ou utilisateur introuvable" });
     }
-    
+
     // 4- hashé le nouveau mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     // 5- Modifier mot de passe en BDD et passer resetToken à null
     user.password = hashedPassword;
     user.resetToken = null;
     await user.save();
-    
+
     console.log("✅ Mot de passe mis à jour avec succès");
-    
+
     // 6- Envoyer mail "mot de passe modifié"
     await validateNewPassword(user.email);
-    
+
     // 7- Feedback réussite
     res.status(200).json({ messageOk: "Mot de passe mis à jour avec succès" });
   } catch (error) {
@@ -343,6 +348,20 @@ const completeProfile = async (req, res) => {
   }
 };
 
+const fetchTatoueur = async (req, res) => {
+  try {
+    const tattooers = await User.find({
+      userType: "tatoueur",
+    }).select(
+      "nom localisation styles avatar portfolio bio followers createdAt"
+    );
+
+    res.json(tattooers);
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 module.exports = {
   signup,
   signin,
@@ -355,4 +374,5 @@ module.exports = {
   resetPassword,
   changePassword,
   completeProfile,
+  fetchTatoueur,
 };

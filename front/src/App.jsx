@@ -9,6 +9,7 @@ import MessagerieProvider from "./components/providers/MessagerieProvider";
 import PromotionProvider from "./components/providers/PromotionProvider";
 import SearchProvider from "./components/providers/SearchProvider";
 import NotifProvider from "./components/providers/NotifProvider";
+import PublicationProvider from "./components/providers/PublicationProvider";
 
 function App() {
   return (
@@ -17,21 +18,23 @@ function App() {
         <AuthProvider>
           <NotifProvider>
             <ProfilProvider>
-              <FlashProvider>
-                <MessagerieProvider>
-                  <PromotionProvider>
-                    <div className="w-full flex flex-col md:flex-row">
-                      <Header />
-                      <div className="flex flex-col flex-1 w-full md:ml-64  md:mt-0 pb-20 md:pb-0">
-                        <main className="flex-1 w-full">
-                          <Outlet />
-                        </main>
+              <PublicationProvider>
+                <FlashProvider>
+                  <MessagerieProvider>
+                    <PromotionProvider>
+                      <div className="w-full flex flex-col md:flex-row">
+                        <Header />
+                        <div className="flex flex-col flex-1 w-full md:ml-64  md:mt-0 pb-20 md:pb-0">
+                          <main className="flex-1 w-full">
+                            <Outlet />
+                          </main>
+                        </div>
                       </div>
-                    </div>
-                    <ScrollRestoration />
-                  </PromotionProvider>
-                </MessagerieProvider>
-              </FlashProvider>
+                      <ScrollRestoration />
+                    </PromotionProvider>
+                  </MessagerieProvider>
+                </FlashProvider>
+              </PublicationProvider>
             </ProfilProvider>
           </NotifProvider>
         </AuthProvider>

@@ -47,10 +47,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    portfolio: {
-      type: String,
-      default: null,
-    },
+   
     followers: {
       type: String,
       default: "0",

@@ -24,6 +24,8 @@ export default function FlashCard({
   likes = 24,
   isLiked = false,
   isSaved = false,
+  onLike,
+  onSave
 }) {
   const [localIsLiked, setLocalIsLiked] = useState(isLiked);
   const [localIsSaved, setLocalIsSaved] = useState(isSaved);
@@ -34,10 +36,20 @@ export default function FlashCard({
     const wasLiked = localIsLiked;
     setLocalIsLiked(!wasLiked);
     setLocalLikes((prevLikes) => (wasLiked ? prevLikes - 1 : prevLikes + 1));
+    
+    // Utiliser le callback du Feed si disponible
+    if (onLike) {
+      onLike();
+    }
   };
 
   const handleSave = () => {
     setLocalIsSaved(!localIsSaved);
+    
+    // Utiliser le callback du Feed si disponible
+    if (onSave) {
+      onSave();
+    }
   };
 
   return (
@@ -145,7 +157,7 @@ export default function FlashCard({
         <span className="font-bold">{artist || username}</span>{" "}
         <span className="text-gray-300">
           {title && `🎵 ${title}`}
-          {price && ` • ${price}`}
+          {price && ` • ${price}€`}
         </span>
       </div>
 
@@ -157,7 +169,7 @@ export default function FlashCard({
       {/* Action buttons - style plus discret */}
       <div className="flex gap-2 px-4 pb-4">
         <Link
-          to="/flashdetail"
+          to={`/flashdetail?id=${id}`}
           className="flex items-center justify-center bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 hover:text-white text-sm font-medium py-2.5 px-4 rounded-lg border border-gray-600/50 hover:border-gray-500/50 transition-all duration-200"
         >
           Détails
