@@ -361,6 +361,46 @@ const fetchTatoueur = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+const fetchTatoueurById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const tatoueur = await User.findOne({
+      _id: id,
+      userType: "tatoueur",
+    }).select(
+      "nom localisation styles avatar portfolio bio followers createdAt email userType"
+    );
+
+    if (!tatoueur) {
+      return res.status(404).json({ message: "Tatoueur non trouvé" });
+    }
+
+    res.json(tatoueur);
+  } catch (error) {
+    console.error("Erreur serveur :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+const getUserById = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const tatoueur = await User.findOne({
+      _id: id,
+    }).select(
+      "nom localisation styles avatar portfolio bio followers createdAt email userType"
+    );
+
+    if (!tatoueur) {
+      return res.status(404).json({ message: "Tatoueur non trouvé" });
+    }
+
+    res.json(tatoueur);
+  } catch (error) {
+    console.error("Erreur serveur :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
 
 module.exports = {
   signup,
@@ -375,4 +415,6 @@ module.exports = {
   changePassword,
   completeProfile,
   fetchTatoueur,
+  fetchTatoueurById,
+  getUserById,
 };
