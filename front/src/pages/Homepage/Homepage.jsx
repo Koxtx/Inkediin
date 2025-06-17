@@ -182,7 +182,7 @@ export default function Homepage() {
       results = results.filter(
         (artist) => artist.experience === selectedExperience
       );
-    }
+     } 
 
     // Filtre par prix
     results = results.filter(

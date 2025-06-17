@@ -1,1116 +1,1259 @@
-import React, { useState, useEffect, useMemo } from "react";
-import SearchBar from "./components/SearchBar";
-import FilterPanel from "./components/FilterPanel";
-import ArtistsGrid from "./components/ArtistsGrid";
-import LoadingSpinner from "./components/LoadingSpinner";
-import ErrorMessage from "./components/ErrorMessage";
-import { getTattooers, calculateDistance } from "../../api/auth.api";
-import { useNavigate } from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
+import { MessageCircle, Share2 } from "lucide-react";
 
-// Constantes des filtres inline
-const categories = [
-  "Tous",
-  "Flash",
-  "Réaliste",
-  "Old School",
-  "Géométrique",
-  "Japonais",
-  "Tribal",
-  "Minimaliste",
-  "Blackwork",
-  "Watercolor",
-  "Neo-traditionnel",
-  "Biomécanique",
-];
-
-const locations = [
-  "Toutes",
-  "Paris",
-  "Lyon",
-  "Marseille",
-  "Bordeaux",
-  "Lille",
-  "Toulouse",
-  "Strasbourg",
-  "Nantes",
-  "Montpellier",
-  "Nice",
-];
-
-const experienceLevels = [
-  "Tous",
-  "Junior (0-3 ans)",
-  "Intermédiaire (3-7 ans)",
-  "Expert (7+ ans)",
-];
-
-export default function Homepage() {
-  const [showFilters, setShowFilters] = useState(false);
-   const navigate = useNavigate();
-
-  // Hook useArtistsData inline
-  const [artists, setArtists] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchArtists = async () => {
-    setLoading(true);
-    setError(null);
-
-    const result = await getTattooers();
-
-    if (result.success) {
-      setArtists(result.data);
-    } else {
-      setError(result.message);
-    }
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchArtists();
-  }, []);
-
-  const refetch = fetchArtists;
-
-  // Hook useGeolocation inline
-  const [userLocation, setUserLocation] = useState(null);
-  const [isLocating, setIsLocating] = useState(false);
-  const [isNearbyMode, setIsNearbyMode] = useState(false);
-
-  const getUserLocation = () => {
-    setIsLocating(true);
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation({ latitude, longitude });
-          setIsNearbyMode(true);
-          setIsLocating(false);
-        },
-        (error) => {
-          console.error("Erreur de géolocalisation:", error);
-          alert(
-            "Impossible d'obtenir votre position. Veuillez vérifier vos paramètres de localisation."
-          );
-          setIsLocating(false);
-          setIsNearbyMode(false);
-        }
-      );
-    } else {
-      alert("La géolocalisation n'est pas supportée par votre navigateur.");
-      setIsLocating(false);
-      setIsNearbyMode(false);
-    }
-  };
-
-  const disableNearbyMode = () => {
-    setIsNearbyMode(false);
-    setUserLocation(null);
-  };
-
-  const toggleLocationMode = () => {
-    if (isNearbyMode) {
-      disableNearbyMode();
-    } else {
-      getUserLocation();
-    }
-  };
-
-  // Hook useArtistsFilter inline
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tous");
-  const [selectedLocation, setSelectedLocation] = useState("Toutes");
-  const [selectedExperience, setSelectedExperience] = useState("Tous");
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(500);
-  const [locationRadius, setLocationRadius] = useState(20);
-
-  const filteredArtists = useMemo(() => {
-    if (artists.length === 0) return [];
-
-    let results = [...artists];
-
-    // Si mode "autour de moi" est activé, calculer les distances
-    if (isNearbyMode && userLocation) {
-      results = results.map((artist) => {
-        const distance = calculateDistance(
-          userLocation.latitude,
-          userLocation.longitude,
-          artist.latitude,
-          artist.longitude
-        );
-        return { ...artist, distance };
-      });
-
-      // Filtrer par rayon de distance
-      results = results.filter((artist) => artist.distance <= locationRadius);
-    }
-
-    // Filtre par recherche (nom)
-    if (searchTerm) {
-      results = results.filter((artist) =>
-        artist.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filtre par catégorie (style)
-    if (selectedCategory !== "Tous") {
-      results = results.filter((artist) => {
-        if (!artist.styles) return false;
-        const artistStyles = artist.styles
-          .split(",")
-          .map((s) => s.trim().toLowerCase());
-        return artistStyles.some(
-          (style) =>
-            style.includes(selectedCategory.toLowerCase()) ||
-            selectedCategory.toLowerCase().includes(style)
-        );
-      });
-    }
-
-    // Filtre par localisation (si pas en mode "autour de moi")
-    if (selectedLocation !== "Toutes" && !isNearbyMode) {
-      results = results.filter((artist) =>
-        artist.location.toLowerCase().includes(selectedLocation.toLowerCase())
-      );
-    }
-
-    // Filtre par expérience
-    if (selectedExperience !== "Tous") {
-      results = results.filter(
-        (artist) => artist.experience === selectedExperience
-      );
-    }
-
-    // Filtre par prix
-    results = results.filter(
-      (artist) => artist.price >= minPrice && artist.price <= maxPrice
+export default function ProfileActions({
+  isOwnProfile,
+  isFollowing,
+  onFollowClick,
+  onMessageClick,
+  onShareClick,
+}) {
+  if (isOwnProfile) {
+    return (
+      <div className="flex space-x-3">
+        <Link
+          to="/modifierprofil"
+          className="px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+        >
+          Modifier le profil
+        </Link>
+        <Link
+          to="/param"
+          className="px-6 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+        >
+          Paramètres
+        </Link>
+      </div>
     );
-
-    // Si en mode "autour de moi", trier par distance
-    if (isNearbyMode) {
-      results.sort((a, b) => a.distance - b.distance);
-    }
-
-    return results;
-  }, [
-    artists,
-    searchTerm,
-    selectedCategory,
-    selectedLocation,
-    selectedExperience,
-    minPrice,
-    maxPrice,
-    isNearbyMode,
-    userLocation,
-    locationRadius,
-  ]);
-
-  const resetFilters = () => {
-    setSearchTerm("");
-    setSelectedCategory("Tous");
-    setSelectedLocation("Toutes");
-    setSelectedExperience("Tous");
-    setMinPrice(0);
-    setMaxPrice(500);
-  };
-
-  // Gestionnaires d'événements
-  const handleContact = (artist) => {
-    console.log("Contacter", artist.name);
-    // Logique de contact
-  };
-
- const handleViewProfile = (artistId) => {
-    console.log("🎯 Navigation vers profil avec ID:", artistId);
-    navigate(`/profil/${artistId}`); // Utilisation de navigate au lieu de window.location.href
-  };
-
-  const handleResetFilters = () => {
-    resetFilters();
-    // Autres actions de reset si nécessaire
-  };
-
-  // Affichage conditionnel
-  if (loading) {
-    return <LoadingSpinner message="Chargement des artistes..." />;
   }
-
-  if (error) {
-    return <ErrorMessage error={error} onRetry={refetch} />;
-  }
-
-
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-8">
-      <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-5">
-        Découvrez les artistes
-      </h2>
+    <div className="flex space-x-3">
+      <button
+        onClick={onFollowClick}
+        className={`px-6 py-2 rounded-full font-medium transition-colors ${
+          isFollowing
+            ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+            : "bg-red-500 text-white hover:bg-red-600"
+        }`}
+      >
+        {isFollowing ? "Suivi" : "Suivre"}
+      </button>
 
-      <SearchBar
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        isNearbyMode={isNearbyMode}
-        isLocating={isLocating}
-        onLocationToggle={toggleLocationMode}
-        showFilters={showFilters}
-        setShowFilters={setShowFilters}
-      />
+      <Link 
+        onClick={onMessageClick}
+        className="px-6 py-2 border border-red-500 text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900 dark:hover:bg-opacity-30 transition-colors flex items-center"
+      >
+        <MessageCircle className="w-4 h-4 mr-2" />
+        Message
+      </Link>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <FilterPanel
-          showFilters={showFilters}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          selectedLocation={selectedLocation}
-          setSelectedLocation={setSelectedLocation}
-          selectedExperience={selectedExperience}
-          setSelectedExperience={setSelectedExperience}
-          minPrice={minPrice}
-          setMinPrice={setMinPrice}
-          maxPrice={maxPrice}
-          setMaxPrice={setMaxPrice}
-          isNearbyMode={isNearbyMode}
-          locationRadius={locationRadius}
-          setLocationRadius={setLocationRadius}
-          onResetFilters={handleResetFilters}
-          categories={categories}
-          locations={locations}
-          experienceLevels={experienceLevels}
-        />
-
-        <ArtistsGrid
-          filteredArtists={filteredArtists}
-          artists={artists}
-          isNearbyMode={isNearbyMode}
-          onContact={handleContact}
-          onViewProfile={handleViewProfile}
-          onResetFilters={handleResetFilters}
-          loading={loading}
-        />
-      </div>
+      <button
+        onClick={onShareClick}
+        className="p-2 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      >
+        <Share2 className="w-4 h-4" />
+      </button>
     </div>
   );
 }
 
-import React, { useState, useEffect, useContext } from "react";
-import { useParams, Link } from "react-router-dom";
-import { AuthContext } from "../../context/AuthContext";
-import { getTattooerById } from "../../api/auth.api";
-import { Edit } from "lucide-react";
-import toast from "react-hot-toast";
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { 
+  ArrowLeft, 
+  MoreVertical, 
+  Plus, 
+  Send, 
+  Smile, 
+  Edit3, 
+  Trash2, 
+  Image,
+  Paperclip,
+  Camera
+} from 'lucide-react';
+import { MessagerieContext } from '../../../context/MessagerieContext';
 
-// Import des composants
-import ProfileHeader from "./components/ProfileHeader";
-import ProfileAvatar from "./components/ProfileAvatar";
-import ProfileBio from "./components/ProfileBio";
-import ProfileActions from "./components/ProfileActions";
-import ProfileStats from "./components/ProfileStats";
-import ProfileSpecialties from "./components/ProfileSpecialties";
-import ProfileTabs from "./components/ProfileTabs";
-import TattooGallery from "./components/TattooGallery";
-import FlashGallery from "./components/FlashGallery";
-import FlashStatistics from "./components/FlashStatistics";
-import ClientPreferences from "./components/ClientPreferences";
-import ClientWishlist from "./components/ClientWishlist";
-import FollowedArtists from "./components/FollowedArtists";
-import ArtistRecommendations from "./components/ArtistRecommendations";
-import ReviewsSection from "./components/ReviewsSection";
-
-export default function Profil() {
-  const { id: userId } = useParams();
-  const { user: currentUser } = useContext(AuthContext);
-
-  // États principaux
-  const [activeTab, setActiveTab] = useState("gallery");
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [isEditingBio, setIsEditingBio] = useState(false);
-  const [tempBio, setTempBio] = useState("");
-  const [otherUserData, setOtherUserData] = useState(null);
-
-  // Logique pour déterminer si c'est son propre profil
-  const isOwnProfile = !userId || userId === currentUser?._id;
-  const displayUser = isOwnProfile ? currentUser : otherUserData;
-
+export default function Conversation() {
+  const { id } = useParams();
+  const { 
+    conversations, 
+    newMessage, 
+    setNewMessage, 
+    activeConversation, 
+    setActiveConversation,
+    sendMessage,
+    markAsRead,
+    deleteMessage,
+    editMessage
+  } = useContext(MessagerieContext);
+  
+  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [messageMenuId, setMessageMenuId] = useState(null);
+  
   useEffect(() => {
-    console.log("📍 Profil - userId depuis URL:", userId);
-    console.log("👤 Profil - currentUser._id:", currentUser?._id);
-    console.log("🏠 Profil - isOwnProfile:", isOwnProfile);
-  }, [userId, currentUser, isOwnProfile]);
-
-  // Données factices pour les clients
-  const [clientPreferences] = useState({
-    favoriteStyles: ["Old School", "Géométrique", "Minimaliste", "Japonais"],
-    preferredLocations: ["Avant-bras", "Épaule", "Dos"],
-    criteria: {
-      "Hygiène du studio": 5,
-      "Réputation de l'artiste": 4,
-      "Prix": 3,
-      "Proximité": 2,
-    },
-  });
-
-  const [wishlist] = useState([
-    { id: 1, artistName: "TattooArtist1", style: "Old School" },
-    { id: 2, artistName: "TattooArtist2", style: "Géométrique" },
-    { id: 3, artistName: "TattooArtist3", style: "Japonais" },
-    { id: 4, artistName: "TattooArtist4", style: "Minimaliste" },
-  ]);
-
-  const [followedArtists] = useState([
-    { id: 1, name: "TattooArtist1", specialty: "Old School" },
-    { id: 2, name: "TattooArtist2", specialty: "Géométrique" },
-    { id: 3, name: "TattooArtist3", specialty: "Japonais" },
-  ]);
-
-  // Chargement des données utilisateur
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (!isOwnProfile && userId) {
-        setLoading(true);
-        try {
-          console.log("📡 Chargement des données pour userId:", userId);
-          
-          const result = await getTattooerById(userId);
-          
-          if (result.success) {
-            console.log("✅ Données utilisateur chargées:", result.data);
-            setOtherUserData({
-              ...result.data,
-              stats: {
-                followers: Math.floor(Math.random() * 2000) + 100,
-                following: Math.floor(Math.random() * 500) + 10,
-                tattoos: Math.floor(Math.random() * 200) + 20,
-              },
-              gallery: generateGallery(result.data),
-              about: generateAboutSection(result.data),
-            });
-          } else {
-            console.error("❌ Erreur lors du chargement:", result.message);
-            setOtherUserData(null);
-          }
-        } catch (error) {
-          console.error("💥 Erreur lors du fetch:", error);
-          setOtherUserData(generateFallbackUserData(userId));
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setTempBio(currentUser?.bio || "");
-      }
-    };
-
-    fetchUserData();
-  }, [userId, isOwnProfile, currentUser]);
-
-  // Initialisation de l'onglet selon le type d'utilisateur
-  useEffect(() => {
-    if (displayUser) {
-      if (displayUser.userType === "client" && isOwnProfile) {
-        setActiveTab("preferences");
-      } else {
-        setActiveTab("gallery");
-      }
+    if (id && id !== activeConversation) {
+      setActiveConversation(id);
+      markAsRead(id);
     }
-  }, [displayUser, isOwnProfile]);
-
-  // Fonctions utilitaires pour générer les données
-  const generateGallery = (userData) => {
-    return [
-      {
-        id: 1,
-        imageUrl: userData.portfolio?.[0] || "/api/placeholder/400/300",
-        style: "Réalisme",
-        title: "Portfolio 1",
-      },
-      {
-        id: 2,
-        imageUrl: userData.portfolio?.[1] || "/api/placeholder/400/300",
-        style: "Black & Grey",
-        title: "Portfolio 2",
-      },
-      {
-        id: 3,
-        imageUrl: userData.portfolio?.[2] || "/api/placeholder/400/300",
-        style: "Réalisme",
-        title: "Portfolio 3",
-      },
-      {
-        id: 4,
-        imageUrl: "/api/placeholder/400/300",
-        style: "Portrait",
-        title: "Visage femme",
-      },
-      {
-        id: 5,
-        imageUrl: "/api/placeholder/400/300",
-        style: "Animal",
-        title: "Loup sauvage",
-      },
-      {
-        id: 6,
-        imageUrl: "/api/placeholder/400/300",
-        style: "Réalisme",
-        title: "Œil humain",
-      },
-    ];
-  };
-
-  const generateAboutSection = (userData) => {
-    return {
-      experience: "Professionnel",
-      specialties: userData.styles 
-        ? userData.styles.split(',').map(s => s.trim()) 
-        : ["Réalisme", "Portraits", "Black & Grey"],
-      studio: "Studio professionnel",
-      certifications: ["Hygiène et sécurité", "Formation continue 2024"],
-    };
-  };
-
-  const generateFallbackUserData = (userId) => {
-    return {
-      _id: userId,
-      nom: "Alexandre_Ink",
-      userType: "tatoueur",
-      photoProfil: null,
-      bio: "Tatoueur professionnel spécialisé dans le réalisme et les portraits. 10 ans d'expérience.",
-      localisation: "Paris, France",
-      styles: "Réalisme, Portraits, Black & Grey",
-      stats: {
-        followers: 1234,
-        following: 89,
-        tattoos: 156,
-      },
-      gallery: [
-        {
-          id: 1,
-          imageUrl: "/api/placeholder/400/300",
-          style: "Réalisme",
-          title: "Portrait réaliste",
-        },
-        {
-          id: 2,
-          imageUrl: "/api/placeholder/400/300",
-          style: "Black & Grey",
-          title: "Lion majestueux",
-        },
-        {
-          id: 3,
-          imageUrl: "/api/placeholder/400/300",
-          style: "Réalisme",
-          title: "Rose détaillée",
-        },
-      ],
-      about: {
-        experience: "10 ans",
-        specialties: ["Réalisme", "Portraits", "Black & Grey"],
-        studio: "Ink Masters Studio",
-        certifications: ["Hygiène et sécurité", "Formation continue 2024"],
-      },
-    };
-  };
-
-  // Handlers pour les actions
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-    toast.success(
-      isFollowing
-        ? "Vous ne suivez plus cet utilisateur"
-        : "Vous suivez maintenant cet utilisateur"
-    );
-  };
-
-  const handleSaveBio = () => {
-    // Ici, vous pourriez appeler une API pour sauvegarder la bio
-    toast.success("Biographie mise à jour !");
-    setIsEditingBio(false);
-  };
-
-  const handleGoBack = () => {
-    window.history.back();
-  };
-
-  const handlePhotoClick = () => {
-    toast.info("Fonctionnalité de changement de photo à implémenter");
-  };
-
-  const handleMessageClick = () => {
-    toast.info("Redirection vers la messagerie à implémenter");
-  };
-
-  const handleShareClick = () => {
-    toast.info("Fonctionnalité de partage à implémenter");
-  };
-
-  const handleEditSpecialties = () => {
-    toast.info("Édition des spécialités à implémenter");
-  };
-
-  const handleAddSpecialty = () => {
-    toast.info("Ajout de spécialité à implémenter");
-  };
-
-  // Handlers pour la galerie
-  const handleAddToGallery = () => {
-    toast.info("Ajout d'image à la galerie à implémenter");
-  };
-
-  const handleEditGalleryItem = (itemId) => {
-    toast.info(`Édition de l'élément ${itemId} à implémenter`);
-  };
-
-  const handleDeleteGalleryItem = (itemId) => {
-    toast.info(`Suppression de l'élément ${itemId} à implémenter`);
-  };
-
-  const handleLikeGalleryItem = (itemId) => {
-    toast.info(`Like de l'élément ${itemId} à implémenter`);
-  };
-
-  // Handlers pour la wishlist et les artistes suivis
-  const handleWishlistItemClick = (item) => {
-    toast.info(`Clic sur ${item.artistName} - ${item.style}`);
-  };
-
-  const handleUnfollowArtist = (artistId) => {
-    toast.info(`Désabonnement de l'artiste ${artistId} à implémenter`);
-  };
-
-  const handleArtistClick = (artist) => {
-    toast.info(`Redirection vers le profil de ${artist.name}`);
-  };
-
-  // Handlers pour les flashs
-  const handleAddFlash = () => {
-    toast.info("Ajout d'un nouveau flash à implémenter");
-  };
-
-  const handleEditFlash = (flashId) => {
-    toast.info(`Édition du flash ${flashId} à implémenter`);
-  };
-
-  const handleDeleteFlash = (flashId) => {
-    toast.info(`Suppression du flash ${flashId} à implémenter`);
-  };
-
-  const handleLikeFlash = (flashId) => {
-    toast.info(`Like du flash ${flashId} à implémenter`);
-  };
-
-  const handleViewAllFlashs = () => {
-    toast.info(`Redirection vers tous les flashs de ${displayUser?.nom}`);
-  };
-
-  // Handlers pour les recommandations d'artistes
-  const handleFollowRecommendedArtist = (artistId) => {
-    toast.info(`Suivi de l'artiste recommandé ${artistId} à implémenter`);
-  };
-
-  const handleViewRecommendedArtist = (artist) => {
-    toast.info(`Redirection vers le profil de ${artist.name}`);
-  };
-
-  // Handlers pour les avis
-  const handleReplyToReview = (reviewId) => {
-    toast.info(`Réponse à l'avis ${reviewId} à implémenter`);
-  };
-
-  const handleLikeReview = (reviewId) => {
-    toast.info(`Like de l'avis ${reviewId} à implémenter`);
-  };
-
-  // Configuration des onglets selon le type d'utilisateur
-  const getAvailableTabs = () => {
-    if (displayUser?.userType === "tatoueur") {
-      const tabs = [{ id: "gallery", label: "Galerie" }];
-
-      if (!isOwnProfile) {
-        tabs.push(
-          { id: "about", label: "À propos" },
-          { id: "reviews", label: "Avis" }
-        );
-      }
-
-      return tabs;
-    } else {
-      // Client
-      if (isOwnProfile) {
-        return [
-          { id: "preferences", label: "Préférences" },
-          { id: "gallery", label: "Wishlist" },
-          { id: "followed", label: "Tatoueurs suivis" },
-        ];
-      } else {
-        return [{ id: "gallery", label: "Wishlist" }];
-      }
-    }
-  };
-
-  // Rendu du contenu des onglets
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "gallery":
-        if (displayUser?.userType === "tatoueur") {
-          return (
-            <TattooGallery
-              displayUser={displayUser}
-              isOwnProfile={isOwnProfile}
-              onAddClick={handleAddToGallery}
-              onEditItem={handleEditGalleryItem}
-              onDeleteItem={handleDeleteGalleryItem}
-              onLikeItem={handleLikeGalleryItem}
-            />
-          );
-        } else {
-          return (
-            <ClientWishlist
-              wishlist={wishlist}
-              isOwnProfile={isOwnProfile}
-              onItemClick={handleWishlistItemClick}
-            />
-          );
-        }
-
-      case "preferences":
-        return <ClientPreferences preferences={clientPreferences} />;
-
-      case "followed":
-        return (
-          <FollowedArtists
-            followedArtists={followedArtists}
-            onUnfollowArtist={handleUnfollowArtist}
-            onArtistClick={handleArtistClick}
-          />
-        );
-
-      case "about":
-        return (
-          <div className="mb-5 space-y-4">
-            <h2 className="text-xl font-bold mb-4">À propos</h2>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <div className="bg-red-400 text-white px-4 py-2 font-medium">
-                Informations professionnelles
-              </div>
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Expérience
-                  </span>
-                  <span className="font-medium">
-                    {displayUser?.about?.experience}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Studio
-                  </span>
-                  <span className="font-medium">
-                    {displayUser?.about?.studio}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Localisation
-                  </span>
-                  <span className="font-medium">
-                    {displayUser?.localisation}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <div className="bg-red-400 text-white px-4 py-2 font-medium">
-                Spécialités
-              </div>
-              <div className="p-4">
-                <div className="flex flex-wrap gap-2">
-                  {displayUser?.about?.specialties?.map((specialty, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <div className="bg-red-400 text-white px-4 py-2 font-medium">
-                Certifications
-              </div>
-              <div className="p-4">
-                <ul className="space-y-2">
-                  {displayUser?.about?.certifications?.map((cert, index) => (
-                    <li key={index} className="flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                      {cert}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        );
-
-      case "reviews":
-        return (
-          <ReviewsSection
-            displayUser={displayUser}
-            isOwnProfile={isOwnProfile}
-            userType={displayUser?.userType}
-            onReplyToReview={handleReplyToReview}
-            onLikeReview={handleLikeReview}
-          />
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  // États de chargement et d'erreur
-  if (loading) {
+  }, [id, activeConversation, setActiveConversation, markAsRead]);
+  
+  if (!activeConversation || !conversations[activeConversation]) {
     return (
-      <div className="container mx-auto px-4 sm:px-6 py-8">
-        <div className="flex justify-center items-center min-h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-500"></div>
-          <span className="ml-3">Chargement du profil...</span>
-        </div>
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <p className="text-gray-600 dark:text-gray-400 mb-4">Conversation non trouvée</p>
+        <Link 
+          to="/messagerie" 
+          className="px-4 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500 transition-colors flex items-center gap-2"
+        >
+          <ArrowLeft size={16} />
+          Retour à la messagerie
+        </Link>
       </div>
     );
   }
+  
+  const { contactInfo, messages } = conversations[activeConversation];
 
-  if (!displayUser) {
-    return (
-      <div className="container mx-auto px-4 sm:px-6 py-8">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-4">Utilisateur introuvable</h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            L'utilisateur avec l'ID "{userId}" n'existe pas ou n'est plus disponible.
-          </p>
-          <div className="space-x-4">
-            <button 
-              onClick={handleGoBack}
-              className="text-red-500 hover:text-red-600 transition-colors"
-            >
-              Retour
-            </button>
-            <Link 
-              to="/" 
-              className="text-red-500 hover:text-red-600 transition-colors"
-            >
-              Accueil
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const handleSendMessage = () => {
+    if (newMessage.trim()) {
+      sendMessage(activeConversation, newMessage);
+    }
+  };
 
-  // Rendu principal
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const handleEditMessage = (messageId, content) => {
+    setEditingMessageId(messageId);
+    setEditingContent(content);
+    setMessageMenuId(null);
+  };
+
+  const handleSaveEdit = (messageId) => {
+    if (editingContent.trim()) {
+      editMessage(activeConversation, messageId, editingContent);
+    }
+    setEditingMessageId(null);
+    setEditingContent('');
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    deleteMessage(activeConversation, messageId);
+    setMessageMenuId(null);
+  };
+
+  const handleAttachmentAction = (type) => {
+    console.log(`Action d'attachement: ${type}`);
+    setShowAttachmentMenu(false);
+    // Ici vous pouvez implémenter la logique pour chaque type d'attachement
+  };
+
   return (
-    <div className="container mx-auto px-4 sm:px-6 py-8">
-      {/* Header avec boutons d'action */}
-      <ProfileHeader
-        isOwnProfile={isOwnProfile}
-        currentUser={currentUser}
-        onGoBack={handleGoBack}
-      />
-
-      {/* Section profil */}
-      <div className="flex flex-col items-center mb-8">
-        <ProfileAvatar
-          displayUser={displayUser}
-          isOwnProfile={isOwnProfile}
-          onPhotoClick={handlePhotoClick}
-        />
-
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-xl sm:text-2xl font-bold">
-            {displayUser.nom || "Utilisateur"}
-          </h1>
-          {!isOwnProfile && (
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              (ID: {userId})
-            </span>
+    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 shadow-md px-4 py-3 flex items-center relative">
+        <Link to="/messagerie" className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 mr-4">
+          <ArrowLeft size={20} />
+        </Link>
+        <div className="w-10 h-10 rounded-full bg-red-400 text-white flex items-center justify-center font-medium">
+          {contactInfo.initials}
+        </div>
+        <div className="ml-3 flex-grow">
+          <div className="font-semibold text-gray-900 dark:text-white">{contactInfo.name}</div>
+          <div className="text-xs text-green-500">{contactInfo.status}</div>
+        </div>
+        <div className="relative">
+          <button
+            className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 cursor-pointer p-1"
+            onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+          >
+            <MoreVertical size={20} />
+          </button>
+          
+          {/* Menu d'options de conversation */}
+          {showOptionsMenu && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+              <div className="py-2">
+                <button className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                  <Edit3 size={16} />
+                  Modifier le contact
+                </button>
+                <button className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                  <Trash2 size={16} />
+                  Supprimer la conversation
+                </button>
+              </div>
+            </div>
           )}
         </div>
+      </div>
 
-        {displayUser.userType === "tatoueur" && !isOwnProfile && (
-          <span className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm mb-2">
-            Tatoueur vérifié
+      {/* Messages container */}
+      <div className="flex-grow overflow-y-auto px-4 py-6">
+        <div className="text-center mb-6">
+          <span className="inline-block px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
+            Aujourd'hui
           </span>
-        )}
-
-        <ProfileBio
-          displayUser={displayUser}
-          isOwnProfile={isOwnProfile}
-          isEditingBio={isEditingBio}
-          tempBio={tempBio}
-          onEditClick={() => setIsEditingBio(true)}
-          onBioChange={setTempBio}
-          onSaveBio={handleSaveBio}
-          onCancelEdit={() => {
-            setIsEditingBio(false);
-            setTempBio(displayUser.bio || "");
-          }}
-        />
-
-        <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-          📍 {displayUser.localisation || "Non spécifié"}
         </div>
 
-        {/* Statistiques pour les tatoueurs */}
-        {displayUser.userType === "tatoueur" && (
-          <ProfileStats stats={displayUser.stats} />
-        )}
-
-        <ProfileActions
-          isOwnProfile={isOwnProfile}
-          isFollowing={isFollowing}
-          onFollowClick={handleFollow}
-          onMessageClick={handleMessageClick}
-          onShareClick={handleShareClick}
-        />
-      </div>
-
-      {/* Spécialités pour les tatoueurs */}
-      {displayUser.userType === "tatoueur" && (
-        <ProfileSpecialties
-          displayUser={displayUser}
-          isOwnProfile={isOwnProfile}
-          onEditClick={handleEditSpecialties}
-          onAddClick={handleAddSpecialty}
-        />
-      )}
-
-      {/* Onglets */}
-      <ProfileTabs
-        availableTabs={getAvailableTabs()}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
-
-      {/* Contenu des onglets */}
-      {renderTabContent()}
-
-      {/* Flashs disponibles pour les tatoueurs */}
-      {displayUser?.userType === "tatoueur" && activeTab === "gallery" && (
-        <FlashGallery
-          displayUser={displayUser}
-          isOwnProfile={isOwnProfile}
-          onAddFlash={handleAddFlash}
-          onEditFlash={handleEditFlash}
-          onDeleteFlash={handleDeleteFlash}
-          onLikeFlash={handleLikeFlash}
-          onViewAll={handleViewAllFlashs}
-        />
-      )}
-
-      {/* Statistiques des flashs pour le propriétaire */}
-      {isOwnProfile && displayUser?.userType === "tatoueur" && (
-        <FlashStatistics
-          isOwnProfile={isOwnProfile}
-          displayUser={displayUser}
-        />
-      )}
-
-      {/* Recommandations d'artistes pour les clients */}
-      {isOwnProfile &&
-        displayUser?.userType === "client" &&
-        activeTab === "followed" && (
-          <ArtistRecommendations
-            isOwnProfile={isOwnProfile}
-            displayUser={displayUser}
-            onFollowArtist={handleFollowRecommendedArtist}
-            onViewArtist={handleViewRecommendedArtist}
-          />
-        )}
-    </div>
-  );
-}
-import React from "react";
-import ArtistCard from "./ArtistCard";
-
-const ArtistsGrid = ({
-  filteredArtists,
-  artists,
-  isNearbyMode,
-  onContact,
-  onViewProfile,
-  onResetFilters,
-  loading,
-}) => {
-  if (loading) {
-    return null; // Le loading est géré dans le composant parent
-  }
-
-  return (
-    <div className="lg:w-3/4">
-      {/* Résultats */}
-      <div className="text-sm text-gray-500 mb-4">
-        {filteredArtists.length}{" "}
-        {filteredArtists.length === 1 ? "résultat" : "résultats"} trouvés
-        {artists.length > 0 && (
-          <span>
-            {" "}
-            sur {artists.length} artiste{artists.length > 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
-
-      {/* Grille d'artistes */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredArtists.map((artist) => (
-          <ArtistCard
-            key={artist._id}
-            artist={artist}
-            isNearbyMode={isNearbyMode}
-            onContact={onContact}
-            onViewProfile={onViewProfile}
-          />
-        ))}
-      </div>
-
-      {/* Message si aucun artiste trouvé */}
-      {filteredArtists.length === 0 && artists.length > 0 && (
-        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
-          <div className="text-lg font-medium mb-2">
-            Aucun artiste ne correspond à vos critères
-          </div>
-          <p className="text-sm mb-4">
-            Essayez d'ajuster vos filtres pour voir plus de résultats
-          </p>
-          <button
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-            onClick={onResetFilters}
-          >
-            Réinitialiser tous les filtres
-          </button>
-        </div>
-      )}
-
-      {/* Message si aucun artiste dans la base */}
-      {artists.length === 0 && (
-        <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
-          <div className="text-lg font-medium mb-2">
-            Aucun artiste disponible pour le moment
-          </div>
-          <p className="text-sm mb-4">
-            Revenez plus tard pour découvrir de nouveaux talents
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default ArtistsGrid;
-
-import React from "react";
-import { MapPin } from "lucide-react";
-
-const ArtistCard = ({ artist, isNearbyMode, onContact, onViewProfile }) => {
-  const formatPrice = (price) => `${price} €`;
-
-  return (
-    <div
-      className="rounded-lg overflow-hidden flex flex-col shadow-lg transition-transform duration-300 hover:transform hover:scale-105 cursor-pointer"
-      onClick={() => onViewProfile(artist._id)}
-    >
-      <div className="bg-red-400 p-3 flex items-center gap-3">
-        <img
-          src={artist.avatar}
-          alt={artist.name}
-          className="w-10 h-10 rounded-full object-cover"
-          onError={(e) => {
-            e.target.src = "/api/placeholder/150/150";
-          }}
-        />
-        <div className="flex-1">
-          <div className="font-bold truncate text-white">{artist.name}</div>
-          <div className="text-xs text-white flex items-center">
-            <MapPin size={12} className="mr-1" />
-            {artist.location}
-          </div>
-        </div>
-        <div
-          className={`text-xs font-medium px-2 py-1 rounded-full ${
-            artist.availability === "Disponible"
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
-          }`}
-        >
-          {artist.availability}
-        </div>
-      </div>
-
-      <div className="h-48 bg-gray-200 relative">
-        <img
-          src={artist.portfolio}
-          alt={`Portfolio de ${artist.name}`}
-          className="w-full h-full object-cover"
-          onError={(e) => {
-            e.target.src = "/api/placeholder/400/300";
-          }}
-        />
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-          <div className="flex justify-between items-center">
-            <div className="text-white text-sm font-medium">
-              {artist.category}
-            </div>
-            <div className="text-white text-sm font-bold">
-              {formatPrice(artist.price)}
-            </div>
-          </div>
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <span
-                    key={i}
-                    className={`text-xs ${
-                      i < Math.floor(artist.rating)
-                        ? "text-yellow-400"
-                        : "text-gray-400"
-                    }`}
-                  >
-                    ★
-                  </span>
-                ))}
+        {messages.map((message, index) => (
+          <div key={message.id || index} className="relative group">
+            {message.isProduct ? (
+              <div className={`flex justify-${message.sent ? 'end' : 'start'} mb-4`}>
+                <div className="max-w-xs sm:max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                  <div className="h-40 bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
+                    <Image size={24} className="text-gray-500 dark:text-gray-400" />
+                  </div>
+                  <div className="p-3 flex justify-between items-center">
+                    <div className="text-gray-900 dark:text-white font-medium">{message.title}</div>
+                    <div className="text-red-500 font-bold">{message.price}</div>
+                  </div>
+                </div>
               </div>
-              <span className="text-white text-xs ml-1">{artist.rating}</span>
-            </div>
-            {isNearbyMode && artist.distance !== undefined && (
-              <div className="text-white text-xs bg-black/50 px-2 py-1 rounded-full">
-                {artist.distance.toFixed(1)} km
+            ) : (
+              <div className={`flex ${message.sent ? 'justify-end' : 'justify-start'} mb-4 relative`}>
+                <div className="relative max-w-xs sm:max-w-md">
+                  {editingMessageId === (message.id || index) ? (
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border-2 border-red-400">
+                      <textarea
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded resize-none dark:bg-gray-700 dark:text-white"
+                        value={editingContent}
+                        onChange={(e) => setEditingContent(e.target.value)}
+                        rows="2"
+                      />
+                      <div className="flex justify-end gap-2 mt-2">
+                        <button
+                          className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
+                          onClick={() => setEditingMessageId(null)}
+                        >
+                          Annuler
+                        </button>
+                        <button
+                          className="px-3 py-1 text-sm bg-red-400 text-white rounded"
+                          onClick={() => handleSaveEdit(message.id || index)}
+                        >
+                          Sauvegarder
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className={`px-4 py-2 rounded-lg ${
+                        message.sent 
+                          ? 'bg-red-400 text-white' 
+                          : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
+                      }`}>
+                        {message.content}
+                      </div>
+                      <span className={`text-xs text-gray-500 ${message.sent ? 'text-right' : 'text-left'} block mt-1`}>
+                        {message.time}
+                      </span>
+                      
+                      {/* Menu contextuel pour les messages */}
+                      {message.sent && (
+                        <div className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            onClick={() => setMessageMenuId(messageMenuId === (message.id || index) ? null : (message.id || index))}
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                          
+                          {messageMenuId === (message.id || index) && (
+                            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+                              <div className="py-1">
+                                <button
+                                  className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  onClick={() => handleEditMessage(message.id || index, message.content)}
+                                >
+                                  <Edit3 size={12} />
+                                  Modifier
+                                </button>
+                                <button
+                                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                  onClick={() => handleDeleteMessage(message.id || index)}
+                                >
+                                  <Trash2 size={12} />
+                                  Supprimer
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </div>
+        ))}
       </div>
 
-      <div className="p-2">
-        <button
-          className="w-full py-2 bg-red-500 hover:bg-red-600 transition-colors text-white rounded-md text-sm font-medium"
-          onClick={(e) => {
-            e.stopPropagation();
-            onContact(artist);
-          }}
+      {/* Input area */}
+      <div className="bg-white dark:bg-gray-800 px-4 py-3 shadow-inner flex items-center relative">
+        <div className="relative">
+          <button 
+            className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 mr-3 p-1"
+            onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+          >
+            <Plus size={20} />
+          </button>
+          
+          {/* Menu d'attachements */}
+          {showAttachmentMenu && (
+            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+              <div className="py-2">
+                <button
+                  className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  onClick={() => handleAttachmentAction('photo')}
+                >
+                  <Camera size={16} />
+                  Photo
+                </button>
+                <button
+                  className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  onClick={() => handleAttachmentAction('file')}
+                >
+                  <Paperclip size={16} />
+                  Fichier
+                </button>
+                <button
+                  className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                  onClick={() => handleAttachmentAction('image')}
+                >
+                  <Image size={16} />
+                  Image
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex-grow relative">
+          <textarea
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-300 transition-colors resize-none dark:bg-gray-700 dark:text-white"
+            placeholder="Écrivez un message..."
+            rows="1"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-red-500">
+            <Smile size={16} />
+          </button>
+        </div>
+        <button 
+          className="ml-3 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 p-1"
+          onClick={handleSendMessage}
         >
-          Prendre contact
+          <Send size={20} />
         </button>
       </div>
+      
+      {/* Overlay pour fermer les menus */}
+      {(showOptionsMenu || showAttachmentMenu || messageMenuId) && (
+        <div 
+          className="fixed inset-0 z-5" 
+          onClick={() => {
+            setShowOptionsMenu(false);
+            setShowAttachmentMenu(false);
+            setMessageMenuId(null);
+          }}
+        />
+      )}
     </div>
   );
+}
+import { createBrowserRouter } from "react-router-dom";
+import App from "./App";
+import Homepage from "./pages/Homepage/Homepage";
+import ErrorPage from "./pages/ErrorPages";
+import UserConnected from "./components/ProtectedRoutes/UserConnected";
+import UserNotConnected from "./components/ProtectedRoutes/UserNotConnected";
+import ProtectedSetupRoute from "./components/ProtectedRoutes/ProtectedSetupRoute";
+import Feed from "./pages/Feed/Feed";
+import Exploration from "./pages/Exploration/Exploration";
+import Messagerie from "./pages/Messagerie/Messagerie";
+import Notification from "./pages/notifications/Notification";
+import Conversation from "./pages/Messagerie/components/Conversation";
+import Wishlist from "./pages/Wishlist/Wishlist";
+import Tag from "./pages/Tags/Tag";
+import Support from "./pages/Support/Support";
+import StatTatoueur from "./pages/Statistiques/StatTatoueur";
+import MentionLegal from "./pages/MentionLegal/MentionLegal";
+import CustomProjet from "./pages/ProjetsPerso/CustomProjet";
+import PortFolioManagement from "./pages/Portfolio/PortFolioManagement";
+import Promotion from "./pages/Promotion/Promotion";
+import RecommandationPerso from "./pages/Recommandation/RecommandationPerso";
+import Tips from "./pages/Recommandation/Tips";
+import Reservation from "./pages/Réservation/Reservation";
+import historiqueReserve from "./pages/Réservation/historiqueReserve";
+import FlashDetail from "./pages/flash/FlashDetail";
+import FlashUploadPage from "./pages/flash/FlashUploadPage";
+import Profil from "./pages/Profil/Profil";
+
+import SignUp from "./pages/Auth/SignUp";
+import SignIn from "./pages/Auth/SignIn";
+import ParametreCompte from "./pages/Parametres/ParametreCompte";
+import SetupProfil from "./pages/Auth/SetupProfil";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
+import ResetPassword from "./pages/Auth/ResetPassword";
+import PublicationUploadPage from "./pages/Feed/PublicationUploadPage";
+import FlashEdit from "./pages/flash/FlashEdit";
+import FlashManagementPage from "./pages/Profil/components/FlashManagement";
+import ModifierProfil from "./pages/Parametres/components/ModifierProfil";
+
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    errorElement: <ErrorPage />,
+    element: <App />,
+    children: [
+      {
+        path: "/signup",
+        element: (
+          <UserNotConnected>
+            <SignUp />
+          </UserNotConnected>
+        ),
+      },
+      {
+        path: "/signin",
+        element: (
+          <UserNotConnected>
+            <SignIn />
+          </UserNotConnected>
+        ),
+      },
+      {
+        path: "/forgotpassword",
+        element: (
+          <UserNotConnected>
+            <ForgotPassword />
+          </UserNotConnected>
+        ),
+      },
+      {
+        path: "/resetpassword/:token",
+        element: (
+          <UserNotConnected>
+            <ResetPassword />
+          </UserNotConnected>
+        ),
+      },
+      // Route protégée pour le setup de profil
+      {
+        path: "/setupprofil",
+        element: (
+          <ProtectedSetupRoute>
+            <SetupProfil />
+          </ProtectedSetupRoute>
+        ),
+      },
+      // Toutes les autres routes nécessitent un profil complet
+      {
+        path: "/tatoueur",
+        element: (
+          <UserConnected>
+            <Homepage />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/",
+        element: (
+          <UserConnected>
+            <Feed />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/exploration",
+        element: (
+          <UserConnected>
+            <Exploration />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/messagerie",
+        element: (
+          <UserConnected>
+            <Messagerie />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/notification",
+        element: (
+          <UserConnected>
+            <Notification />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/conversation/:id",
+        element: (
+          <UserConnected>
+            <Conversation />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/wishlist",
+        element: (
+          <UserConnected>
+            <Wishlist />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/profil",
+        element: (
+          <UserConnected>
+            <Profil />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/profil/:id",
+        element: (
+          <UserConnected>
+            <Profil />
+          </UserConnected>
+        ),
+      },
+
+      {
+        path: "/tag",
+        element: (
+          <UserConnected>
+            <Tag />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/stat",
+        element: (
+          <UserConnected>
+            <StatTatoueur />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/mentionlegal",
+        element: (
+          <UserConnected>
+            <MentionLegal />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/customprojet",
+        element: (
+          <UserConnected>
+            <CustomProjet />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/portfoliomanage",
+        element: (
+          <UserConnected>
+            <PortFolioManagement />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/promotion",
+        element: (
+          <UserConnected>
+            <Promotion />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/recoperso",
+        element: (
+          <UserConnected>
+            <RecommandationPerso />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/tips",
+        element: (
+          <UserConnected>
+            <Tips />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/reservation",
+        element: (
+          <UserConnected>
+            <Reservation />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/historiquereserve",
+        element: (
+          <UserConnected>
+            <historiqueReserve />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/flashdetail",
+        element: (
+          <UserConnected>
+            <FlashDetail />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/flashupload",
+        element: (
+          <UserConnected>
+            <FlashUploadPage />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/support",
+        element: (
+          <UserConnected>
+            <Support />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/param",
+        element: (
+          <UserConnected>
+            <ParametreCompte />
+          </UserConnected>
+        ),
+      },
+
+      {
+        path: "/uploadpublication",
+        element: (
+          <UserConnected>
+            <PublicationUploadPage />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/flashedit/:flashId",
+        element: (
+          <UserConnected>
+            <FlashEdit />
+          </UserConnected>
+        ),
+      },
+      {
+        path: "/flashs",
+        element: (
+          <UserConnected>
+            <FlashManagementPage />
+          </UserConnected>
+        ),
+      },
+          {
+        path: "/modifierprofil",
+        element: (
+          <UserConnected>
+            <ModifierProfil />
+          </UserConnected>
+        ),
+      },
+    ],
+  },
+]);
+import { BASE_URL } from "../utils/url";
+
+// Configuration des headers par défaut
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  const token = localStorage.getItem('token');
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  
+  return headers;
 };
 
-export default ArtistCard;
+// Gestion des erreurs
+const handleApiError = async (response) => {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.message || 'Erreur API');
+  }
+  return response.json();
+};
+
+// API de la messagerie
+export const messagerieApi = {
+  // Récupérer toutes les conversations de l'utilisateur
+  getConversations: async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/messageries`, {
+        method: 'GET',
+        headers: getHeaders(),
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des conversations:', error);
+      throw error;
+    }
+  },
+
+  // Récupérer une conversation spécifique avec tous ses messages
+  getConversation: async (conversationId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/messageries/${conversationId}`, {
+        method: 'GET',
+        headers: getHeaders(),
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la récupération de la conversation:', error);
+      throw error;
+    }
+  },
+
+  // Envoyer un message
+  sendMessage: async (messageData) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/messageries/send`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(messageData),
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi du message:', error);
+      throw error;
+    }
+  },
+
+  // Marquer un message comme lu
+  markAsRead: async (messageId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/messageries/${messageId}/read`, {
+        method: 'PUT',
+        headers: getHeaders(),
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors du marquage comme lu:', error);
+      throw error;
+    }
+  },
+
+  // Créer une conversation pour une réservation de flash
+  createReservationMessage: async (reservationData) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/messageries/reservation`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(reservationData),
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la création du message de réservation:', error);
+      throw error;
+    }
+  },
+};
+
+// Fonctions utilitaires pour la messagerie
+export const messagerieUtils = {
+  // Formater la date d'un message
+  formatMessageDate: (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffMinutes = Math.ceil(diffTime / (1000 * 60));
+    const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffMinutes < 1) {
+      return 'À l\'instant';
+    } else if (diffMinutes < 60) {
+      return `Il y a ${diffMinutes} min`;
+    } else if (diffHours < 24) {
+      return `Il y a ${diffHours}h`;
+    } else if (diffDays === 1) {
+      return 'Hier';
+    } else if (diffDays < 7) {
+      return `Il y a ${diffDays} jours`;
+    } else {
+      return date.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'short',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    }
+  },
+
+  // Formater l'heure d'un message
+  formatMessageTime: (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  },
+
+  // Obtenir le nom d'affichage d'un participant
+  getParticipantDisplayName: (participant) => {
+    if (!participant) return 'Utilisateur inconnu';
+    return participant.nom ? `${participant.nom}` : participant.email;
+  },
+
+  // Obtenir l'autre participant dans une conversation (pas l'utilisateur actuel)
+  getOtherParticipant: (conversation, currentUserId) => {
+    if (!conversation.participants) return null;
+    return conversation.participants.find(p => p._id !== currentUserId);
+  },
+
+  // Déterminer si un message est envoyé par l'utilisateur actuel
+  isOwnMessage: (message, currentUserId) => {
+    return message.expediteurId._id === currentUserId || message.expediteurId === currentUserId;
+  },
+
+  // Grouper les messages par date
+  groupMessagesByDate: (messages) => {
+    const groups = {};
+    
+    messages.forEach(message => {
+      const date = new Date(message.dateEnvoi);
+      const dateKey = date.toDateString();
+      
+      if (!groups[dateKey]) {
+        groups[dateKey] = {
+          date: date,
+          messages: []
+        };
+      }
+      
+      groups[dateKey].messages.push(message);
+    });
+    
+    return Object.values(groups).sort((a, b) => a.date - b.date);
+  },
+
+  // Formater la date de groupe
+  formatGroupDate: (date) => {
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      return 'Aujourd\'hui';
+    } else if (diffDays === 1) {
+      return 'Hier';
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('fr-FR', { weekday: 'long' });
+    } else {
+      return date.toLocaleDateString('fr-FR', {
+        day: 'numeric',
+        month: 'long',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      });
+    }
+  },
+
+  // Obtenir le statut de la conversation
+  getConversationStatus: (conversation) => {
+    if (conversation.type === 'reservation_flash') {
+      return 'Réservation Flash';
+    }
+    return 'Conversation';
+  },
+
+  // Obtenir l'icône du type de conversation
+  getConversationIcon: (conversation) => {
+    if (conversation.type === 'reservation_flash') {
+      return '⚡';
+    }
+    return '💬';
+  },
+
+  // Compter le total des messages non lus
+  getTotalUnreadCount: (conversations) => {
+    return conversations.reduce((total, conv) => total + (conv.messagesNonLus || 0), 0);
+  },
+
+  // Filtrer les conversations par type
+  filterConversationsByType: (conversations, type) => {
+    if (!type || type === 'all') return conversations;
+    return conversations.filter(conv => conv.type === type);
+  },
+
+  // Rechercher dans les conversations
+  searchConversations: (conversations, query, currentUserId) => {
+    if (!query.trim()) return conversations;
+    
+    const searchTerm = query.toLowerCase();
+    
+    return conversations.filter(conv => {
+      // Recherche dans le nom des participants
+      const otherParticipant = messagerieUtils.getOtherParticipant(conv, currentUserId);
+      if (otherParticipant) {
+        const participantName = messagerieUtils.getParticipantDisplayName(otherParticipant).toLowerCase();
+        if (participantName.includes(searchTerm)) return true;
+      }
+      
+      // Recherche dans le dernier message
+      if (conv.dernierMessage && conv.dernierMessage.contenu) {
+        if (conv.dernierMessage.contenu.toLowerCase().includes(searchTerm)) return true;
+      }
+      
+      return false;
+    });
+  },
+
+  // Valider les données d'un message
+  validateMessageData: (messageData) => {
+    const errors = [];
+    
+    if (!messageData.contenu || messageData.contenu.trim().length === 0) {
+      errors.push('Le contenu du message est requis');
+    }
+    
+    if (messageData.contenu && messageData.contenu.length > 1000) {
+      errors.push('Le message ne peut pas dépasser 1000 caractères');
+    }
+    
+    if (!messageData.destinataireId && !messageData.conversationId) {
+      errors.push('Destinataire ou conversation requis');
+    }
+    
+    return errors;
+  },
+
+  // Valider les données d'une réservation
+  validateReservationData: (reservationData) => {
+    const errors = [];
+    
+    if (!reservationData.flashId) {
+      errors.push('Flash ID requis');
+    }
+    
+    if (!reservationData.tatoueurId) {
+      errors.push('Tatoueur ID requis');
+    }
+    
+    if (!reservationData.contenu || reservationData.contenu.trim().length === 0) {
+      errors.push('Message de réservation requis');
+    }
+    
+    if (reservationData.contenu && reservationData.contenu.length > 500) {
+      errors.push('Le message de réservation ne peut pas dépasser 500 caractères');
+    }
+    
+    return errors;
+  },
+
+  // Créer un message de réservation type
+  createReservationTemplate: (flash, customMessage = '') => {
+    const baseMessage = `Bonjour, je suis intéressé(e) par votre flash à ${flash.prix}€.`;
+    
+    if (customMessage.trim()) {
+      return `${baseMessage}\n\n${customMessage.trim()}`;
+    }
+    
+    return baseMessage;
+  },
+
+  // Extraire le texte de prévisualisation d'un message
+  getPreviewText: (message, maxLength = 50) => {
+    if (!message.contenu) return '';
+    
+    const text = message.contenu.trim();
+    if (text.length <= maxLength) return text;
+    
+    return text.substring(0, maxLength).trim() + '...';
+  },
+
+  // Déterminer si une conversation nécessite une action
+  needsAttention: (conversation, currentUserId) => {
+    // Conversation avec messages non lus
+    if (conversation.messagesNonLus > 0) return true;
+    
+    // Conversation de réservation sans réponse récente du tatoueur
+    if (conversation.type === 'reservation_flash' && conversation.dernierMessage) {
+      const lastMessage = conversation.dernierMessage;
+      const isFromClient = messagerieUtils.isOwnMessage(lastMessage, currentUserId);
+      const isOld = new Date() - new Date(lastMessage.dateEnvoi) > 24 * 60 * 60 * 1000; // 24h
+      
+      return isFromClient && isOld;
+    }
+    
+    return false;
+  },
+};
+
+export default messagerieApi;
+
+import React, { useState } from "react";
+import { MessagerieContext } from "../../context/MessagerieContext";
+
+export default function MessagerieProvider({ children }) {
+  // État pour les onglets
+  const [activeTab, setActiveTab] = useState("Tous");
+  const tabs = ["Tous", "Clients", "Tatoueurs", "Non lus"];
+
+  // État pour les messages
+  const [messages, setMessages] = useState([
+    {
+      initials: "JS",
+      name: "Julie S.",
+      time: "10:25",
+      message: "Super, je voudrais réserver le flash de rose que vous avez posté.",
+      unread: 2,
+      type: "Clients",
+    },
+    {
+      initials: "TA",
+      name: "TattooArtist3",
+      time: "hier",
+      message: "Merci pour les conseils sur la coloration, ça m'a beaucoup aidé !",
+      unread: 0,
+      type: "Tatoueurs",
+    },
+    {
+      initials: "LM",
+      name: "Lucas M.",
+      time: "hier",
+      message: "Est-ce que le flash avec le serpent est toujours disponible ?",
+      unread: 0,
+      type: "Clients",
+    },
+    {
+      initials: "CM",
+      name: "Camille M.",
+      time: "20/04",
+      message: "Le tatouage est super, merci encore ! Je vous enverrai une photo quand...",
+      unread: 0,
+      type: "Clients",
+    },
+    {
+      initials: "IN",
+      name: "Inkediin Support",
+      time: "18/04",
+      message: "Bonjour, nous avons bien reçu votre demande concernant le paiement...",
+      unread: 0,
+      type: "Tatoueurs",
+    },
+  ]);
+
+  // État pour les recherches
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // État pour les conversations individuelles
+  const [conversations, setConversations] = useState({
+    "JS": {
+      contactInfo: {
+        initials: "JS",
+        name: "Julie S.",
+        status: "En ligne"
+      },
+      messages: [
+        {
+          content: "Bonjour ! J'ai vu votre flash de rose old school et je suis intéressée.",
+          time: "09:42",
+          sent: false
+        },
+        {
+          content: "Bonjour Julie ! Merci pour votre intérêt. La rose est toujours disponible.",
+          time: "09:45",
+          sent: true
+        },
+        {
+          content: "Super ! J'aimerais la réserver pour le mois prochain si possible.",
+          time: "09:48",
+          sent: false
+        },
+        {
+          content: "Bien sûr, voici le design dont nous parlons :",
+          time: "09:50",
+          sent: true
+        },
+        {
+          isProduct: true,
+          title: "Rose Old School",
+          price: "150 €",
+          sent: true
+        },
+        {
+          content: "J'ai des disponibilités les 15, 16 et 20 mai. Est-ce qu'une de ces dates vous conviendrait ?",
+          time: "09:51",
+          sent: true
+        },
+        {
+          content: "Le 16 mai serait parfait pour moi. Comment procède-t-on pour la réservation ?",
+          time: "10:15",
+          sent: false
+        },
+        {
+          content: "Et est-ce qu'il y a un acompte à verser ?",
+          time: "10:15",
+          sent: false
+        },
+        {
+          content: "Parfait ! Je vais bloquer le 16 mai pour vous. Oui, il y a un acompte de 50€ pour confirmer la réservation. Vous pouvez le régler directement via l'application en cliquant sur le bouton de réservation du flash.",
+          time: "10:20",
+          sent: true
+        }
+      ]
+    }
+    // Vous pourriez ajouter d'autres conversations ici
+  });
+
+  // État pour le message actuellement en cours de rédaction
+  const [newMessage, setNewMessage] = useState("");
+  
+  // État pour la conversation active
+  const [activeConversation, setActiveConversation] = useState(null);
+
+  // Fonctions utilitaires
+  const getFilteredMessages = () => {
+    let filtered = messages;
+    
+    // Filtrer par type ou non lus
+    if (activeTab !== "Tous") {
+      filtered = activeTab === "Non lus" 
+        ? filtered.filter(msg => msg.unread > 0)
+        : filtered.filter(msg => msg.type === activeTab);
+    }
+    
+    // Filtrer par recherche
+    if (searchTerm) {
+      filtered = filtered.filter(
+        msg => msg.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+               msg.message.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    return filtered;
+  };
+
+  // Fonction pour envoyer un message
+  const sendMessage = (contactInitials, content) => {
+    if (!content.trim()) return;
+    
+    const newMsg = {
+      content,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sent: true
+    };
+    
+    setConversations(prev => {
+      if (!prev[contactInitials]) {
+        // Créer une nouvelle conversation si elle n'existe pas
+        return {
+          ...prev,
+          [contactInitials]: {
+            contactInfo: {
+              // Il faudrait idéalement rechercher les infos du contact
+              initials: contactInitials,
+              name: "Nouveau contact",
+              status: "Hors ligne"
+            },
+            messages: [newMsg]
+          }
+        };
+      }
+      
+      // Ajouter le message à une conversation existante
+      return {
+        ...prev,
+        [contactInitials]: {
+          ...prev[contactInitials],
+          messages: [...prev[contactInitials].messages, newMsg]
+        }
+      };
+    });
+    
+    // Mettre à jour l'aperçu du message dans la liste des messages
+    setMessages(prev => {
+      const index = prev.findIndex(msg => msg.initials === contactInitials);
+      if (index === -1) return prev;
+      
+      const updatedMessages = [...prev];
+      updatedMessages[index] = {
+        ...updatedMessages[index],
+        message: content,
+        time: "à l'instant"
+      };
+      
+      return updatedMessages;
+    });
+    
+    // Réinitialiser le champ de saisie
+    setNewMessage("");
+  };
+
+  // Fonction pour marquer une conversation comme lue
+  const markAsRead = (contactInitials) => {
+    setMessages(prev => {
+      const index = prev.findIndex(msg => msg.initials === contactInitials);
+      if (index === -1) return prev;
+      
+      const updatedMessages = [...prev];
+      updatedMessages[index] = {
+        ...updatedMessages[index],
+        unread: 0
+      };
+      
+      return updatedMessages;
+    });
+  };
+
+  return (
+    <MessagerieContext.Provider 
+      value={{
+        activeTab,
+        setActiveTab,
+        tabs,
+        messages,
+        setMessages,
+        searchTerm,
+        setSearchTerm,
+        conversations,
+        newMessage,
+        setNewMessage,
+        activeConversation,
+        setActiveConversation,
+        getFilteredMessages,
+        sendMessage,
+        markAsRead
+      }}
+    >
+      {children}
+    </MessagerieContext.Provider>
+  );
+}

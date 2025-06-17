@@ -18,7 +18,7 @@ const ArtistsGrid = ({
     <div className="lg:w-3/4">
       {/* Résultats */}
       <div className="text-sm text-gray-500 mb-4">
-        {filteredArtists.length}{" "}
+        {filteredArtists.length}
         {filteredArtists.length === 1 ? "résultat" : "résultats"} trouvés
         {artists.length > 0 && (
           <span>

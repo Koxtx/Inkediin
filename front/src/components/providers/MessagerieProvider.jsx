@@ -141,11 +141,59 @@ export default function MessagerieProvider({ children }) {
     return filtered;
   };
 
+  // Fonction pour créer une nouvelle conversation
+  const createNewConversation = (conversationId, contactInfo) => {
+    setConversations(prev => {
+      // Si la conversation existe déjà, ne pas la recréer
+      if (prev[conversationId]) {
+        return prev;
+      }
+
+      // Créer une nouvelle conversation
+      const newConversation = {
+        contactInfo: {
+          initials: contactInfo.initials || "??",
+          name: contactInfo.name || "Utilisateur inconnu",
+          status: contactInfo.status || "Hors ligne",
+          id: contactInfo.id,
+          userType: contactInfo.userType,
+          avatar: contactInfo.avatar
+        },
+        messages: []
+      };
+
+      // Ajouter aussi à la liste des messages si ce n'est pas déjà fait
+      setMessages(prevMessages => {
+        const existingMessage = prevMessages.find(msg => msg.initials === conversationId);
+        if (existingMessage) {
+          return prevMessages;
+        }
+
+        const newMessageEntry = {
+          initials: conversationId,
+          name: contactInfo.name || "Utilisateur inconnu",
+          time: "à l'instant",
+          message: "Nouvelle conversation",
+          unread: 0,
+          type: contactInfo.userType === "tatoueur" ? "Tatoueurs" : "Clients",
+        };
+
+        return [newMessageEntry, ...prevMessages];
+      });
+
+      return {
+        ...prev,
+        [conversationId]: newConversation
+      };
+    });
+  };
+
   // Fonction pour envoyer un message
   const sendMessage = (contactInitials, content) => {
     if (!content.trim()) return;
     
     const newMsg = {
+      id: Date.now(), // ID temporaire basé sur le timestamp
       content,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       sent: true
@@ -158,7 +206,6 @@ export default function MessagerieProvider({ children }) {
           ...prev,
           [contactInitials]: {
             contactInfo: {
-              // Il faudrait idéalement rechercher les infos du contact
               initials: contactInitials,
               name: "Nouveau contact",
               status: "Hors ligne"
@@ -181,7 +228,18 @@ export default function MessagerieProvider({ children }) {
     // Mettre à jour l'aperçu du message dans la liste des messages
     setMessages(prev => {
       const index = prev.findIndex(msg => msg.initials === contactInitials);
-      if (index === -1) return prev;
+      if (index === -1) {
+        // Ajouter un nouveau message à la liste si il n'existe pas
+        const newMessageEntry = {
+          initials: contactInitials,
+          name: conversations[contactInitials]?.contactInfo?.name || "Nouveau contact",
+          time: "à l'instant",
+          message: content,
+          unread: 0,
+          type: "Clients",
+        };
+        return [newMessageEntry, ...prev];
+      }
       
       const updatedMessages = [...prev];
       updatedMessages[index] = {
@@ -190,7 +248,9 @@ export default function MessagerieProvider({ children }) {
         time: "à l'instant"
       };
       
-      return updatedMessages;
+      // Déplacer le message en haut de la liste
+      const updatedMessage = updatedMessages.splice(index, 1)[0];
+      return [updatedMessage, ...updatedMessages];
     });
     
     // Réinitialiser le champ de saisie
@@ -213,6 +273,60 @@ export default function MessagerieProvider({ children }) {
     });
   };
 
+  // Fonction pour supprimer un message
+  const deleteMessage = (conversationId, messageId) => {
+    setConversations(prev => {
+      if (!prev[conversationId]) return prev;
+      
+      return {
+        ...prev,
+        [conversationId]: {
+          ...prev[conversationId],
+          messages: prev[conversationId].messages.filter(msg => msg.id !== messageId)
+        }
+      };
+    });
+  };
+
+  // Fonction pour modifier un message
+  const editMessage = (conversationId, messageId, newContent) => {
+    setConversations(prev => {
+      if (!prev[conversationId]) return prev;
+      
+      return {
+        ...prev,
+        [conversationId]: {
+          ...prev[conversationId],
+          messages: prev[conversationId].messages.map(msg => 
+            msg.id === messageId 
+              ? { ...msg, content: newContent, edited: true }
+              : msg
+          )
+        }
+      };
+    });
+
+    // Mettre à jour aussi le dernier message dans la liste si c'est le plus récent
+    setMessages(prev => {
+      const conversationMessages = conversations[conversationId]?.messages || [];
+      const lastMessage = conversationMessages[conversationMessages.length - 1];
+      
+      if (lastMessage && lastMessage.id === messageId) {
+        const index = prev.findIndex(msg => msg.initials === conversationId);
+        if (index !== -1) {
+          const updatedMessages = [...prev];
+          updatedMessages[index] = {
+            ...updatedMessages[index],
+            message: newContent
+          };
+          return updatedMessages;
+        }
+      }
+      
+      return prev;
+    });
+  };
+
   return (
     <MessagerieContext.Provider 
       value={{
@@ -230,7 +344,10 @@ export default function MessagerieProvider({ children }) {
         setActiveConversation,
         getFilteredMessages,
         sendMessage,
-        markAsRead
+        markAsRead,
+        deleteMessage,
+        editMessage,
+        createNewConversation
       }}
     >
       {children}

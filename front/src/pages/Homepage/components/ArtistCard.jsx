@@ -91,7 +91,7 @@ const ArtistCard = ({ artist, isNearbyMode, onContact, onViewProfile }) => {
         >
           Prendre contact
         </button>
-      </div>
+      </div> 
     </div>
   );
 };

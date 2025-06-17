@@ -486,6 +486,69 @@ export async function getTattooers() {
 // Fonction pour récupérer un tatoueur spécifique par ID
 export async function getTattooerById(id) {
   try {
+    console.log("🔍 API - Récupération utilisateur ID:", id);
+    
+    const response = await fetch(`${BASE_URL}/users/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+
+    console.log("📡 API Response status:", response.status);
+
+    if (!response.ok) {
+      throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+    }
+
+    const user = await response.json();
+    console.log("📥 API - Données brutes reçues:", user);
+    
+    // Normalisation des données pour assurer la cohérence
+    const transformedUser = {
+      _id: user._id || user.id,
+      nom: user.nom || user.name || user.username || "Utilisateur",
+      email: user.email,
+      userType: user.userType || user.type || "tatoueur",
+      photoProfil: user.photoProfil || user.avatar || user.profilePicture || null,
+      bio: user.bio || user.description || "",
+      localisation: user.localisation || user.location || user.address || "",
+      styles: user.styles || user.specialties || "",
+      portfolio: user.portfolio || user.images || [],
+      followers: user.followers || 0,
+      following: user.following || 0,
+      // Ajout de champs supplémentaires s'ils existent
+      phone: user.phone || user.telephone || "",
+      website: user.website || "",
+      instagram: user.instagram || "",
+      experience: user.experience || "",
+      studio: user.studio || "",
+    };
+
+    console.log("✅ API - Données transformées:", transformedUser);
+
+    return {
+      success: true,
+      data: transformedUser,
+      message: "Utilisateur récupéré avec succès"
+    };
+    
+  } catch (error) {
+    console.error("❌ API - Erreur lors de la récupération du tatoueur:", error);
+    return {
+      success: false,
+      message: error.message || "Impossible de charger le tatoueur.",
+      data: null
+    };
+  }
+}
+
+// Fonction alternative si vous avez besoin de récupérer n'importe quel type d'utilisateur
+export async function getUserById(id) {
+  try {
+    console.log("🔍 API - Récupération utilisateur (générique) ID:", id);
+    
     const response = await fetch(`${BASE_URL}/users/${id}`, {
       method: "GET",
       headers: {
@@ -499,41 +562,19 @@ export async function getTattooerById(id) {
     }
 
     const user = await response.json();
+    console.log("📥 API - Données utilisateur reçues:", user);
     
-    // Transformer les données
-    const coordinates = getCoordinatesFromLocation(user.localisation);
-    
-    const transformedArtist = {
-      _id: user._id,
-      name: user.nom || "Nom non renseigné",
-      category: user.styles ? user.styles.split(',')[0].trim() : "Non spécifié",
-      location: user.localisation || "Non renseigné",
-      experience: determineExperience(user.createdAt),
-      price: generateRandomPrice(),
-      rating: generateRandomRating(),
-      availability: Math.random() > 0.3 ? "Disponible" : "Complet",
-      avatar: user.avatar || "/api/placeholder/150/150",
-      portfolio: user.portfolio || [],
-      bio: user.bio || "",
-      styles: user.styles || "",
-      followers: user.followers || 0,
-      latitude: coordinates.lat,
-      longitude: coordinates.lng,
-      createdAt: user.createdAt,
-      email: user.email,
-      userType: user.userType
-    };
-
     return {
       success: true,
-      data: transformedArtist
+      data: user,
+      message: "Utilisateur récupéré avec succès"
     };
     
   } catch (error) {
-    console.error("Erreur lors de la récupération du tatoueur:", error);
+    console.error("❌ API - Erreur lors de la récupération de l'utilisateur:", error);
     return {
       success: false,
-      message: error.message || "Impossible de charger le tatoueur.",
+      message: error.message || "Impossible de charger l'utilisateur.",
       data: null
     };
   }

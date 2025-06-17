@@ -20,7 +20,6 @@ import ClientPreferences from "./components/ClientPreferences";
 import ClientWishlist from "./components/ClientWishlist";
 import FollowedArtists from "./components/FollowedArtists";
 import ArtistRecommendations from "./components/ArtistRecommendations";
-import ReviewsSection from "./components/ReviewsSection";
 
 export default function Profil() {
   const { id: userId } = useParams();
@@ -51,8 +50,8 @@ export default function Profil() {
     criteria: {
       "Hygiène du studio": 5,
       "Réputation de l'artiste": 4,
-      "Prix": 3,
-      "Proximité": 2,
+      Prix: 3,
+      Proximité: 2,
     },
   });
 
@@ -76,9 +75,9 @@ export default function Profil() {
         setLoading(true);
         try {
           console.log("📡 Chargement des données pour userId:", userId);
-          
+
           const result = await getTattooerById(userId);
-          
+
           if (result.success) {
             console.log("✅ Données utilisateur chargées:", result.data);
             setOtherUserData({
@@ -165,8 +164,8 @@ export default function Profil() {
   const generateAboutSection = (userData) => {
     return {
       experience: "Professionnel",
-      specialties: userData.styles 
-        ? userData.styles.split(',').map(s => s.trim()) 
+      specialties: userData.styles
+        ? userData.styles.split(",").map((s) => s.trim())
         : ["Réalisme", "Portraits", "Black & Grey"],
       studio: "Studio professionnel",
       certifications: ["Hygiène et sécurité", "Formation continue 2024"],
@@ -331,10 +330,7 @@ export default function Profil() {
       const tabs = [{ id: "gallery", label: "Galerie" }];
 
       if (!isOwnProfile) {
-        tabs.push(
-          { id: "about", label: "À propos" },
-          { id: "reviews", label: "Avis" }
-        );
+        tabs.push({ id: "about" }, { id: "reviews" });
       }
 
       return tabs;
@@ -388,93 +384,6 @@ export default function Profil() {
             onArtistClick={handleArtistClick}
           />
         );
-
-      case "about":
-        return (
-          <div className="mb-5 space-y-4">
-            <h2 className="text-xl font-bold mb-4">À propos</h2>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <div className="bg-red-400 text-white px-4 py-2 font-medium">
-                Informations professionnelles
-              </div>
-              <div className="p-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Expérience
-                  </span>
-                  <span className="font-medium">
-                    {displayUser?.about?.experience}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Studio
-                  </span>
-                  <span className="font-medium">
-                    {displayUser?.about?.studio}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">
-                    Localisation
-                  </span>
-                  <span className="font-medium">
-                    {displayUser?.localisation}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <div className="bg-red-400 text-white px-4 py-2 font-medium">
-                Spécialités
-              </div>
-              <div className="p-4">
-                <div className="flex flex-wrap gap-2">
-                  {displayUser?.about?.specialties?.map((specialty, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-              <div className="bg-red-400 text-white px-4 py-2 font-medium">
-                Certifications
-              </div>
-              <div className="p-4">
-                <ul className="space-y-2">
-                  {displayUser?.about?.certifications?.map((cert, index) => (
-                    <li key={index} className="flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                      {cert}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        );
-
-      case "reviews":
-        return (
-          <ReviewsSection
-            displayUser={displayUser}
-            isOwnProfile={isOwnProfile}
-            userType={displayUser?.userType}
-            onReplyToReview={handleReplyToReview}
-            onLikeReview={handleLikeReview}
-          />
-        );
-
-      default:
-        return null;
     }
   };
 
@@ -496,17 +405,18 @@ export default function Profil() {
         <div className="text-center">
           <h2 className="text-xl font-bold mb-4">Utilisateur introuvable</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            L'utilisateur avec l'ID "{userId}" n'existe pas ou n'est plus disponible.
+            L'utilisateur avec l'ID "{userId}" n'existe pas ou n'est plus
+            disponible.
           </p>
           <div className="space-x-4">
-            <button 
+            <button
               onClick={handleGoBack}
               className="text-red-500 hover:text-red-600 transition-colors"
             >
               Retour
             </button>
-            <Link 
-              to="/" 
+            <Link
+              to="/"
               className="text-red-500 hover:text-red-600 transition-colors"
             >
               Accueil
@@ -539,18 +449,7 @@ export default function Profil() {
           <h1 className="text-xl sm:text-2xl font-bold">
             {displayUser.nom || "Utilisateur"}
           </h1>
-          {!isOwnProfile && (
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              (ID: {userId})
-            </span>
-          )}
         </div>
-
-        {displayUser.userType === "tatoueur" && !isOwnProfile && (
-          <span className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm mb-2">
-            Tatoueur vérifié
-          </span>
-        )}
 
         <ProfileBio
           displayUser={displayUser}
@@ -581,6 +480,7 @@ export default function Profil() {
           onFollowClick={handleFollow}
           onMessageClick={handleMessageClick}
           onShareClick={handleShareClick}
+          displayUser={displayUser}
         />
       </div>
 

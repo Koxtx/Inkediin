@@ -126,7 +126,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: "/conversation",
+        path: "/conversation/:id",
         element: (
           <UserConnected>
             <Conversation />

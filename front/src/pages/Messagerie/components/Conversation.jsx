@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useLocation, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   MoreVertical, 
@@ -16,6 +16,8 @@ import { MessagerieContext } from '../../../context/MessagerieContext';
 
 export default function Conversation() {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { 
     conversations, 
     newMessage, 
@@ -25,7 +27,8 @@ export default function Conversation() {
     sendMessage,
     markAsRead,
     deleteMessage,
-    editMessage
+    editMessage,
+    createNewConversation
   } = useContext(MessagerieContext);
   
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -33,15 +36,49 @@ export default function Conversation() {
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [messageMenuId, setMessageMenuId] = useState(null);
+  const [contactInfo, setContactInfo] = useState(null);
   
   useEffect(() => {
     if (id && id !== activeConversation) {
       setActiveConversation(id);
       markAsRead(id);
     }
-  }, [id, activeConversation, setActiveConversation, markAsRead]);
+
+    // Vérifier si on a des informations de contact depuis la navigation
+    if (location.state?.contactInfo) {
+      const newContactInfo = location.state.contactInfo;
+      setContactInfo(newContactInfo);
+      
+      // Si la conversation n'existe pas encore, la créer
+      if (!conversations[id]) {
+        createNewConversation(id, newContactInfo);
+      }
+    }
+  }, [id, activeConversation, setActiveConversation, markAsRead, location.state, conversations, createNewConversation]);
   
-  if (!activeConversation || !conversations[activeConversation]) {
+  // Déterminer les informations de contact à afficher
+  const getDisplayContactInfo = () => {
+    if (contactInfo) {
+      return contactInfo;
+    }
+    
+    if (conversations[activeConversation]?.contactInfo) {
+      return conversations[activeConversation].contactInfo;
+    }
+    
+    // Valeurs par défaut si aucune info n'est disponible
+    return {
+      initials: id?.substring(0, 2).toUpperCase() || "??",
+      name: "Utilisateur inconnu",
+      status: "Hors ligne"
+    };
+  };
+
+  const displayContactInfo = getDisplayContactInfo();
+  const messages = conversations[activeConversation]?.messages || [];
+
+  // Si pas de conversation active, afficher un message d'erreur
+  if (!activeConversation) {
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
         <p className="text-gray-600 dark:text-gray-400 mb-4">Conversation non trouvée</p>
@@ -55,8 +92,6 @@ export default function Conversation() {
       </div>
     );
   }
-  
-  const { contactInfo, messages } = conversations[activeConversation];
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
@@ -96,6 +131,12 @@ export default function Conversation() {
     // Ici vous pouvez implémenter la logique pour chaque type d'attachement
   };
 
+  const handleViewProfile = () => {
+    if (contactInfo?.id) {
+      navigate(`/profil/${contactInfo.id}`);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
       {/* Header */}
@@ -103,13 +144,33 @@ export default function Conversation() {
         <Link to="/messagerie" className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 mr-4">
           <ArrowLeft size={20} />
         </Link>
-        <div className="w-10 h-10 rounded-full bg-red-400 text-white flex items-center justify-center font-medium">
-          {contactInfo.initials}
-        </div>
-        <div className="ml-3 flex-grow">
-          <div className="font-semibold text-gray-900 dark:text-white">{contactInfo.name}</div>
-          <div className="text-xs text-green-500">{contactInfo.status}</div>
-        </div>
+        
+        <button 
+          onClick={handleViewProfile}
+          className="flex items-center flex-grow hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg p-2 transition-colors"
+        >
+          {displayContactInfo.avatar ? (
+            <img 
+              src={displayContactInfo.avatar} 
+              alt="Avatar" 
+              className="w-10 h-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-red-400 text-white flex items-center justify-center font-medium">
+              {displayContactInfo.initials}
+            </div>
+          )}
+          <div className="ml-3 flex-grow text-left">
+            <div className="font-semibold text-gray-900 dark:text-white">{displayContactInfo.name}</div>
+            <div className="text-xs text-green-500">{displayContactInfo.status}</div>
+            {displayContactInfo.userType && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                {displayContactInfo.userType}
+              </div>
+            )}
+          </div>
+        </button>
+
         <div className="relative">
           <button
             className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 cursor-pointer p-1"
@@ -122,9 +183,12 @@ export default function Conversation() {
           {showOptionsMenu && (
             <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
               <div className="py-2">
-                <button className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
+                <button 
+                  onClick={handleViewProfile}
+                  className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                >
                   <Edit3 size={16} />
-                  Modifier le contact
+                  Voir le profil
                 </button>
                 <button className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
                   <Trash2 size={16} />
@@ -138,104 +202,113 @@ export default function Conversation() {
 
       {/* Messages container */}
       <div className="flex-grow overflow-y-auto px-4 py-6">
-        <div className="text-center mb-6">
-          <span className="inline-block px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-            Aujourd'hui
-          </span>
-        </div>
+        {messages.length === 0 ? (
+          <div className="text-center text-gray-500 dark:text-gray-400 mt-20">
+            <p className="mb-2">Aucun message pour le moment</p>
+            <p className="text-sm">Commencez la conversation en envoyant un message !</p>
+          </div>
+        ) : (
+          <>
+            <div className="text-center mb-6">
+              <span className="inline-block px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
+                Aujourd'hui
+              </span>
+            </div>
 
-        {messages.map((message, index) => (
-          <div key={message.id || index} className="relative group">
-            {message.isProduct ? (
-              <div className={`flex justify-${message.sent ? 'end' : 'start'} mb-4`}>
-                <div className="max-w-xs sm:max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-                  <div className="h-40 bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                    <Image size={24} className="text-gray-500 dark:text-gray-400" />
-                  </div>
-                  <div className="p-3 flex justify-between items-center">
-                    <div className="text-gray-900 dark:text-white font-medium">{message.title}</div>
-                    <div className="text-red-500 font-bold">{message.price}</div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className={`flex ${message.sent ? 'justify-end' : 'justify-start'} mb-4 relative`}>
-                <div className="relative max-w-xs sm:max-w-md">
-                  {editingMessageId === (message.id || index) ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border-2 border-red-400">
-                      <textarea
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded resize-none dark:bg-gray-700 dark:text-white"
-                        value={editingContent}
-                        onChange={(e) => setEditingContent(e.target.value)}
-                        rows="2"
-                      />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button
-                          className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
-                          onClick={() => setEditingMessageId(null)}
-                        >
-                          Annuler
-                        </button>
-                        <button
-                          className="px-3 py-1 text-sm bg-red-400 text-white rounded"
-                          onClick={() => handleSaveEdit(message.id || index)}
-                        >
-                          Sauvegarder
-                        </button>
+            {messages.map((message, index) => (
+              <div key={message.id || index} className="relative group">
+                {message.isProduct ? (
+                  <div className={`flex justify-${message.sent ? 'end' : 'start'} mb-4`}>
+                    <div className="max-w-xs sm:max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                      <div className="h-40 bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
+                        <Image size={24} className="text-gray-500 dark:text-gray-400" />
+                      </div>
+                      <div className="p-3 flex justify-between items-center">
+                        <div className="text-gray-900 dark:text-white font-medium">{message.title}</div>
+                        <div className="text-red-500 font-bold">{message.price}</div>
                       </div>
                     </div>
-                  ) : (
-                    <>
-                      <div className={`px-4 py-2 rounded-lg ${
-                        message.sent 
-                          ? 'bg-red-400 text-white' 
-                          : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-                      }`}>
-                        {message.content}
-                      </div>
-                      <span className={`text-xs text-gray-500 ${message.sent ? 'text-right' : 'text-left'} block mt-1`}>
-                        {message.time}
-                      </span>
-                      
-                      {/* Menu contextuel pour les messages */}
-                      {message.sent && (
-                        <div className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                            onClick={() => setMessageMenuId(messageMenuId === (message.id || index) ? null : (message.id || index))}
-                          >
-                            <MoreVertical size={16} />
-                          </button>
+                  </div>
+                ) : (
+                  <div className={`flex ${message.sent ? 'justify-end' : 'justify-start'} mb-4 relative`}>
+                    <div className="relative max-w-xs sm:max-w-md">
+                      {editingMessageId === (message.id || index) ? (
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border-2 border-red-400">
+                          <textarea
+                            className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded resize-none dark:bg-gray-700 dark:text-white"
+                            value={editingContent}
+                            onChange={(e) => setEditingContent(e.target.value)}
+                            rows="2"
+                          />
+                          <div className="flex justify-end gap-2 mt-2">
+                            <button
+                              className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
+                              onClick={() => setEditingMessageId(null)}
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              className="px-3 py-1 text-sm bg-red-400 text-white rounded"
+                              onClick={() => handleSaveEdit(message.id || index)}
+                            >
+                              Sauvegarder
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <div className={`px-4 py-2 rounded-lg ${
+                            message.sent 
+                              ? 'bg-red-400 text-white' 
+                              : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
+                          }`}>
+                            {message.content}
+                          </div>
+                          <span className={`text-xs text-gray-500 ${message.sent ? 'text-right' : 'text-left'} block mt-1`}>
+                            {message.time}
+                          </span>
                           
-                          {messageMenuId === (message.id || index) && (
-                            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
-                              <div className="py-1">
-                                <button
-                                  className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                  onClick={() => handleEditMessage(message.id || index, message.content)}
-                                >
-                                  <Edit3 size={12} />
-                                  Modifier
-                                </button>
-                                <button
-                                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                  onClick={() => handleDeleteMessage(message.id || index)}
-                                >
-                                  <Trash2 size={12} />
-                                  Supprimer
-                                </button>
-                              </div>
+                          {/* Menu contextuel pour les messages */}
+                          {message.sent && (
+                            <div className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                onClick={() => setMessageMenuId(messageMenuId === (message.id || index) ? null : (message.id || index))}
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+                              
+                              {messageMenuId === (message.id || index) && (
+                                <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
+                                  <div className="py-1">
+                                    <button
+                                      className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                      onClick={() => handleEditMessage(message.id || index, message.content)}
+                                    >
+                                      <Edit3 size={12} />
+                                      Modifier
+                                    </button>
+                                    <button
+                                      className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                                      onClick={() => handleDeleteMessage(message.id || index)}
+                                    >
+                                      <Trash2 size={12} />
+                                      Supprimer
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
-                        </div>
+                        </>
                       )}
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            ))}
+          </>
+        )}
       </div>
 
       {/* Input area */}

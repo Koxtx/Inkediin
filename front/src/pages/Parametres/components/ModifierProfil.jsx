@@ -9,8 +9,6 @@ import {
   MapPin,
   MessageSquare,
   Palette,
-  Link,
-  Users,
 } from "lucide-react";
 
 export default function ModifierProfil({ onBack }) {
@@ -22,8 +20,6 @@ export default function ModifierProfil({ onBack }) {
     localisation: "",
     bio: "",
     styles: "",
-
-    followers: "0",
     photoProfil: "",
   });
 
@@ -36,8 +32,6 @@ export default function ModifierProfil({ onBack }) {
         localisation: user.localisation || "",
         bio: user.bio || "",
         styles: user.styles || "",
-
-        followers: user.followers || "0",
         photoProfil: user.photoProfil || "",
       });
     }
@@ -270,22 +264,6 @@ export default function ModifierProfil({ onBack }) {
                       {formData.styles.length}/200
                     </p>
                   )}
-                </div>
-
-                {/* Followers */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    <Users className="w-4 h-4 inline mr-2" />
-                    Nombre de followers
-                  </label>
-                  <input
-                    type="number"
-                    name="followers"
-                    value={formData.followers}
-                    onChange={handleInputChange}
-                    placeholder="0"
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent dark:bg-gray-800 dark:text-white"
-                  />
                 </div>
               </>
             )}
