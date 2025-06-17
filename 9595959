@@ -1,1259 +1,324 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { MessageCircle, Share2 } from "lucide-react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import { AuthContext } from "../../context/AuthContext";
+import { SocketContext } from "../../context/SocketContext";
 
-export default function ProfileActions({
-  isOwnProfile,
-  isFollowing,
-  onFollowClick,
-  onMessageClick,
-  onShareClick,
-}) {
-  if (isOwnProfile) {
-    return (
-      <div className="flex space-x-3">
-        <Link
-          to="/modifierprofil"
-          className="px-6 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-        >
-          Modifier le profil
-        </Link>
-        <Link
-          to="/param"
-          className="px-6 py-2 border border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-        >
-          Paramètres
-        </Link>
-      </div>
-    );
-  }
+export const SocketProvider = ({ children }) => {
+  const [socket, setSocket] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const { user } = useContext(AuthContext);
 
-  return (
-    <div className="flex space-x-3">
-      <button
-        onClick={onFollowClick}
-        className={`px-6 py-2 rounded-full font-medium transition-colors ${
-          isFollowing
-            ? "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-            : "bg-red-500 text-white hover:bg-red-600"
-        }`}
-      >
-        {isFollowing ? "Suivi" : "Suivre"}
-      </button>
-
-      <Link 
-        onClick={onMessageClick}
-        className="px-6 py-2 border border-red-500 text-red-500 rounded-full hover:bg-red-50 dark:hover:bg-red-900 dark:hover:bg-opacity-30 transition-colors flex items-center"
-      >
-        <MessageCircle className="w-4 h-4 mr-2" />
-        Message
-      </Link>
-
-      <button
-        onClick={onShareClick}
-        className="p-2 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-      >
-        <Share2 className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
-import React, { useContext, useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  MoreVertical, 
-  Plus, 
-  Send, 
-  Smile, 
-  Edit3, 
-  Trash2, 
-  Image,
-  Paperclip,
-  Camera
-} from 'lucide-react';
-import { MessagerieContext } from '../../../context/MessagerieContext';
-
-export default function Conversation() {
-  const { id } = useParams();
-  const { 
-    conversations, 
-    newMessage, 
-    setNewMessage, 
-    activeConversation, 
-    setActiveConversation,
-    sendMessage,
-    markAsRead,
-    deleteMessage,
-    editMessage
-  } = useContext(MessagerieContext);
-  
-  const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [editingMessageId, setEditingMessageId] = useState(null);
-  const [editingContent, setEditingContent] = useState('');
-  const [messageMenuId, setMessageMenuId] = useState(null);
-  
   useEffect(() => {
-    if (id && id !== activeConversation) {
-      setActiveConversation(id);
-      markAsRead(id);
+    if (user) {
+      console.log("🔌 Connexion WebSocket pour utilisateur:", user._id);
+
+      // Fonction pour récupérer le token depuis les cookies - améliorée
+      const getCookie = (name) => {
+        if (typeof document === "undefined") return null;
+
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) {
+          const cookieValue = parts.pop().split(";").shift();
+          return decodeURIComponent(cookieValue);
+        }
+        return null;
+      };
+
+      // Fonction de debug pour les cookies
+      const debugCookies = () => {
+        console.log("🍪 Debug cookies:");
+        console.log("- Document cookie:", document.cookie);
+        console.log("- Token:", getCookie("token"));
+        console.log("- AuthToken:", getCookie("authToken"));
+        console.log("- JWT:", getCookie("jwt"));
+        console.log("- AccessToken:", getCookie("accessToken"));
+      };
+
+      // Debug des cookies
+      debugCookies();
+
+      // Essayer plusieurs noms de cookies possibles
+      const token =
+        getCookie("token") ||
+        getCookie("authToken") ||
+        getCookie("jwt") ||
+        getCookie("accessToken");
+
+      if (!token) {
+        console.error("❌ Token non trouvé pour WebSocket");
+        console.log(
+          "🔍 Vérifiez que le token est bien défini lors de la connexion"
+        );
+        return;
+      }
+
+      console.log(
+        "✅ Token trouvé pour WebSocket:",
+        token.substring(0, 20) + "..."
+      );
+
+      // Créer la connexion socket avec le token
+      const newSocket = io(
+        process.env.REACT_APP_SERVER_URL || "http://localhost:5000",
+        {
+          auth: {
+            token: token,
+          },
+          withCredentials: true,
+          transports: ["websocket", "polling"], // Permettre plusieurs transports
+          timeout: 10000, // Timeout de 10 secondes
+          forceNew: true, // Forcer une nouvelle connexion
+        }
+      );
+
+      // Gestion des événements de connexion
+      newSocket.on("connect", () => {
+        console.log("✅ WebSocket connecté:", newSocket.id);
+        setSocket(newSocket);
+
+        // Rejoindre la room des notifications
+        newSocket.emit("joinNotificationRoom");
+      });
+
+      newSocket.on("disconnect", (reason) => {
+        console.log("❌ WebSocket déconnecté:", reason);
+        setSocket(null);
+      });
+
+      // Gestion des erreurs de connexion
+      newSocket.on("connect_error", (error) => {
+        console.error("❌ Erreur connexion WebSocket:", error.message);
+        console.log("🔍 Vérifiez:");
+        console.log("- Le serveur WebSocket est-il démarré ?");
+        console.log("- Le token est-il valide ?");
+        console.log("- La configuration CORS côté serveur");
+      });
+
+      // Événement d'authentification réussie
+      newSocket.on("authenticated", () => {
+        console.log("🔐 WebSocket authentifié avec succès");
+      });
+
+      // Écouter les utilisateurs en ligne
+      newSocket.on("getOnlineUsers", (users) => {
+        console.log("👥 Utilisateurs en ligne:", users);
+        setOnlineUsers(users);
+      });
+
+      // Test de connexion après 2 secondes
+      setTimeout(() => {
+        if (newSocket.connected) {
+          console.log("✅ WebSocket connecté et fonctionnel");
+        } else {
+          console.warn("⚠️ WebSocket non connecté après 2 secondes");
+        }
+      }, 2000);
+
+      // Nettoyer lors du démontage
+      return () => {
+        console.log("🔌 Fermeture connexion WebSocket");
+        newSocket.close();
+      };
+    } else {
+      // Si pas d'utilisateur, fermer la connexion
+      if (socket) {
+        console.log("🔌 Fermeture WebSocket (déconnexion utilisateur)");
+        socket.close();
+        setSocket(null);
+      }
     }
-  }, [id, activeConversation, setActiveConversation, markAsRead]);
-  
-  if (!activeConversation || !conversations[activeConversation]) {
-    return (
-      <div className="flex flex-col h-screen items-center justify-center bg-gray-100 dark:bg-gray-900">
-        <p className="text-gray-600 dark:text-gray-400 mb-4">Conversation non trouvée</p>
-        <Link 
-          to="/messagerie" 
-          className="px-4 py-2 bg-red-400 text-white rounded-lg hover:bg-red-500 transition-colors flex items-center gap-2"
-        >
-          <ArrowLeft size={16} />
-          Retour à la messagerie
-        </Link>
-      </div>
-    );
-  }
-  
-  const { contactInfo, messages } = conversations[activeConversation];
+  }, [user]);
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      sendMessage(activeConversation, newMessage);
+  // Fonction utilitaire pour tester la connexion WebSocket
+  const testConnection = () => {
+    if (socket && socket.connected) {
+      console.log("✅ WebSocket connecté");
+      socket.emit("test", { message: "Test de connexion" });
+      return true;
+    } else {
+      console.warn("❌ WebSocket non connecté");
+      return false;
     }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const handleEditMessage = (messageId, content) => {
-    setEditingMessageId(messageId);
-    setEditingContent(content);
-    setMessageMenuId(null);
-  };
-
-  const handleSaveEdit = (messageId) => {
-    if (editingContent.trim()) {
-      editMessage(activeConversation, messageId, editingContent);
-    }
-    setEditingMessageId(null);
-    setEditingContent('');
-  };
-
-  const handleDeleteMessage = (messageId) => {
-    deleteMessage(activeConversation, messageId);
-    setMessageMenuId(null);
-  };
-
-  const handleAttachmentAction = (type) => {
-    console.log(`Action d'attachement: ${type}`);
-    setShowAttachmentMenu(false);
-    // Ici vous pouvez implémenter la logique pour chaque type d'attachement
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-md px-4 py-3 flex items-center relative">
-        <Link to="/messagerie" className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 mr-4">
-          <ArrowLeft size={20} />
-        </Link>
-        <div className="w-10 h-10 rounded-full bg-red-400 text-white flex items-center justify-center font-medium">
-          {contactInfo.initials}
-        </div>
-        <div className="ml-3 flex-grow">
-          <div className="font-semibold text-gray-900 dark:text-white">{contactInfo.name}</div>
-          <div className="text-xs text-green-500">{contactInfo.status}</div>
-        </div>
-        <div className="relative">
-          <button
-            className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 cursor-pointer p-1"
-            onClick={() => setShowOptionsMenu(!showOptionsMenu)}
-          >
-            <MoreVertical size={20} />
-          </button>
-          
-          {/* Menu d'options de conversation */}
-          {showOptionsMenu && (
-            <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
-              <div className="py-2">
-                <button className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-                  <Edit3 size={16} />
-                  Modifier le contact
-                </button>
-                <button className="w-full px-4 py-2 text-left text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2">
-                  <Trash2 size={16} />
-                  Supprimer la conversation
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Messages container */}
-      <div className="flex-grow overflow-y-auto px-4 py-6">
-        <div className="text-center mb-6">
-          <span className="inline-block px-3 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-            Aujourd'hui
-          </span>
-        </div>
-
-        {messages.map((message, index) => (
-          <div key={message.id || index} className="relative group">
-            {message.isProduct ? (
-              <div className={`flex justify-${message.sent ? 'end' : 'start'} mb-4`}>
-                <div className="max-w-xs sm:max-w-md bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-                  <div className="h-40 bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
-                    <Image size={24} className="text-gray-500 dark:text-gray-400" />
-                  </div>
-                  <div className="p-3 flex justify-between items-center">
-                    <div className="text-gray-900 dark:text-white font-medium">{message.title}</div>
-                    <div className="text-red-500 font-bold">{message.price}</div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className={`flex ${message.sent ? 'justify-end' : 'justify-start'} mb-4 relative`}>
-                <div className="relative max-w-xs sm:max-w-md">
-                  {editingMessageId === (message.id || index) ? (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 border-2 border-red-400">
-                      <textarea
-                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded resize-none dark:bg-gray-700 dark:text-white"
-                        value={editingContent}
-                        onChange={(e) => setEditingContent(e.target.value)}
-                        rows="2"
-                      />
-                      <div className="flex justify-end gap-2 mt-2">
-                        <button
-                          className="px-3 py-1 text-sm bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded"
-                          onClick={() => setEditingMessageId(null)}
-                        >
-                          Annuler
-                        </button>
-                        <button
-                          className="px-3 py-1 text-sm bg-red-400 text-white rounded"
-                          onClick={() => handleSaveEdit(message.id || index)}
-                        >
-                          Sauvegarder
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <div className={`px-4 py-2 rounded-lg ${
-                        message.sent 
-                          ? 'bg-red-400 text-white' 
-                          : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'
-                      }`}>
-                        {message.content}
-                      </div>
-                      <span className={`text-xs text-gray-500 ${message.sent ? 'text-right' : 'text-left'} block mt-1`}>
-                        {message.time}
-                      </span>
-                      
-                      {/* Menu contextuel pour les messages */}
-                      {message.sent && (
-                        <div className="absolute -right-8 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                            onClick={() => setMessageMenuId(messageMenuId === (message.id || index) ? null : (message.id || index))}
-                          >
-                            <MoreVertical size={16} />
-                          </button>
-                          
-                          {messageMenuId === (message.id || index) && (
-                            <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
-                              <div className="py-1">
-                                <button
-                                  className="w-full px-3 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                  onClick={() => handleEditMessage(message.id || index, message.content)}
-                                >
-                                  <Edit3 size={12} />
-                                  Modifier
-                                </button>
-                                <button
-                                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                                  onClick={() => handleDeleteMessage(message.id || index)}
-                                >
-                                  <Trash2 size={12} />
-                                  Supprimer
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Input area */}
-      <div className="bg-white dark:bg-gray-800 px-4 py-3 shadow-inner flex items-center relative">
-        <div className="relative">
-          <button 
-            className="text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 mr-3 p-1"
-            onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
-          >
-            <Plus size={20} />
-          </button>
-          
-          {/* Menu d'attachements */}
-          {showAttachmentMenu && (
-            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-10">
-              <div className="py-2">
-                <button
-                  className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                  onClick={() => handleAttachmentAction('photo')}
-                >
-                  <Camera size={16} />
-                  Photo
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                  onClick={() => handleAttachmentAction('file')}
-                >
-                  <Paperclip size={16} />
-                  Fichier
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                  onClick={() => handleAttachmentAction('image')}
-                >
-                  <Image size={16} />
-                  Image
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <div className="flex-grow relative">
-          <textarea
-            className="w-full border border-gray-300 dark:border-gray-600 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-300 transition-colors resize-none dark:bg-gray-700 dark:text-white"
-            placeholder="Écrivez un message..."
-            rows="1"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          <button className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-red-500">
-            <Smile size={16} />
-          </button>
-        </div>
-        <button 
-          className="ml-3 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 p-1"
-          onClick={handleSendMessage}
-        >
-          <Send size={20} />
-        </button>
-      </div>
-      
-      {/* Overlay pour fermer les menus */}
-      {(showOptionsMenu || showAttachmentMenu || messageMenuId) && (
-        <div 
-          className="fixed inset-0 z-5" 
-          onClick={() => {
-            setShowOptionsMenu(false);
-            setShowAttachmentMenu(false);
-            setMessageMenuId(null);
-          }}
-        />
-      )}
-    </div>
+    <SocketContext.Provider value={{ socket, onlineUsers, testConnection }}>
+      {children}
+    </SocketContext.Provider>
   );
-}
-import { createBrowserRouter } from "react-router-dom";
-import App from "./App";
-import Homepage from "./pages/Homepage/Homepage";
-import ErrorPage from "./pages/ErrorPages";
-import UserConnected from "./components/ProtectedRoutes/UserConnected";
-import UserNotConnected from "./components/ProtectedRoutes/UserNotConnected";
-import ProtectedSetupRoute from "./components/ProtectedRoutes/ProtectedSetupRoute";
-import Feed from "./pages/Feed/Feed";
-import Exploration from "./pages/Exploration/Exploration";
-import Messagerie from "./pages/Messagerie/Messagerie";
-import Notification from "./pages/notifications/Notification";
-import Conversation from "./pages/Messagerie/components/Conversation";
-import Wishlist from "./pages/Wishlist/Wishlist";
-import Tag from "./pages/Tags/Tag";
-import Support from "./pages/Support/Support";
-import StatTatoueur from "./pages/Statistiques/StatTatoueur";
-import MentionLegal from "./pages/MentionLegal/MentionLegal";
-import CustomProjet from "./pages/ProjetsPerso/CustomProjet";
-import PortFolioManagement from "./pages/Portfolio/PortFolioManagement";
-import Promotion from "./pages/Promotion/Promotion";
-import RecommandationPerso from "./pages/Recommandation/RecommandationPerso";
-import Tips from "./pages/Recommandation/Tips";
-import Reservation from "./pages/Réservation/Reservation";
-import historiqueReserve from "./pages/Réservation/historiqueReserve";
-import FlashDetail from "./pages/flash/FlashDetail";
-import FlashUploadPage from "./pages/flash/FlashUploadPage";
-import Profil from "./pages/Profil/Profil";
+};
 
-import SignUp from "./pages/Auth/SignUp";
-import SignIn from "./pages/Auth/SignIn";
-import ParametreCompte from "./pages/Parametres/ParametreCompte";
-import SetupProfil from "./pages/Auth/SetupProfil";
-import ForgotPassword from "./pages/Auth/ForgotPassword";
-import ResetPassword from "./pages/Auth/ResetPassword";
-import PublicationUploadPage from "./pages/Feed/PublicationUploadPage";
-import FlashEdit from "./pages/flash/FlashEdit";
-import FlashManagementPage from "./pages/Profil/components/FlashManagement";
-import ModifierProfil from "./pages/Parametres/components/ModifierProfil";
+const { Server } = require("socket.io");
+const http = require("http");
+const express = require("express");
+const jwt = require("jsonwebtoken");
 
-export const router = createBrowserRouter([
-  {
-    path: "/",
-    errorElement: <ErrorPage />,
-    element: <App />,
-    children: [
-      {
-        path: "/signup",
-        element: (
-          <UserNotConnected>
-            <SignUp />
-          </UserNotConnected>
-        ),
-      },
-      {
-        path: "/signin",
-        element: (
-          <UserNotConnected>
-            <SignIn />
-          </UserNotConnected>
-        ),
-      },
-      {
-        path: "/forgotpassword",
-        element: (
-          <UserNotConnected>
-            <ForgotPassword />
-          </UserNotConnected>
-        ),
-      },
-      {
-        path: "/resetpassword/:token",
-        element: (
-          <UserNotConnected>
-            <ResetPassword />
-          </UserNotConnected>
-        ),
-      },
-      // Route protégée pour le setup de profil
-      {
-        path: "/setupprofil",
-        element: (
-          <ProtectedSetupRoute>
-            <SetupProfil />
-          </ProtectedSetupRoute>
-        ),
-      },
-      // Toutes les autres routes nécessitent un profil complet
-      {
-        path: "/tatoueur",
-        element: (
-          <UserConnected>
-            <Homepage />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/",
-        element: (
-          <UserConnected>
-            <Feed />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/exploration",
-        element: (
-          <UserConnected>
-            <Exploration />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/messagerie",
-        element: (
-          <UserConnected>
-            <Messagerie />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/notification",
-        element: (
-          <UserConnected>
-            <Notification />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/conversation/:id",
-        element: (
-          <UserConnected>
-            <Conversation />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/wishlist",
-        element: (
-          <UserConnected>
-            <Wishlist />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/profil",
-        element: (
-          <UserConnected>
-            <Profil />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/profil/:id",
-        element: (
-          <UserConnected>
-            <Profil />
-          </UserConnected>
-        ),
-      },
-
-      {
-        path: "/tag",
-        element: (
-          <UserConnected>
-            <Tag />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/stat",
-        element: (
-          <UserConnected>
-            <StatTatoueur />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/mentionlegal",
-        element: (
-          <UserConnected>
-            <MentionLegal />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/customprojet",
-        element: (
-          <UserConnected>
-            <CustomProjet />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/portfoliomanage",
-        element: (
-          <UserConnected>
-            <PortFolioManagement />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/promotion",
-        element: (
-          <UserConnected>
-            <Promotion />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/recoperso",
-        element: (
-          <UserConnected>
-            <RecommandationPerso />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/tips",
-        element: (
-          <UserConnected>
-            <Tips />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/reservation",
-        element: (
-          <UserConnected>
-            <Reservation />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/historiquereserve",
-        element: (
-          <UserConnected>
-            <historiqueReserve />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/flashdetail",
-        element: (
-          <UserConnected>
-            <FlashDetail />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/flashupload",
-        element: (
-          <UserConnected>
-            <FlashUploadPage />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/support",
-        element: (
-          <UserConnected>
-            <Support />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/param",
-        element: (
-          <UserConnected>
-            <ParametreCompte />
-          </UserConnected>
-        ),
-      },
-
-      {
-        path: "/uploadpublication",
-        element: (
-          <UserConnected>
-            <PublicationUploadPage />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/flashedit/:flashId",
-        element: (
-          <UserConnected>
-            <FlashEdit />
-          </UserConnected>
-        ),
-      },
-      {
-        path: "/flashs",
-        element: (
-          <UserConnected>
-            <FlashManagementPage />
-          </UserConnected>
-        ),
-      },
-          {
-        path: "/modifierprofil",
-        element: (
-          <UserConnected>
-            <ModifierProfil />
-          </UserConnected>
-        ),
-      },
-    ],
+const app = express();
+const serverHttp = http.createServer(app);
+const io = new Server(serverHttp, {
+  cors: {
+    origin: process.env.CLIENT_URL,
+    methods: ["GET", "POST", "DELETE", "PUT"],
   },
-]);
-import { BASE_URL } from "../utils/url";
+});
 
-// Configuration des headers par défaut
-const getHeaders = () => {
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-  
-  const token = localStorage.getItem('token');
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
+const userSocketMap = {};
+
+const getReceiverSocketId = (receiverId) => {
+  return userSocketMap[receiverId];
+};
+
+// Middleware d'authentification pour Socket.IO
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token || socket.handshake.query.token;
+    
+    if (!token) {
+      return next(new Error('Token manquant'));
+    }
+
+    const decoded = jwt.verify(token, process.env.SECRET_KEY);
+    const User = require("../models/user.model");
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      return next(new Error('Utilisateur non trouvé'));
+    }
+
+    socket.userId = user._id.toString();
+    socket.user = user;
+    next();
+  } catch (error) {
+    next(new Error('Authentification échouée'));
   }
+});
+
+io.on("connection", (socket) => {
+  console.log("Utilisateur connecté:", socket.id);
   
-  return headers;
-};
-
-// Gestion des erreurs
-const handleApiError = async (response) => {
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.message || 'Erreur API');
+  const userId = socket.userId;
+  
+  if (userId) {
+    userSocketMap[userId] = socket.id;
+    console.log(`Utilisateur ${userId} mappé au socket ${socket.id}`);
+    
+    // Joindre l'utilisateur à sa propre room pour les notifications
+    socket.join(userId);
   }
-  return response.json();
-};
 
-// API de la messagerie
-export const messagerieApi = {
-  // Récupérer toutes les conversations de l'utilisateur
-  getConversations: async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/api/messageries`, {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-      
-      return await handleApiError(response);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des conversations:', error);
-      throw error;
+  // Émettre la liste des utilisateurs en ligne
+  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+
+  // Gérer la demande de notifications en temps réel
+  socket.on("joinNotificationRoom", () => {
+    if (userId) {
+      socket.join(`notifications-${userId}`);
+      console.log(`Utilisateur ${userId} a rejoint la room des notifications`);
     }
-  },
-
-  // Récupérer une conversation spécifique avec tous ses messages
-  getConversation: async (conversationId) => {
-    try {
-      const response = await fetch(`${BASE_URL}/api/messageries/${conversationId}`, {
-        method: 'GET',
-        headers: getHeaders(),
-      });
-      
-      return await handleApiError(response);
-    } catch (error) {
-      console.error('Erreur lors de la récupération de la conversation:', error);
-      throw error;
-    }
-  },
-
-  // Envoyer un message
-  sendMessage: async (messageData) => {
-    try {
-      const response = await fetch(`${BASE_URL}/api/messageries/send`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(messageData),
-      });
-      
-      return await handleApiError(response);
-    } catch (error) {
-      console.error('Erreur lors de l\'envoi du message:', error);
-      throw error;
-    }
-  },
-
-  // Marquer un message comme lu
-  markAsRead: async (messageId) => {
-    try {
-      const response = await fetch(`${BASE_URL}/api/messageries/${messageId}/read`, {
-        method: 'PUT',
-        headers: getHeaders(),
-      });
-      
-      return await handleApiError(response);
-    } catch (error) {
-      console.error('Erreur lors du marquage comme lu:', error);
-      throw error;
-    }
-  },
-
-  // Créer une conversation pour une réservation de flash
-  createReservationMessage: async (reservationData) => {
-    try {
-      const response = await fetch(`${BASE_URL}/api/messageries/reservation`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(reservationData),
-      });
-      
-      return await handleApiError(response);
-    } catch (error) {
-      console.error('Erreur lors de la création du message de réservation:', error);
-      throw error;
-    }
-  },
-};
-
-// Fonctions utilitaires pour la messagerie
-export const messagerieUtils = {
-  // Formater la date d'un message
-  formatMessageDate: (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffMinutes = Math.ceil(diffTime / (1000 * 60));
-    const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffMinutes < 1) {
-      return 'À l\'instant';
-    } else if (diffMinutes < 60) {
-      return `Il y a ${diffMinutes} min`;
-    } else if (diffHours < 24) {
-      return `Il y a ${diffHours}h`;
-    } else if (diffDays === 1) {
-      return 'Hier';
-    } else if (diffDays < 7) {
-      return `Il y a ${diffDays} jours`;
-    } else {
-      return date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'short',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-      });
-    }
-  },
-
-  // Formater l'heure d'un message
-  formatMessageTime: (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  },
-
-  // Obtenir le nom d'affichage d'un participant
-  getParticipantDisplayName: (participant) => {
-    if (!participant) return 'Utilisateur inconnu';
-    return participant.nom ? `${participant.nom}` : participant.email;
-  },
-
-  // Obtenir l'autre participant dans une conversation (pas l'utilisateur actuel)
-  getOtherParticipant: (conversation, currentUserId) => {
-    if (!conversation.participants) return null;
-    return conversation.participants.find(p => p._id !== currentUserId);
-  },
-
-  // Déterminer si un message est envoyé par l'utilisateur actuel
-  isOwnMessage: (message, currentUserId) => {
-    return message.expediteurId._id === currentUserId || message.expediteurId === currentUserId;
-  },
-
-  // Grouper les messages par date
-  groupMessagesByDate: (messages) => {
-    const groups = {};
-    
-    messages.forEach(message => {
-      const date = new Date(message.dateEnvoi);
-      const dateKey = date.toDateString();
-      
-      if (!groups[dateKey]) {
-        groups[dateKey] = {
-          date: date,
-          messages: []
-        };
-      }
-      
-      groups[dateKey].messages.push(message);
-    });
-    
-    return Object.values(groups).sort((a, b) => a.date - b.date);
-  },
-
-  // Formater la date de groupe
-  formatGroupDate: (date) => {
-    const now = new Date();
-    const diffTime = Math.abs(now - date);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) {
-      return 'Aujourd\'hui';
-    } else if (diffDays === 1) {
-      return 'Hier';
-    } else if (diffDays < 7) {
-      return date.toLocaleDateString('fr-FR', { weekday: 'long' });
-    } else {
-      return date.toLocaleDateString('fr-FR', {
-        day: 'numeric',
-        month: 'long',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-      });
-    }
-  },
-
-  // Obtenir le statut de la conversation
-  getConversationStatus: (conversation) => {
-    if (conversation.type === 'reservation_flash') {
-      return 'Réservation Flash';
-    }
-    return 'Conversation';
-  },
-
-  // Obtenir l'icône du type de conversation
-  getConversationIcon: (conversation) => {
-    if (conversation.type === 'reservation_flash') {
-      return '⚡';
-    }
-    return '💬';
-  },
-
-  // Compter le total des messages non lus
-  getTotalUnreadCount: (conversations) => {
-    return conversations.reduce((total, conv) => total + (conv.messagesNonLus || 0), 0);
-  },
-
-  // Filtrer les conversations par type
-  filterConversationsByType: (conversations, type) => {
-    if (!type || type === 'all') return conversations;
-    return conversations.filter(conv => conv.type === type);
-  },
-
-  // Rechercher dans les conversations
-  searchConversations: (conversations, query, currentUserId) => {
-    if (!query.trim()) return conversations;
-    
-    const searchTerm = query.toLowerCase();
-    
-    return conversations.filter(conv => {
-      // Recherche dans le nom des participants
-      const otherParticipant = messagerieUtils.getOtherParticipant(conv, currentUserId);
-      if (otherParticipant) {
-        const participantName = messagerieUtils.getParticipantDisplayName(otherParticipant).toLowerCase();
-        if (participantName.includes(searchTerm)) return true;
-      }
-      
-      // Recherche dans le dernier message
-      if (conv.dernierMessage && conv.dernierMessage.contenu) {
-        if (conv.dernierMessage.contenu.toLowerCase().includes(searchTerm)) return true;
-      }
-      
-      return false;
-    });
-  },
-
-  // Valider les données d'un message
-  validateMessageData: (messageData) => {
-    const errors = [];
-    
-    if (!messageData.contenu || messageData.contenu.trim().length === 0) {
-      errors.push('Le contenu du message est requis');
-    }
-    
-    if (messageData.contenu && messageData.contenu.length > 1000) {
-      errors.push('Le message ne peut pas dépasser 1000 caractères');
-    }
-    
-    if (!messageData.destinataireId && !messageData.conversationId) {
-      errors.push('Destinataire ou conversation requis');
-    }
-    
-    return errors;
-  },
-
-  // Valider les données d'une réservation
-  validateReservationData: (reservationData) => {
-    const errors = [];
-    
-    if (!reservationData.flashId) {
-      errors.push('Flash ID requis');
-    }
-    
-    if (!reservationData.tatoueurId) {
-      errors.push('Tatoueur ID requis');
-    }
-    
-    if (!reservationData.contenu || reservationData.contenu.trim().length === 0) {
-      errors.push('Message de réservation requis');
-    }
-    
-    if (reservationData.contenu && reservationData.contenu.length > 500) {
-      errors.push('Le message de réservation ne peut pas dépasser 500 caractères');
-    }
-    
-    return errors;
-  },
-
-  // Créer un message de réservation type
-  createReservationTemplate: (flash, customMessage = '') => {
-    const baseMessage = `Bonjour, je suis intéressé(e) par votre flash à ${flash.prix}€.`;
-    
-    if (customMessage.trim()) {
-      return `${baseMessage}\n\n${customMessage.trim()}`;
-    }
-    
-    return baseMessage;
-  },
-
-  // Extraire le texte de prévisualisation d'un message
-  getPreviewText: (message, maxLength = 50) => {
-    if (!message.contenu) return '';
-    
-    const text = message.contenu.trim();
-    if (text.length <= maxLength) return text;
-    
-    return text.substring(0, maxLength).trim() + '...';
-  },
-
-  // Déterminer si une conversation nécessite une action
-  needsAttention: (conversation, currentUserId) => {
-    // Conversation avec messages non lus
-    if (conversation.messagesNonLus > 0) return true;
-    
-    // Conversation de réservation sans réponse récente du tatoueur
-    if (conversation.type === 'reservation_flash' && conversation.dernierMessage) {
-      const lastMessage = conversation.dernierMessage;
-      const isFromClient = messagerieUtils.isOwnMessage(lastMessage, currentUserId);
-      const isOld = new Date() - new Date(lastMessage.dateEnvoi) > 24 * 60 * 60 * 1000; // 24h
-      
-      return isFromClient && isOld;
-    }
-    
-    return false;
-  },
-};
-
-export default messagerieApi;
-
-import React, { useState } from "react";
-import { MessagerieContext } from "../../context/MessagerieContext";
-
-export default function MessagerieProvider({ children }) {
-  // État pour les onglets
-  const [activeTab, setActiveTab] = useState("Tous");
-  const tabs = ["Tous", "Clients", "Tatoueurs", "Non lus"];
-
-  // État pour les messages
-  const [messages, setMessages] = useState([
-    {
-      initials: "JS",
-      name: "Julie S.",
-      time: "10:25",
-      message: "Super, je voudrais réserver le flash de rose que vous avez posté.",
-      unread: 2,
-      type: "Clients",
-    },
-    {
-      initials: "TA",
-      name: "TattooArtist3",
-      time: "hier",
-      message: "Merci pour les conseils sur la coloration, ça m'a beaucoup aidé !",
-      unread: 0,
-      type: "Tatoueurs",
-    },
-    {
-      initials: "LM",
-      name: "Lucas M.",
-      time: "hier",
-      message: "Est-ce que le flash avec le serpent est toujours disponible ?",
-      unread: 0,
-      type: "Clients",
-    },
-    {
-      initials: "CM",
-      name: "Camille M.",
-      time: "20/04",
-      message: "Le tatouage est super, merci encore ! Je vous enverrai une photo quand...",
-      unread: 0,
-      type: "Clients",
-    },
-    {
-      initials: "IN",
-      name: "Inkediin Support",
-      time: "18/04",
-      message: "Bonjour, nous avons bien reçu votre demande concernant le paiement...",
-      unread: 0,
-      type: "Tatoueurs",
-    },
-  ]);
-
-  // État pour les recherches
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // État pour les conversations individuelles
-  const [conversations, setConversations] = useState({
-    "JS": {
-      contactInfo: {
-        initials: "JS",
-        name: "Julie S.",
-        status: "En ligne"
-      },
-      messages: [
-        {
-          content: "Bonjour ! J'ai vu votre flash de rose old school et je suis intéressée.",
-          time: "09:42",
-          sent: false
-        },
-        {
-          content: "Bonjour Julie ! Merci pour votre intérêt. La rose est toujours disponible.",
-          time: "09:45",
-          sent: true
-        },
-        {
-          content: "Super ! J'aimerais la réserver pour le mois prochain si possible.",
-          time: "09:48",
-          sent: false
-        },
-        {
-          content: "Bien sûr, voici le design dont nous parlons :",
-          time: "09:50",
-          sent: true
-        },
-        {
-          isProduct: true,
-          title: "Rose Old School",
-          price: "150 €",
-          sent: true
-        },
-        {
-          content: "J'ai des disponibilités les 15, 16 et 20 mai. Est-ce qu'une de ces dates vous conviendrait ?",
-          time: "09:51",
-          sent: true
-        },
-        {
-          content: "Le 16 mai serait parfait pour moi. Comment procède-t-on pour la réservation ?",
-          time: "10:15",
-          sent: false
-        },
-        {
-          content: "Et est-ce qu'il y a un acompte à verser ?",
-          time: "10:15",
-          sent: false
-        },
-        {
-          content: "Parfait ! Je vais bloquer le 16 mai pour vous. Oui, il y a un acompte de 50€ pour confirmer la réservation. Vous pouvez le régler directement via l'application en cliquant sur le bouton de réservation du flash.",
-          time: "10:20",
-          sent: true
-        }
-      ]
-    }
-    // Vous pourriez ajouter d'autres conversations ici
   });
 
-  // État pour le message actuellement en cours de rédaction
-  const [newMessage, setNewMessage] = useState("");
-  
-  // État pour la conversation active
-  const [activeConversation, setActiveConversation] = useState(null);
-
-  // Fonctions utilitaires
-  const getFilteredMessages = () => {
-    let filtered = messages;
-    
-    // Filtrer par type ou non lus
-    if (activeTab !== "Tous") {
-      filtered = activeTab === "Non lus" 
-        ? filtered.filter(msg => msg.unread > 0)
-        : filtered.filter(msg => msg.type === activeTab);
+  // Gérer la déconnexion
+  socket.on("disconnect", () => {
+    console.log("Utilisateur déconnecté:", socket.id);
+    if (userId) {
+      delete userSocketMap[userId];
+      io.emit("getOnlineUsers", Object.keys(userSocketMap));
     }
-    
-    // Filtrer par recherche
-    if (searchTerm) {
-      filtered = filtered.filter(
-        msg => msg.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-               msg.message.toLowerCase().includes(searchTerm.toLowerCase())
+  });
+
+  // Gérer l'événement de frappe en cours
+  socket.on("typing", ({ conversationId, userId }) => {
+    socket.to(conversationId).emit("userTyping", { userId });
+  });
+
+  socket.on("stopTyping", ({ conversationId, userId }) => {
+    socket.to(conversationId).emit("userStoppedTyping", { userId });
+  });
+
+  // Événement pour marquer une notification comme lue en temps réel
+  socket.on("markNotificationRead", async ({ notificationId }) => {
+    try {
+      const Notification = require("../models/notification.model");
+      await Notification.findOneAndUpdate(
+        { _id: notificationId, idUser: userId },
+        { lu: true }
       );
+      
+      // Confirmer à l'utilisateur que la notification a été marquée comme lue
+      socket.emit("notificationMarkedRead", { notificationId });
+    } catch (error) {
+      socket.emit("error", { message: "Erreur lors du marquage de la notification" });
     }
-    
-    return filtered;
-  };
+  });
+});
 
-  // Fonction pour envoyer un message
-  const sendMessage = (contactInitials, content) => {
-    if (!content.trim()) return;
-    
-    const newMsg = {
-      content,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      sent: true
-    };
-    
-    setConversations(prev => {
-      if (!prev[contactInitials]) {
-        // Créer une nouvelle conversation si elle n'existe pas
-        return {
-          ...prev,
-          [contactInitials]: {
-            contactInfo: {
-              // Il faudrait idéalement rechercher les infos du contact
-              initials: contactInitials,
-              name: "Nouveau contact",
-              status: "Hors ligne"
-            },
-            messages: [newMsg]
-          }
-        };
-      }
-      
-      // Ajouter le message à une conversation existante
-      return {
-        ...prev,
-        [contactInitials]: {
-          ...prev[contactInitials],
-          messages: [...prev[contactInitials].messages, newMsg]
-        }
-      };
-    });
-    
-    // Mettre à jour l'aperçu du message dans la liste des messages
-    setMessages(prev => {
-      const index = prev.findIndex(msg => msg.initials === contactInitials);
-      if (index === -1) return prev;
-      
-      const updatedMessages = [...prev];
-      updatedMessages[index] = {
-        ...updatedMessages[index],
-        message: content,
-        time: "à l'instant"
-      };
-      
-      return updatedMessages;
-    });
-    
-    // Réinitialiser le champ de saisie
-    setNewMessage("");
-  };
+module.exports = { app, serverHttp, io, getReceiverSocketId };
 
-  // Fonction pour marquer une conversation comme lue
-  const markAsRead = (contactInitials) => {
-    setMessages(prev => {
-      const index = prev.findIndex(msg => msg.initials === contactInitials);
-      if (index === -1) return prev;
-      
-      const updatedMessages = [...prev];
-      updatedMessages[index] = {
-        ...updatedMessages[index],
-        unread: 0
-      };
-      
-      return updatedMessages;
-    });
-  };
+// auth.js
+const jwt = require("jsonwebtoken");
+const User = require("../models/user.model");
 
-  return (
-    <MessagerieContext.Provider 
-      value={{
-        activeTab,
-        setActiveTab,
-        tabs,
-        messages,
-        setMessages,
-        searchTerm,
-        setSearchTerm,
-        conversations,
-        newMessage,
-        setNewMessage,
-        activeConversation,
-        setActiveConversation,
-        getFilteredMessages,
-        sendMessage,
-        markAsRead
-      }}
-    >
-      {children}
-    </MessagerieContext.Provider>
-  );
-}
+const authentification = async (req, res, next) => {
+  const { token } = req.cookies;
+
+  if (!token) {
+    return res.status(401).json({ message: "Accès interdit" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.SECRET_KEY);
+    const user = await User.findById(decoded.sub);
+
+    if (!user) {
+      return res.status(401).json({ message: "Utilisateur non trouvé" });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: "Accès non autorisé" });
+  }
+};
+
+module.exports = authentification;
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+require("dotenv").config();
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const { serverHttp, app } = require("./socket/socket");
+
+// const __DIRNAME = path.resolve();
+
+const PORT = process.env.API_URL;
+
+// app.use(express.static(path.join(__DIRNAME, "/front/dist")));
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+
+app.use(express.json());
+app.use(cookieParser());
+
+const feedRoutes = require("./routes/feed.routes");
+const flashRoutes = require("./routes/flash.routes");
+const messagerieRoutes = require("./routes/messagerie.routes");
+const notificationRoutes = require("./routes/notification.routes");
+const reservationRoutes = require("./routes/reservation.routes");
+const userRoutes = require("./routes/user.routes");
+
+app.use("/api/feeds", feedRoutes);
+app.use("/api/flashs", flashRoutes);
+app.use("/api/messageries", messagerieRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/reservations", reservationRoutes);
+app.use("/api/users", userRoutes);
+
+// app.get(/(.*)/, (req, res) => {
+//   res.sendFile(path.join(__DIRNAME, "front", "dist", "index.html"));
+// });
+
+mongoose.connect(process.env.MONGO_URL).then(() => {
+  console.log("✅ MongoDB connected");
+  app.listen(process.env.PORT, () => console.log(`🚀 Server on ${PORT}`));
+});

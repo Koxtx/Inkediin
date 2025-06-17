@@ -1,6 +1,7 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { MessageCircle, Share2 } from "lucide-react";
+import { useMessagerie } from "../../../hooks/useMessagerie";
 
 export default function ProfileActions({
   isOwnProfile,
@@ -10,38 +11,18 @@ export default function ProfileActions({
   onMessageClick,
   onShareClick,
 }) {
-  const navigate = useNavigate();
+  const { startConversationWithUser } = useMessagerie();
 
   const handleMessageClick = () => {
     if (!displayUser) return;
     
-    // Créer un identifiant unique pour la conversation
-    // Utiliser l'ID de l'utilisateur ou ses initiales comme fallback
-    const conversationId = displayUser._id || displayUser.nom?.replace(/\s+/g, '').substring(0, 2).toUpperCase() || 'USER';
-    
-    // Rediriger vers la page de conversation
-    navigate(`/conversation/${conversationId}`, {
-      state: {
-        contactInfo: {
-          id: displayUser._id,
-          initials: getInitials(displayUser.nom),
-          name: displayUser.nom || "Utilisateur",
-          status: "Hors ligne", // Vous pourriez implémenter un système de statut en temps réel
-          userType: displayUser.userType,
-          avatar: displayUser.photoProfil
-        }
-      }
-    });
+    // Utiliser le hook pour démarrer la conversation
+    startConversationWithUser(displayUser);
     
     // Appeler la fonction onMessageClick si elle existe (pour des actions supplémentaires)
     if (onMessageClick) {
       onMessageClick();
     }
-  };
-
-  const getInitials = (name) => {
-    if (!name) return "U";
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
   if (isOwnProfile) {

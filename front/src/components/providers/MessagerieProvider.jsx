@@ -1,335 +1,636 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { MessagerieContext } from "../../context/MessagerieContext";
+import { messagerieApi } from "../../api/messagerie.api";
+import { AuthContext } from "../../context/AuthContext";
+import { SocketContext } from "../../context/SocketContext"; // Importer le contexte Socket
 
 export default function MessagerieProvider({ children }) {
+  const { user } = useContext(AuthContext);
+  const { socket } = useContext(SocketContext);
+
   // État pour les onglets
   const [activeTab, setActiveTab] = useState("Tous");
   const tabs = ["Tous", "Clients", "Tatoueurs", "Non lus"];
 
-  // État pour les messages
-  const [messages, setMessages] = useState([
-    {
-      initials: "JS",
-      name: "Julie S.",
-      time: "10:25",
-      message: "Super, je voudrais réserver le flash de rose que vous avez posté.",
-      unread: 2,
-      type: "Clients",
-    },
-    {
-      initials: "TA",
-      name: "TattooArtist3",
-      time: "hier",
-      message: "Merci pour les conseils sur la coloration, ça m'a beaucoup aidé !",
-      unread: 0,
-      type: "Tatoueurs",
-    },
-    {
-      initials: "LM",
-      name: "Lucas M.",
-      time: "hier",
-      message: "Est-ce que le flash avec le serpent est toujours disponible ?",
-      unread: 0,
-      type: "Clients",
-    },
-    {
-      initials: "CM",
-      name: "Camille M.",
-      time: "20/04",
-      message: "Le tatouage est super, merci encore ! Je vous enverrai une photo quand...",
-      unread: 0,
-      type: "Clients",
-    },
-    {
-      initials: "IN",
-      name: "Inkediin Support",
-      time: "18/04",
-      message: "Bonjour, nous avons bien reçu votre demande concernant le paiement...",
-      unread: 0,
-      type: "Tatoueurs",
-    },
-  ]);
+  // État pour les messages (liste des conversations)
+  const [messages, setMessages] = useState([]);
 
   // État pour les recherches
   const [searchTerm, setSearchTerm] = useState("");
 
   // État pour les conversations individuelles
-  const [conversations, setConversations] = useState({
-    "JS": {
-      contactInfo: {
-        initials: "JS",
-        name: "Julie S.",
-        status: "En ligne"
-      },
-      messages: [
-        {
-          content: "Bonjour ! J'ai vu votre flash de rose old school et je suis intéressée.",
-          time: "09:42",
-          sent: false
-        },
-        {
-          content: "Bonjour Julie ! Merci pour votre intérêt. La rose est toujours disponible.",
-          time: "09:45",
-          sent: true
-        },
-        {
-          content: "Super ! J'aimerais la réserver pour le mois prochain si possible.",
-          time: "09:48",
-          sent: false
-        },
-        {
-          content: "Bien sûr, voici le design dont nous parlons :",
-          time: "09:50",
-          sent: true
-        },
-        {
-          isProduct: true,
-          title: "Rose Old School",
-          price: "150 €",
-          sent: true
-        },
-        {
-          content: "J'ai des disponibilités les 15, 16 et 20 mai. Est-ce qu'une de ces dates vous conviendrait ?",
-          time: "09:51",
-          sent: true
-        },
-        {
-          content: "Le 16 mai serait parfait pour moi. Comment procède-t-on pour la réservation ?",
-          time: "10:15",
-          sent: false
-        },
-        {
-          content: "Et est-ce qu'il y a un acompte à verser ?",
-          time: "10:15",
-          sent: false
-        },
-        {
-          content: "Parfait ! Je vais bloquer le 16 mai pour vous. Oui, il y a un acompte de 50€ pour confirmer la réservation. Vous pouvez le régler directement via l'application en cliquant sur le bouton de réservation du flash.",
-          time: "10:20",
-          sent: true
-        }
-      ]
-    }
-    // Vous pourriez ajouter d'autres conversations ici
-  });
+  const [conversations, setConversations] = useState({});
 
   // État pour le message actuellement en cours de rédaction
   const [newMessage, setNewMessage] = useState("");
-  
+
   // État pour la conversation active
   const [activeConversation, setActiveConversation] = useState(null);
 
+  // États de chargement et d'erreur
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Charger les conversations au montage du composant
+  useEffect(() => {
+    if (user) {
+      loadConversations();
+    }
+  }, [user]);
+
+  // Gestion des événements WebSocket
+  useEffect(() => {
+    if (socket && user) {
+      console.log("🔌 Configuration des listeners WebSocket");
+
+      // Écouter les nouveaux messages
+      const handleNewMessage = (data) => {
+        console.log("📨 Nouveau message reçu via WebSocket:", data);
+        const { message, conversationId } = data;
+
+        // Ajouter le message à la conversation correspondante
+        setConversations((prev) => {
+          const conversation = prev[conversationId];
+          if (!conversation) {
+            // Si la conversation n'existe pas, recharger toutes les conversations
+            setTimeout(() => loadConversations(), 500);
+            return prev;
+          }
+
+          const newMessage = {
+            id: message._id,
+            content: message.contenu,
+            time: formatTime(message.dateEnvoi),
+            sent: message.expediteurId._id === user._id,
+            edited: false,
+          };
+
+          return {
+            ...prev,
+            [conversationId]: {
+              ...conversation,
+              messages: [...(conversation.messages || []), newMessage],
+            },
+          };
+        });
+
+        // Mettre à jour la liste des conversations
+        setMessages((prev) => {
+          const index = prev.findIndex(
+            (msg) => msg.conversationId === conversationId
+          );
+          if (index !== -1) {
+            const updatedMessages = [...prev];
+            updatedMessages[index] = {
+              ...updatedMessages[index],
+              message: message.contenu,
+              time: formatTime(message.dateEnvoi),
+              unread:
+                message.expediteurId._id !== user._id
+                  ? (updatedMessages[index].unread || 0) + 1
+                  : updatedMessages[index].unread || 0,
+            };
+
+            // Déplacer la conversation en haut de la liste
+            const updatedMessage = updatedMessages.splice(index, 1)[0];
+            return [updatedMessage, ...updatedMessages];
+          } else {
+            // Nouvelle conversation, recharger la liste
+            setTimeout(() => loadConversations(), 500);
+            return prev;
+          }
+        });
+      };
+
+      // Écouter les nouvelles réservations
+      const handleNewReservation = (data) => {
+        console.log("⚡ Nouvelle réservation reçue via WebSocket:", data);
+        // Recharger les conversations pour inclure la nouvelle réservation
+        setTimeout(() => loadConversations(), 500);
+      };
+
+      // Écouter les notifications de frappe
+      const handleUserTyping = (data) => {
+        console.log("✏️ Utilisateur en train de taper:", data);
+        // Vous pouvez implémenter l'affichage "en train de taper..." ici
+      };
+
+      const handleUserStoppedTyping = (data) => {
+        console.log("✏️ Utilisateur a arrêté de taper:", data);
+        // Masquer l'indicateur "en train de taper..."
+      };
+
+      // Ajouter les listeners
+      socket.on("nouveauMessage", handleNewMessage);
+      socket.on("nouvelleReservation", handleNewReservation);
+      socket.on("userTyping", handleUserTyping);
+      socket.on("userStoppedTyping", handleUserStoppedTyping);
+
+      // Nettoyer les listeners lors du démontage
+      return () => {
+        console.log("🧹 Nettoyage des listeners WebSocket");
+        socket.off("nouveauMessage", handleNewMessage);
+        socket.off("nouvelleReservation", handleNewReservation);
+        socket.off("userTyping", handleUserTyping);
+        socket.off("userStoppedTyping", handleUserStoppedTyping);
+      };
+    }
+  }, [socket, user]); // Supprimé loadConversations des dépendances
+
+  // Fonction utilitaire pour vérifier si un ID est valide pour MongoDB
+  const isValidObjectId = (id) => {
+    return /^[0-9a-fA-F]{24}$/.test(id);
+  };
+
   // Fonctions utilitaires
+  const getOtherParticipant = (conversation) => {
+    if (!conversation.participants || !user) return null;
+    return conversation.participants.find((p) => p._id !== user._id);
+  };
+
+  const getOtherParticipantName = (conversation) => {
+    const otherParticipant = getOtherParticipant(conversation);
+    if (!otherParticipant) return "Utilisateur inconnu";
+    return (
+      otherParticipant.nom || otherParticipant.email || "Utilisateur inconnu"
+    );
+  };
+
+  const getConversationType = (conversation) => {
+    const otherParticipant = getOtherParticipant(conversation);
+    if (!otherParticipant) return "Clients";
+
+    if (conversation.type === "reservation_flash") return "Clients";
+    return otherParticipant.userType === "tatoueur" ? "Tatoueurs" : "Clients";
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "??";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const formatTime = (dateString) => {
+    if (!dateString) return "";
+
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return date.toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } else if (diffDays === 1) {
+      return "hier";
+    } else if (diffDays < 7) {
+      return `${diffDays}j`;
+    } else {
+      return date.toLocaleDateString("fr-FR", {
+        day: "2-digit",
+        month: "2-digit",
+      });
+    }
+  };
+
+  // Fonction pour charger toutes les conversations - DÉCLARÉE EN PREMIER
+  const loadConversations = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data = await messagerieApi.getConversations();
+      console.log("📥 Données conversations reçues:", data);
+
+      // Transformer les données API en format attendu par l'interface
+      const formattedMessages =
+        data?.map((conv) => ({
+          initials: getInitials(getOtherParticipantName(conv)),
+          name: getOtherParticipantName(conv),
+          time: formatTime(conv.dernierMessage?.dateEnvoi),
+          message: conv.dernierMessage?.contenu || "Nouvelle conversation",
+          unread: conv.messagesNonLus || 0,
+          type: getConversationType(conv),
+          conversationId: conv._id,
+          otherParticipant: getOtherParticipant(conv),
+        })) || [];
+
+      console.log("📋 Messages formatés:", formattedMessages);
+      setMessages(formattedMessages);
+
+      // Créer un objet conversations pour la gestion détaillée
+      const conversationsObj = {};
+      data?.forEach((conv) => {
+        const otherParticipant = getOtherParticipant(conv);
+        const conversationKey = conv._id;
+
+        conversationsObj[conversationKey] = {
+          contactInfo: {
+            id: otherParticipant?._id,
+            initials: getInitials(getOtherParticipantName(conv)),
+            name: getOtherParticipantName(conv),
+            status: "Hors ligne", // À implémenter avec un système de présence
+            userType: otherParticipant?.userType,
+            avatar: otherParticipant?.photoProfil,
+          },
+          messages: [], // Les messages seront chargés individuellement
+          conversationData: conv,
+        };
+      });
+
+      console.log("🗂️ Conversations organisées:", conversationsObj);
+      setConversations(conversationsObj);
+    } catch (err) {
+      console.error("❌ Erreur lors du chargement des conversations:", err);
+      setError("Impossible de charger les conversations");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fonction pour charger une conversation spécifique
+  const loadConversation = async (conversationId) => {
+    try {
+      // Vérifier si l'ID est valide avant de faire la requête
+      if (!isValidObjectId(conversationId)) {
+        console.log(
+          "⚠️ ID de conversation invalide pour MongoDB:",
+          conversationId
+        );
+        return;
+      }
+
+      console.log("🔄 Chargement de la conversation:", conversationId);
+      const data = await messagerieApi.getConversation(conversationId);
+      console.log("📥 Données conversation reçues:", data);
+
+      const otherParticipant = getOtherParticipant(data.conversation);
+
+      setConversations((prev) => ({
+        ...prev,
+        [conversationId]: {
+          contactInfo: {
+            id: otherParticipant?._id,
+            initials: getInitials(getOtherParticipantName(data.conversation)),
+            name: getOtherParticipantName(data.conversation),
+            status: "Hors ligne",
+            userType: otherParticipant?.userType,
+            avatar: otherParticipant?.photoProfil,
+          },
+          messages:
+            data.messages?.map((msg) => ({
+              id: msg._id,
+              content: msg.contenu,
+              time: formatTime(msg.dateEnvoi),
+              sent:
+                msg.expediteurId._id === user._id ||
+                msg.expediteurId === user._id,
+              edited: msg.edited || false,
+            })) || [],
+          conversationData: data.conversation,
+        },
+      }));
+
+      console.log(
+        "💬 Messages de la conversation chargés:",
+        data.messages?.length || 0
+      );
+    } catch (err) {
+      console.error("❌ Erreur lors du chargement de la conversation:", err);
+      setError("Impossible de charger la conversation");
+    }
+  };
+
   const getFilteredMessages = () => {
     let filtered = messages;
-    
+
     // Filtrer par type ou non lus
     if (activeTab !== "Tous") {
-      filtered = activeTab === "Non lus" 
-        ? filtered.filter(msg => msg.unread > 0)
-        : filtered.filter(msg => msg.type === activeTab);
+      filtered =
+        activeTab === "Non lus"
+          ? filtered.filter((msg) => msg.unread > 0)
+          : filtered.filter((msg) => msg.type === activeTab);
     }
-    
+
     // Filtrer par recherche
     if (searchTerm) {
       filtered = filtered.filter(
-        msg => msg.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-               msg.message.toLowerCase().includes(searchTerm.toLowerCase())
+        (msg) =>
+          msg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          msg.message.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     return filtered;
   };
 
   // Fonction pour créer une nouvelle conversation
-  const createNewConversation = (conversationId, contactInfo) => {
-    setConversations(prev => {
-      // Si la conversation existe déjà, ne pas la recréer
-      if (prev[conversationId]) {
-        return prev;
+  const createNewConversation = async (conversationId, contactInfo) => {
+    console.log(
+      "🆕 Création nouvelle conversation:",
+      conversationId,
+      contactInfo
+    );
+
+    // Vérifier si la conversation existe déjà
+    if (conversations[conversationId]) {
+      console.log("⚠️ Conversation déjà existante");
+      return;
+    }
+
+    // Créer une nouvelle conversation localement
+    const newConversation = {
+      contactInfo: {
+        id: contactInfo.id,
+        initials: contactInfo.initials || "??",
+        name: contactInfo.name || "Utilisateur inconnu",
+        status: contactInfo.status || "Hors ligne",
+        userType: contactInfo.userType,
+        avatar: contactInfo.avatar,
+      },
+      messages: [],
+      isNew: true, // Marquer comme nouvelle conversation
+    };
+
+    setConversations((prev) => ({
+      ...prev,
+      [conversationId]: newConversation,
+    }));
+
+    // Ajouter à la liste des messages si ce n'est pas déjà fait
+    setMessages((prevMessages) => {
+      const existingMessage = prevMessages.find(
+        (msg) => msg.conversationId === conversationId
+      );
+      if (existingMessage) {
+        return prevMessages;
       }
 
-      // Créer une nouvelle conversation
-      const newConversation = {
-        contactInfo: {
-          initials: contactInfo.initials || "??",
-          name: contactInfo.name || "Utilisateur inconnu",
-          status: contactInfo.status || "Hors ligne",
-          id: contactInfo.id,
-          userType: contactInfo.userType,
-          avatar: contactInfo.avatar
-        },
-        messages: []
+      const newMessageEntry = {
+        initials: contactInfo.initials || "??",
+        name: contactInfo.name || "Utilisateur inconnu",
+        time: "à l'instant",
+        message: "Nouvelle conversation",
+        unread: 0,
+        type: contactInfo.userType === "tatoueur" ? "Tatoueurs" : "Clients",
+        conversationId: conversationId,
+        otherParticipant: contactInfo,
       };
 
-      // Ajouter aussi à la liste des messages si ce n'est pas déjà fait
-      setMessages(prevMessages => {
-        const existingMessage = prevMessages.find(msg => msg.initials === conversationId);
-        if (existingMessage) {
-          return prevMessages;
-        }
-
-        const newMessageEntry = {
-          initials: conversationId,
-          name: contactInfo.name || "Utilisateur inconnu",
-          time: "à l'instant",
-          message: "Nouvelle conversation",
-          unread: 0,
-          type: contactInfo.userType === "tatoueur" ? "Tatoueurs" : "Clients",
-        };
-
-        return [newMessageEntry, ...prevMessages];
-      });
-
-      return {
-        ...prev,
-        [conversationId]: newConversation
-      };
+      return [newMessageEntry, ...prevMessages];
     });
   };
 
-  // Fonction pour envoyer un message
-  const sendMessage = (contactInitials, content) => {
+  // Fonction pour envoyer un message - CORRIGÉE
+  const sendMessage = async (conversationId, content) => {
     if (!content.trim()) return;
-    
-    const newMsg = {
-      id: Date.now(), // ID temporaire basé sur le timestamp
-      content,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      sent: true
-    };
-    
-    setConversations(prev => {
-      if (!prev[contactInitials]) {
-        // Créer une nouvelle conversation si elle n'existe pas
-        return {
+
+    try {
+      console.log("📤 Envoi message vers conversation:", conversationId);
+      const conversation = conversations[conversationId];
+
+      let response;
+      let realConversationId = conversationId;
+
+      // Si c'est une nouvelle conversation, créer la conversation sur le backend
+      if (conversation?.isNew) {
+        console.log("🆕 Création nouvelle conversation backend");
+        const messageData = {
+          destinataireId: conversation.contactInfo.id,
+          contenu: content,
+        };
+
+        response = await messagerieApi.sendMessage(messageData);
+        console.log("✅ Réponse création conversation:", response);
+
+        // Récupérer le vrai ID de conversation depuis la réponse
+        realConversationId = response.conversationId;
+        console.log("🔄 Vraie conversation ID:", realConversationId);
+
+        // Supprimer l'ancienne conversation temporaire
+        setConversations((prev) => {
+          const newConv = { ...prev };
+          delete newConv[conversationId]; // Supprimer la fausse conversation
+          return newConv;
+        });
+
+        // Mettre à jour l'activeConversation avec le vrai ID
+        setActiveConversation(realConversationId);
+
+        // Recharger les conversations pour obtenir la vraie conversation avec les messages
+        await loadConversations();
+
+        // Charger la conversation spécifique pour avoir les messages
+        await loadConversation(realConversationId);
+      } else {
+        console.log("📨 Envoi message conversation existante");
+        // Conversation existante
+        const messageData = {
+          conversationId: conversationId,
+          destinataireId: conversation?.contactInfo?.id,
+          contenu: content,
+        };
+
+        response = await messagerieApi.sendMessage(messageData);
+        console.log("✅ Réponse envoi message:", response);
+
+        // Ajouter le message localement IMMÉDIATEMENT pour une réponse rapide
+        const newMsg = {
+          id: response._id || Date.now().toString(),
+          content: content,
+          time: formatTime(new Date().toISOString()),
+          sent: true,
+        };
+
+        console.log("➕ Ajout message local:", newMsg);
+
+        setConversations((prev) => ({
           ...prev,
-          [contactInitials]: {
-            contactInfo: {
-              initials: contactInitials,
-              name: "Nouveau contact",
-              status: "Hors ligne"
-            },
-            messages: [newMsg]
-          }
-        };
+          [conversationId]: {
+            ...prev[conversationId],
+            messages: [...(prev[conversationId]?.messages || []), newMsg],
+            isNew: false,
+          },
+        }));
+
+        // Mettre à jour la liste des messages
+        updateMessagesList(conversationId, content);
       }
-      
-      // Ajouter le message à une conversation existante
-      return {
-        ...prev,
-        [contactInitials]: {
-          ...prev[contactInitials],
-          messages: [...prev[contactInitials].messages, newMsg]
-        }
-      };
-    });
-    
-    // Mettre à jour l'aperçu du message dans la liste des messages
-    setMessages(prev => {
-      const index = prev.findIndex(msg => msg.initials === contactInitials);
+
+      // Réinitialiser le champ de saisie
+      setNewMessage("");
+    } catch (err) {
+      console.error("❌ Erreur lors de l'envoi du message:", err);
+      setError("Impossible d'envoyer le message");
+    }
+  };
+
+  // Fonction utilitaire pour mettre à jour la liste des messages
+  const updateMessagesList = (conversationId, content) => {
+    console.log("🔄 Mise à jour liste messages pour:", conversationId);
+
+    setMessages((prev) => {
+      const index = prev.findIndex(
+        (msg) => msg.conversationId === conversationId
+      );
       if (index === -1) {
-        // Ajouter un nouveau message à la liste si il n'existe pas
-        const newMessageEntry = {
-          initials: contactInitials,
-          name: conversations[contactInitials]?.contactInfo?.name || "Nouveau contact",
-          time: "à l'instant",
-          message: content,
-          unread: 0,
-          type: "Clients",
-        };
-        return [newMessageEntry, ...prev];
+        console.log("⚠️ Conversation non trouvée dans la liste");
+        return prev;
       }
-      
+
       const updatedMessages = [...prev];
       updatedMessages[index] = {
         ...updatedMessages[index],
         message: content,
-        time: "à l'instant"
+        time: "à l'instant",
       };
-      
+
       // Déplacer le message en haut de la liste
       const updatedMessage = updatedMessages.splice(index, 1)[0];
-      return [updatedMessage, ...updatedMessages];
+      const newList = [updatedMessage, ...updatedMessages];
+
+      console.log("✅ Liste messages mise à jour");
+      return newList;
     });
-    
-    // Réinitialiser le champ de saisie
-    setNewMessage("");
   };
 
   // Fonction pour marquer une conversation comme lue
-  const markAsRead = (contactInitials) => {
-    setMessages(prev => {
-      const index = prev.findIndex(msg => msg.initials === contactInitials);
-      if (index === -1) return prev;
-      
-      const updatedMessages = [...prev];
-      updatedMessages[index] = {
-        ...updatedMessages[index],
-        unread: 0
-      };
-      
-      return updatedMessages;
-    });
+  const markAsRead = async (conversationId) => {
+    try {
+      // Vérifier si l'ID est valide avant de faire la requête
+      if (!isValidObjectId(conversationId)) {
+        console.log(
+          "⚠️ ID de conversation invalide pour markAsRead:",
+          conversationId
+        );
+        return;
+      }
+
+      // Trouver le dernier message non lu
+      const conversation = conversations[conversationId];
+      if (!conversation) return;
+
+      const unreadMessages = conversation.messages.filter(
+        (msg) => !msg.sent && !msg.read
+      );
+      if (unreadMessages.length === 0) return;
+
+      // Marquer comme lu sur le backend
+      const lastUnreadMessage = unreadMessages[unreadMessages.length - 1];
+      await messagerieApi.markAsRead(lastUnreadMessage.id);
+
+      // Mettre à jour localement
+      setMessages((prev) => {
+        const index = prev.findIndex(
+          (msg) => msg.conversationId === conversationId
+        );
+        if (index === -1) return prev;
+
+        const updatedMessages = [...prev];
+        updatedMessages[index] = {
+          ...updatedMessages[index],
+          unread: 0,
+        };
+
+        return updatedMessages;
+      });
+    } catch (err) {
+      console.error("Erreur lors du marquage comme lu:", err);
+    }
   };
 
   // Fonction pour supprimer un message
-  const deleteMessage = (conversationId, messageId) => {
-    setConversations(prev => {
-      if (!prev[conversationId]) return prev;
-      
-      return {
-        ...prev,
-        [conversationId]: {
-          ...prev[conversationId],
-          messages: prev[conversationId].messages.filter(msg => msg.id !== messageId)
-        }
-      };
-    });
+  const deleteMessage = async (conversationId, messageId) => {
+    try {
+      // Note: Implémenter l'API de suppression de message si nécessaire
+      // await messagerieApi.deleteMessage(messageId);
+
+      setConversations((prev) => {
+        if (!prev[conversationId]) return prev;
+
+        return {
+          ...prev,
+          [conversationId]: {
+            ...prev[conversationId],
+            messages: prev[conversationId].messages.filter(
+              (msg) => msg.id !== messageId
+            ),
+          },
+        };
+      });
+    } catch (err) {
+      console.error("Erreur lors de la suppression du message:", err);
+      setError("Impossible de supprimer le message");
+    }
   };
 
   // Fonction pour modifier un message
-  const editMessage = (conversationId, messageId, newContent) => {
-    setConversations(prev => {
-      if (!prev[conversationId]) return prev;
-      
-      return {
-        ...prev,
-        [conversationId]: {
-          ...prev[conversationId],
-          messages: prev[conversationId].messages.map(msg => 
-            msg.id === messageId 
-              ? { ...msg, content: newContent, edited: true }
-              : msg
-          )
-        }
-      };
-    });
+  const editMessage = async (conversationId, messageId, newContent) => {
+    try {
+      // Note: Implémenter l'API de modification de message si nécessaire
+      // await messagerieApi.editMessage(messageId, { contenu: newContent });
 
-    // Mettre à jour aussi le dernier message dans la liste si c'est le plus récent
-    setMessages(prev => {
-      const conversationMessages = conversations[conversationId]?.messages || [];
+      setConversations((prev) => {
+        if (!prev[conversationId]) return prev;
+
+        return {
+          ...prev,
+          [conversationId]: {
+            ...prev[conversationId],
+            messages: prev[conversationId].messages.map((msg) =>
+              msg.id === messageId
+                ? { ...msg, content: newContent, edited: true }
+                : msg
+            ),
+          },
+        };
+      });
+
+      // Mettre à jour aussi le dernier message dans la liste si c'est le plus récent
+      const conversationMessages =
+        conversations[conversationId]?.messages || [];
       const lastMessage = conversationMessages[conversationMessages.length - 1];
-      
+
       if (lastMessage && lastMessage.id === messageId) {
-        const index = prev.findIndex(msg => msg.initials === conversationId);
-        if (index !== -1) {
-          const updatedMessages = [...prev];
-          updatedMessages[index] = {
-            ...updatedMessages[index],
-            message: newContent
-          };
-          return updatedMessages;
-        }
+        updateMessagesList(conversationId, newContent);
       }
-      
-      return prev;
-    });
+    } catch (err) {
+      console.error("Erreur lors de la modification du message:", err);
+      setError("Impossible de modifier le message");
+    }
+  };
+
+  // Fonction pour créer une conversation de réservation
+  const createReservationConversation = async (reservationData) => {
+    try {
+      const response = await messagerieApi.createReservationMessage(
+        reservationData
+      );
+
+      // Recharger les conversations pour inclure la nouvelle
+      await loadConversations();
+
+      return response;
+    } catch (err) {
+      console.error(
+        "Erreur lors de la création de la conversation de réservation:",
+        err
+      );
+      setError("Impossible de créer la conversation de réservation");
+      throw err;
+    }
   };
 
   return (
-    <MessagerieContext.Provider 
+    <MessagerieContext.Provider
       value={{
+        // États
         activeTab,
         setActiveTab,
         tabs,
@@ -342,12 +643,19 @@ export default function MessagerieProvider({ children }) {
         setNewMessage,
         activeConversation,
         setActiveConversation,
+        loading,
+        error,
+
+        // Fonctions
         getFilteredMessages,
         sendMessage,
         markAsRead,
         deleteMessage,
         editMessage,
-        createNewConversation
+        createNewConversation,
+        createReservationConversation,
+        loadConversations,
+        loadConversation,
       }}
     >
       {children}

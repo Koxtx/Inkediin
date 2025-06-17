@@ -1,6 +1,12 @@
 const Messagerie = require("../models/messagerie.model");
 const Conversation = require("../models/conversation.model");
 const { getReceiverSocketId, io } = require("../socket/socket");
+const mongoose = require("mongoose");
+
+// Fonction utilitaire pour valider un ObjectId
+const isValidObjectId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
 
 // Récupérer toutes les conversations de l'utilisateur connecté
 const getConversations = async (req, res) => {
@@ -43,6 +49,11 @@ const getConversation = async (req, res) => {
   try {
     const { conversationId } = req.params;
     const userId = req.user._id;
+
+    // Valider l'ID de conversation
+    if (!isValidObjectId(conversationId)) {
+      return res.status(400).json({ message: "ID de conversation invalide" });
+    }
 
     // Vérifier que l'utilisateur fait partie de cette conversation
     const conversation = await Conversation.findById(conversationId)
@@ -97,9 +108,19 @@ const sendMessage = async (req, res) => {
       return res.status(400).json({ message: "Destinataire et contenu requis" });
     }
 
+    // Valider l'ID du destinataire
+    if (!isValidObjectId(destinataireId)) {
+      return res.status(400).json({ message: "ID destinataire invalide" });
+    }
+
     let conversation;
 
     if (conversationId) {
+      // Valider l'ID de conversation s'il est fourni
+      if (!isValidObjectId(conversationId)) {
+        return res.status(400).json({ message: "ID de conversation invalide" });
+      }
+
       // Conversation existante
       conversation = await Conversation.findById(conversationId);
       if (!conversation || !conversation.participants.includes(expediteurId)) {
@@ -150,7 +171,11 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    res.status(201).json(nouveauMessage);
+    // Retourner le message avec l'ID de conversation
+    res.status(201).json({
+      ...nouveauMessage.toObject(),
+      conversationId: conversation._id
+    });
   } catch (error) {
     console.error('Erreur sendMessage:', error);
     res.status(500).json({ error: error.message });
@@ -167,6 +192,11 @@ const createReservationMessage = async (req, res) => {
       return res.status(400).json({ 
         message: "Flash ID, tatoueur ID et message requis" 
       });
+    }
+
+    // Valider les IDs
+    if (!isValidObjectId(flashId) || !isValidObjectId(tatoueurId)) {
+      return res.status(400).json({ message: "IDs invalides" });
     }
 
     // Vérifier s'il existe déjà une conversation pour ce flash entre ces utilisateurs
@@ -231,6 +261,11 @@ const markAsRead = async (req, res) => {
   try {
     const { messageId } = req.params;
     const userId = req.user._id;
+
+    // Valider l'ID du message
+    if (!isValidObjectId(messageId)) {
+      return res.status(400).json({ message: "ID de message invalide" });
+    }
 
     const message = await Messagerie.findOneAndUpdate(
       { 

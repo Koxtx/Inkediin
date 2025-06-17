@@ -2,23 +2,32 @@ import { BASE_URL } from "../utils/url";
 
 // Configuration des headers par défaut
 const getHeaders = () => {
-  const headers = {
+  return {
     'Content-Type': 'application/json',
   };
-  
-  const token = localStorage.getItem('token');
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  
-  return headers;
+  // Pas besoin d'ajouter Authorization header car le token est dans un cookie httpOnly
 };
 
 // Gestion des erreurs
 const handleApiError = async (response) => {
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || errorData.message || 'Erreur API');
+    let errorData = {};
+    try {
+      errorData = await response.json();
+    } catch (e) {
+      errorData = { 
+        message: `Erreur HTTP ${response.status}`,
+        status: response.status 
+      };
+    }
+    
+    // Gestion spécifique des erreurs d'authentification
+    if (response.status === 401) {
+      console.error('Erreur d\'authentification - Token manquant ou invalide');
+      throw new Error(errorData.message || 'Session expirée. Veuillez vous reconnecter.');
+    }
+    
+    throw new Error(errorData.error || errorData.message || `Erreur ${response.status}`);
   }
   return response.json();
 };
@@ -28,9 +37,10 @@ export const messagerieApi = {
   // Récupérer toutes les conversations de l'utilisateur
   getConversations: async () => {
     try {
-      const response = await fetch(`${BASE_URL}/api/messageries`, {
+      const response = await fetch(`${BASE_URL}/messageries`, {
         method: 'GET',
         headers: getHeaders(),
+        credentials: 'include', // ESSENTIEL - inclut automatiquement le cookie token
       });
       
       return await handleApiError(response);
@@ -43,9 +53,10 @@ export const messagerieApi = {
   // Récupérer une conversation spécifique avec tous ses messages
   getConversation: async (conversationId) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/messageries/${conversationId}`, {
+      const response = await fetch(`${BASE_URL}/messageries/${conversationId}`, {
         method: 'GET',
         headers: getHeaders(),
+        credentials: 'include',
       });
       
       return await handleApiError(response);
@@ -58,15 +69,20 @@ export const messagerieApi = {
   // Envoyer un message
   sendMessage: async (messageData) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/messageries/send`, {
+      console.log('📤 Envoi du message:', messageData);
+      
+      const response = await fetch(`${BASE_URL}/messageries/send`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(messageData),
+        credentials: 'include', // Inclut le cookie token automatiquement
       });
+      
+      console.log('📨 Réponse serveur:', response.status, response.statusText);
       
       return await handleApiError(response);
     } catch (error) {
-      console.error('Erreur lors de l\'envoi du message:', error);
+      console.error('❌ Erreur lors de l\'envoi du message:', error);
       throw error;
     }
   },
@@ -74,9 +90,10 @@ export const messagerieApi = {
   // Marquer un message comme lu
   markAsRead: async (messageId) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/messageries/${messageId}/read`, {
+      const response = await fetch(`${BASE_URL}/messageries/${messageId}/read`, {
         method: 'PUT',
         headers: getHeaders(),
+        credentials: 'include',
       });
       
       return await handleApiError(response);
@@ -89,10 +106,11 @@ export const messagerieApi = {
   // Créer une conversation pour une réservation de flash
   createReservationMessage: async (reservationData) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/messageries/reservation`, {
+      const response = await fetch(`${BASE_URL}/messageries/reservation`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(reservationData),
+        credentials: 'include',
       });
       
       return await handleApiError(response);
@@ -101,6 +119,28 @@ export const messagerieApi = {
       throw error;
     }
   },
+
+  // Fonction utilitaire pour tester l'authentification
+  testConnection: async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/messageries`, {
+        method: 'GET',
+        headers: getHeaders(),
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        console.log('✅ Connexion authentifiée avec succès');
+        return true;
+      } else {
+        console.error('❌ Problème d\'authentification:', response.status);
+        return false;
+      }
+    } catch (error) {
+      console.error('❌ Erreur de connexion:', error);
+      return false;
+    }
+  }
 };
 
 // Fonctions utilitaires pour la messagerie

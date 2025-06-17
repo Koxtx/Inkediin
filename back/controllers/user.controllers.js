@@ -91,11 +91,24 @@ const signin = async (req, res) => {
         expiresIn: "7d",
         algorithm: "HS256",
       });
+
+      console.log('🔐 Token créé pour:', user.nom);
+      console.log('🎫 Token:', token.substring(0, 20) + '...');
+
+      // CORRECTION IMPORTANTE: httpOnly doit être false pour WebSocket
       res.cookie("token", token, {
-        httpOnly: true,
-        secure: false,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
+        httpOnly: false,  // ⚠️ CHANGÉ: false au lieu de true pour permettre l'accès via JavaScript
+        secure: process.env.NODE_ENV === 'production', // HTTPS en production seulement
+        sameSite: 'lax',  // Protection CSRF
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
+        path: '/',        // Disponible sur tout le site
       });
+
+      console.log('🍪 Cookie défini avec les options:');
+      console.log('- httpOnly: false (accessible via JS pour WebSocket)');
+      console.log('- secure:', process.env.NODE_ENV === 'production');
+      console.log('- sameSite: lax');
+      console.log('- maxAge: 7 jours');
 
       // Ajouter l'information sur le statut du profil
       res.status(200).json({
@@ -107,6 +120,7 @@ const signin = async (req, res) => {
     }
   } catch (error) {
     console.log(error);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
@@ -178,10 +192,17 @@ const currentUser = async (req, res) => {
 };
 
 const logoutUser = async (req, res) => {
+  console.log('👋 Déconnexion utilisateur');
+  
+  // Supprimer le cookie avec les mêmes options que lors de la création
   res.clearCookie("token", {
-    httpOnly: true,
-    secure: false,
+    httpOnly: false,  // Doit correspondre aux options de création
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
   });
+
+  console.log('🍪 Cookie token supprimé');
   res.status(200).json({ message: "Déconnexion réussie" });
 };
 
