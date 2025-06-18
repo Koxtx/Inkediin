@@ -1,308 +1,423 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PublicationContext } from "../../context/PublicationContext";
+import { publicationApi, publicationUtils } from "../../api/feed.api";
 
 export default function PublicationProvider({ children }) {
-  // État pour les publications suivies
-  const [followedPosts, setFollowedPosts] = useState([
-    {
-      id: 1,
-      idTatoueur: "artist_1",
-      username: "TattooArtist1",
-      time: "Il y a 2 heures",
-      datePublication: new Date("2024-06-13T10:00:00"),
-      contenu: "Nouvelle création réalisée hier ! Style réaliste avec des touches de couleur. Qu'en pensez-vous ? #tattoo #realism #ink",
-      image: null,
-      tags: ["tattoo", "realism", "ink"],
-      likes: 124,
-      isLiked: false,
-      isSaved: false,
-      comments: 18,
-      commentsData: [
-        {
-          id: 1,
-          userId: "user_1",
-          userType: "Client",
-          username: "Client1",
-          contenu: "Magnifique travail ! 🔥",
-          date: new Date("2024-06-13T11:00:00"),
-          likes: 5,
-          isLiked: false,
-          replies: []
-        },
-        {
-          id: 2,
-          userId: "artist_2",
-          userType: "Tatoueur",
-          username: "InkMaster",
-          contenu: "Très beau rendu des couleurs !",
-          date: new Date("2024-06-13T11:30:00"),
-          likes: 3,
-          isLiked: false,
-          replies: [
-            {
-              id: 3,
-              userId: "artist_1",
-              userType: "Tatoueur",
-              username: "TattooArtist1",
-              contenu: "Merci beaucoup ! 🙏",
-              date: new Date("2024-06-13T12:00:00"),
-              likes: 1,
-              isLiked: false
-            }
-          ]
+  // États pour les publications
+  const [followedPosts, setFollowedPosts] = useState([]);
+  const [recommendedPosts, setRecommendedPosts] = useState([]);
+  const [savedPosts, setSavedPosts] = useState([]);
+
+  // États de chargement et d'erreur
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // État pour l'utilisateur actuel
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  // ✅ AJOUT: Récupérer l'utilisateur actuel
+  useEffect(() => {
+    const getCurrentUser = () => {
+      try {
+        const cookies = document.cookie.split('; ');
+        const tokenCookie = cookies.find(row => row.startsWith('token='));
+        
+        if (tokenCookie) {
+          const token = tokenCookie.split('=')[1];
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const userId = payload.sub || payload.userId || payload.id || payload._id;
+          
+          if (userId) {
+            setCurrentUserId(userId);
+            console.log('✅ PublicationProvider - User ID:', userId);
+            return;
+          }
         }
-      ]
-    },
-    {
-      id: 2,
-      idTatoueur: "artist_2",
-      username: "InkMaster",
-      time: "Il y a 5 heures",
-      datePublication: new Date("2024-06-13T07:00:00"),
-      contenu: "Nouveau design terminé pour un client. Style japonais traditionnel. Fier du résultat ! #irezumi #japonais #traditional",
-      image: null,
-      tags: ["irezumi", "japonais", "traditional"],
-      likes: 89,
-      isLiked: true,
-      isSaved: false,
-      comments: 7,
-      commentsData: [
-        {
-          id: 4,
-          userId: "client_1",
-          userType: "Client",
-          username: "TattooLover",
-          contenu: "Incroyable niveau de détail !",
-          date: new Date("2024-06-13T08:00:00"),
-          likes: 2,
-          isLiked: false,
-          replies: []
-        }
-      ]
-    }
-  ]);
-
-  // État pour les publications recommandées
-  const [recommendedPosts, setRecommendedPosts] = useState([
-    {
-      id: 3,
-      idTatoueur: "artist_3",
-      username: "TattooQueen",
-      time: "Il y a 1 jour",
-      datePublication: new Date("2024-06-12T15:00:00"),
-      contenu: "Pièce terminée après 3 séances. Un mandala avec des éléments floraux. Le client est ravi ! #mandala #flowertattoo #geometric",
-      image: null,
-      tags: ["mandala", "flowertattoo", "geometric"],
-      likes: 432,
-      isLiked: false,
-      isSaved: true,
-      comments: 42,
-      commentsData: []
-    },
-    {
-      id: 4,
-      idTatoueur: "artist_4",
-      username: "InkDreamer",
-      time: "Il y a 8 heures",
-      datePublication: new Date("2024-06-13T04:00:00"),
-      contenu: "Un petit aperçu de mon travail cette semaine. Style minimaliste qui gagne en popularité. #minimalist #finelinetattoo #simple",
-      image: null,
-      tags: ["minimalist", "finelinetattoo", "simple"],
-      likes: 215,
-      isLiked: false,
-      isSaved: false,
-      comments: 23,
-      commentsData: []
-    }
-  ]);
-
-  // État pour les publications sauvegardées
-  const [savedPosts, setSavedPosts] = useState([
-    {
-      id: 3,
-      idTatoueur: "artist_3",
-      username: "TattooQueen",
-      contenu: "Pièce terminée après 3 séances. Un mandala avec des éléments floraux.",
-      image: null,
-      dateSaved: new Date("2024-06-12T16:00:00"),
-      datePublication: new Date("2024-06-12T15:00:00")
-    }
-  ]);
-
-  // Fonction pour ajouter une nouvelle publication
-  const addPublication = (publicationData) => {
-    const newPublication = {
-      id: Date.now(),
-      idTatoueur: publicationData.idTatoueur || "current_user",
-      username: publicationData.username || "Votre nom",
-      time: "À l'instant",
-      datePublication: new Date(),
-      contenu: publicationData.contenu,
-      image: publicationData.image || null,
-      tags: publicationData.tags || [],
-      likes: 0,
-      isLiked: false,
-      isSaved: false,
-      comments: 0,
-      commentsData: []
+        
+        // Fallback temporaire
+        setCurrentUserId('68492f8aff76a60093ccb90b');
+        console.log('⚠️ PublicationProvider - ID temporaire');
+      } catch (error) {
+        console.error('❌ PublicationProvider - Erreur user:', error);
+      }
     };
 
-    setFollowedPosts(prev => [newPublication, ...prev]);
-    return newPublication;
+    getCurrentUser();
+  }, []);
+
+  // Charger les données initiales
+  useEffect(() => {
+    if (currentUserId) {
+      loadInitialData();
+    }
+  }, [currentUserId]);
+
+  // Fonction pour charger toutes les données initiales
+  const loadInitialData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('🌐 PublicationProvider - Chargement données...');
+      
+      // Charger les publications en parallèle
+      const [followedData, recommendedData, savedData] =
+        await Promise.allSettled([
+          publicationApi.getFollowedPublications({ limit: 20 }),
+          publicationApi.getRecommendedPublications({ limit: 20 }),
+          publicationApi.getSavedPublications({ limit: 50 }),
+        ]);
+
+      // ✅ CORRECTION: Garder les données RAW de l'API
+      if (followedData.status === "fulfilled") {
+        const rawFollowed = followedData.value.publications || [];
+        console.log('📦 PublicationProvider - Raw followed:', rawFollowed);
+        
+        // ✅ IMPORTANT: Ne PAS transformer, garder les données complètes
+        setFollowedPosts(rawFollowed);
+      }
+
+      if (recommendedData.status === "fulfilled") {
+        const rawRecommended = recommendedData.value.publications || [];
+        console.log('📦 PublicationProvider - Raw recommended:', rawRecommended);
+        
+        // ✅ IMPORTANT: Ne PAS transformer, garder les données complètes
+        setRecommendedPosts(rawRecommended);
+      }
+
+      if (savedData.status === "fulfilled") {
+        const rawSaved = savedData.value.publications || [];
+        console.log('📦 PublicationProvider - Raw saved:', rawSaved);
+        
+        // Pour les sauvegardées, on peut garder une adaptation simple
+        const adaptedSaved = rawSaved.map(post => ({
+          id: post._id || post.id,
+          idTatoueur: post.idTatoueur?._id || post.idTatoueur,
+          username: post.idTatoueur?.nom || post.username || "Utilisateur",
+          contenu: post.contenu,
+          image: post.image,
+          dateSaved: new Date(post.dateSaved || post.createdAt),
+          datePublication: new Date(post.datePublication || post.createdAt),
+        }));
+        
+        setSavedPosts(adaptedSaved);
+      }
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur chargement:", error);
+      setError("Erreur lors du chargement des publications");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Fonction pour liker/unliker une publication
-  const toggleLikePost = (postId) => {
-    const updatePostInArray = (postArray, setPostArray) => {
-      const postIndex = postArray.findIndex(post => post.id === postId);
-      if (postIndex !== -1) {
-        const updatedPosts = [...postArray];
-        const post = updatedPosts[postIndex];
-        updatedPosts[postIndex] = {
-          ...post,
-          isLiked: !post.isLiked,
-          likes: post.isLiked ? post.likes - 1 : post.likes + 1
-        };
-        setPostArray(updatedPosts);
-        return true;
-      }
-      return false;
-    };
+  // ✅ SUPPRIMÉ: adaptPublicationForState - On garde les données raw !
 
-    // Essayer de mettre à jour dans les posts suivis
-    if (updatePostInArray(followedPosts, setFollowedPosts)) return;
-    
-    // Sinon, essayer dans les posts recommandés
-    updatePostInArray(recommendedPosts, setRecommendedPosts);
+  // Fonction pour ajouter une nouvelle publication
+  const addPublication = async (publicationData) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Valider les données
+      const validationErrors = publicationUtils.validatePublicationData(publicationData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join(", "));
+      }
+
+      // Créer la publication via l'API
+      const newPublication = await publicationApi.createPublication(publicationData);
+      
+      console.log('✅ PublicationProvider - Nouvelle publication:', newPublication);
+
+      // ✅ CORRECTION: Ajouter la publication RAW sans transformation
+      setFollowedPosts((prev) => [newPublication, ...prev]);
+
+      return newPublication;
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur création:", error);
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ CORRECTION: Fonction pour liker/unliker avec données raw
+  const toggleLikePost = async (postId) => {
+    try {
+      console.log('👍 PublicationProvider - Toggle like:', postId, 'User:', currentUserId);
+      
+      // Fonction helper pour mettre à jour un post dans un array
+      const updatePostInArray = (postArray, setPostArray) => {
+        const postIndex = postArray.findIndex((post) => (post._id || post.id) === postId);
+        if (postIndex !== -1) {
+          const updatedPosts = [...postArray];
+          const post = updatedPosts[postIndex];
+          
+          // ✅ CORRECTION: Travailler avec les données raw (likes array)
+          const currentLikes = post.likes || [];
+          const userHasLiked = currentLikes.some(like => {
+            const likeUserId = like.userId?._id || like.userId?.id || like.userId;
+            return likeUserId?.toString() === currentUserId?.toString();
+          });
+
+          console.log('🔍 PublicationProvider - Current likes:', currentLikes);
+          console.log('🔍 PublicationProvider - User has liked:', userHasLiked);
+
+          if (userHasLiked) {
+            // Retirer le like
+            updatedPosts[postIndex] = {
+              ...post,
+              likes: currentLikes.filter(like => {
+                const likeUserId = like.userId?._id || like.userId?.id || like.userId;
+                return likeUserId?.toString() !== currentUserId?.toString();
+              })
+            };
+          } else {
+            // Ajouter le like
+            updatedPosts[postIndex] = {
+              ...post,
+              likes: [
+                ...currentLikes,
+                {
+                  userId: currentUserId,
+                  userType: 'tatoueur', // À adapter selon le type d'utilisateur
+                  date: new Date()
+                }
+              ]
+            };
+          }
+
+          setPostArray(updatedPosts);
+          return true;
+        }
+        return false;
+      };
+
+      // Mise à jour optimiste
+      let updated = updatePostInArray(followedPosts, setFollowedPosts);
+      if (!updated) {
+        updated = updatePostInArray(recommendedPosts, setRecommendedPosts);
+      }
+
+      // Appel API
+      if (updated) {
+        await publicationApi.toggleLikePublication(postId);
+        console.log('✅ PublicationProvider - Like API success');
+      }
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur like:", error);
+      // En cas d'erreur, recharger les données pour être sûr
+      await loadInitialData();
+      setError("Erreur lors du like");
+    }
   };
 
   // Fonction pour sauvegarder/désauvegarder une publication
-  const toggleSavePost = (post) => {
-    const isAlreadySaved = savedPosts.some(savedPost => savedPost.id === post.id);
+  const toggleSavePost = async (post) => {
+    try {
+      const postId = post._id || post.id;
+      const isAlreadySaved = savedPosts.some((savedPost) => savedPost.id === postId);
 
-    if (isAlreadySaved) {
-      // Retirer des sauvegardées
-      setSavedPosts(prev => prev.filter(savedPost => savedPost.id !== post.id));
-    } else {
-      // Ajouter aux sauvegardées
-      const postToSave = {
-        id: post.id,
-        idTatoueur: post.idTatoueur,
-        username: post.username,
-        contenu: post.contenu,
-        image: post.image,
-        dateSaved: new Date(),
-        datePublication: post.datePublication
-      };
-      setSavedPosts(prev => [postToSave, ...prev]);
-    }
-
-    // Mettre à jour le statut isSaved dans les listes de posts
-    const updateSaveStatus = (postArray, setPostArray) => {
-      const postIndex = postArray.findIndex(p => p.id === post.id);
-      if (postIndex !== -1) {
-        const updatedPosts = [...postArray];
-        updatedPosts[postIndex] = {
-          ...updatedPosts[postIndex],
-          isSaved: !isAlreadySaved
+      // Mise à jour optimiste
+      if (isAlreadySaved) {
+        setSavedPosts((prev) => prev.filter((savedPost) => savedPost.id !== postId));
+      } else {
+        const postToSave = {
+          id: postId,
+          idTatoueur: post.idTatoueur?._id || post.idTatoueur,
+          username: post.idTatoueur?.nom || post.username || "Utilisateur",
+          contenu: post.contenu,
+          image: post.image,
+          dateSaved: new Date(),
+          datePublication: new Date(post.datePublication || post.createdAt),
         };
-        setPostArray(updatedPosts);
+        setSavedPosts((prev) => [postToSave, ...prev]);
       }
-    };
 
-    updateSaveStatus(followedPosts, setFollowedPosts);
-    updateSaveStatus(recommendedPosts, setRecommendedPosts);
+      // Appel API
+      await publicationApi.toggleSavePublication(postId);
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur sauvegarde:", error);
+      await loadInitialData(); // Recharger en cas d'erreur
+      setError("Erreur lors de la sauvegarde");
+    }
   };
 
   // Fonction pour vérifier si une publication est sauvegardée
   const isPostSaved = (postId) => {
-    return savedPosts.some(post => post.id === postId);
+    return savedPosts.some((post) => post.id === postId);
   };
 
   // Fonction pour ajouter un commentaire à une publication
-  const addComment = (postId, commentData) => {
-    const newComment = {
-      id: Date.now(),
-      userId: commentData.userId || "current_user",
-      userType: commentData.userType || "Tatoueur",
-      username: commentData.username || "Votre nom",
-      contenu: commentData.contenu,
-      date: new Date(),
-      likes: 0,
-      isLiked: false,
-      replies: []
-    };
-
-    const updatePostComments = (postArray, setPostArray) => {
-      const postIndex = postArray.findIndex(post => post.id === postId);
-      if (postIndex !== -1) {
-        const updatedPosts = [...postArray];
-        updatedPosts[postIndex] = {
-          ...updatedPosts[postIndex],
-          commentsData: [...(updatedPosts[postIndex].commentsData || []), newComment],
-          comments: (updatedPosts[postIndex].comments || 0) + 1
-        };
-        setPostArray(updatedPosts);
-        return true;
+  const addComment = async (postId, commentData) => {
+    try {
+      const validationErrors = publicationUtils.validateCommentData(commentData);
+      if (validationErrors.length > 0) {
+        throw new Error(validationErrors.join(", "));
       }
-      return false;
-    };
 
-    // Essayer de mettre à jour dans les posts suivis
-    if (updatePostComments(followedPosts, setFollowedPosts)) return newComment;
-    
-    // Sinon, essayer dans les posts recommandés
-    updatePostComments(recommendedPosts, setRecommendedPosts);
-    return newComment;
+      const newComment = await publicationApi.addComment(postId, commentData);
+
+      // Mettre à jour localement les commentaires
+      const updatePostComments = (postArray, setPostArray) => {
+        const postIndex = postArray.findIndex((post) => (post._id || post.id) === postId);
+        if (postIndex !== -1) {
+          const updatedPosts = [...postArray];
+          const currentComments = updatedPosts[postIndex].commentaires || [];
+          
+          updatedPosts[postIndex] = {
+            ...updatedPosts[postIndex],
+            commentaires: [...currentComments, newComment]
+          };
+          
+          setPostArray(updatedPosts);
+          return true;
+        }
+        return false;
+      };
+
+      // Mettre à jour dans les bonnes listes
+      let updated = updatePostComments(followedPosts, setFollowedPosts);
+      if (!updated) {
+        updatePostComments(recommendedPosts, setRecommendedPosts);
+      }
+
+      return newComment;
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur commentaire:", error);
+      setError(error.message);
+      throw error;
+    }
   };
 
   // Fonction pour supprimer une publication
-  const deletePost = (postId) => {
-    setFollowedPosts(prev => prev.filter(post => post.id !== postId));
-    setRecommendedPosts(prev => prev.filter(post => post.id !== postId));
-    setSavedPosts(prev => prev.filter(post => post.id !== postId));
+  const deletePost = async (postId) => {
+    try {
+      if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette publication ?")) {
+        return;
+      }
+
+      setLoading(true);
+      await publicationApi.deletePublication(postId);
+
+      // Supprimer localement
+      const removeFromArray = (postArray) => 
+        postArray.filter((post) => (post._id || post.id) !== postId);
+
+      setFollowedPosts(removeFromArray);
+      setRecommendedPosts(removeFromArray);
+      setSavedPosts(removeFromArray);
+      
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur suppression:", error);
+      setError("Erreur lors de la suppression de la publication");
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Fonction pour obtenir les publications par tag
-  const getPostsByTag = (tag) => {
-    const allPosts = [...followedPosts, ...recommendedPosts];
-    return allPosts.filter(post => 
-      post.tags?.some(postTag => postTag.toLowerCase().includes(tag.toLowerCase())) ||
-      post.contenu.toLowerCase().includes(`#${tag.toLowerCase()}`)
-    );
+  const getPostsByTag = async (tag) => {
+    try {
+      const response = await publicationApi.getPublicationsByTag(tag);
+      return response.publications || [];
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur recherche tag:", error);
+      setError("Erreur lors de la recherche");
+      return [];
+    }
   };
 
   // Fonction pour obtenir les publications par artiste
-  const getPostsByArtist = (artistId) => {
-    const allPosts = [...followedPosts, ...recommendedPosts];
-    return allPosts.filter(post => post.idTatoueur === artistId);
+  const getPostsByArtist = async (artistId) => {
+    try {
+      const response = await publicationApi.getPublicationsByTattooArtist(artistId);
+      return response.publications || [];
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur recherche artiste:", error);
+      setError("Erreur lors de la recherche");
+      return [];
+    }
+  };
+
+  // Fonction pour recharger les données
+  const refreshData = async () => {
+    await loadInitialData();
+  };
+
+  // Fonction pour charger plus de publications (pagination)
+  const loadMorePosts = async (type = "followed", page = 2) => {
+    try {
+      let response;
+
+      if (type === "followed") {
+        response = await publicationApi.getFollowedPublications({ page, limit: 10 });
+        const newPosts = response.publications || [];
+        setFollowedPosts((prev) => [...prev, ...newPosts]);
+      } else if (type === "recommended") {
+        response = await publicationApi.getRecommendedPublications({ page, limit: 10 });
+        const newPosts = response.publications || [];
+        setRecommendedPosts((prev) => [...prev, ...newPosts]);
+      }
+
+      return response;
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur pagination:", error);
+      setError("Erreur lors du chargement");
+      throw error;
+    }
+  };
+
+  // Fonction pour vider le cache et recharger
+  const clearAndReload = async () => {
+    setFollowedPosts([]);
+    setRecommendedPosts([]);
+    setSavedPosts([]);
+    await loadInitialData();
   };
 
   // Valeur partagée via le contexte
   const value = {
-    // États
+    // États - ✅ CORRECTION: Données raw de l'API
     followedPosts,
     recommendedPosts,
     savedPosts,
-    
+    loading,
+    error,
+    currentUserId,
+
     // Fonctions CRUD
     addPublication,
     deletePost,
     addComment,
-    
+
     // Fonctions d'interaction
     toggleLikePost,
     toggleSavePost,
     isPostSaved,
-    
+
     // Fonctions de recherche/filtrage
     getPostsByTag,
     getPostsByArtist,
-    
-    // Setters pour mise à jour externe si nécessaire
+
+    // Fonctions de gestion des données
+    refreshData,
+    loadMorePosts,
+    clearAndReload,
+
+    // Fonctions pour gérer les erreurs
+    clearError: () => setError(null),
+
+    // Setters
     setFollowedPosts,
     setRecommendedPosts,
-    setSavedPosts
+    setSavedPosts,
+    setCurrentUserId,
+
+    // Utilitaires
+    utils: publicationUtils,
   };
 
   return (

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
+import { PublicationContext } from "../../context/PublicationContext";
 import { getTattooerById } from "../../api/auth.api";
+import { publicationApi } from "../../api/feed.api";
 import { Edit } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -24,6 +26,14 @@ import ArtistRecommendations from "./components/ArtistRecommendations";
 export default function Profil() {
   const { id: userId } = useParams();
   const { user: currentUser } = useContext(AuthContext);
+  const {
+    followedPosts,
+    recommendedPosts,
+    toggleLikePost,
+    toggleSavePost,
+    deletePost: deletePublication,
+    refreshData,
+  } = useContext(PublicationContext);
 
   // États principaux
   const [activeTab, setActiveTab] = useState("gallery");
@@ -32,6 +42,11 @@ export default function Profil() {
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [tempBio, setTempBio] = useState("");
   const [otherUserData, setOtherUserData] = useState(null);
+  const [userStats, setUserStats] = useState({
+    followers: 0,
+    following: 0,
+    publications: 0,
+  });
 
   // Logique pour déterminer si c'est son propre profil
   const isOwnProfile = !userId || userId === currentUser?._id;
@@ -68,6 +83,40 @@ export default function Profil() {
     { id: 3, name: "TattooArtist3", specialty: "Japonais" },
   ]);
 
+  // Fonction pour charger les statistiques de l'utilisateur
+  const loadUserStats = async (targetUserId) => {
+    try {
+      let publicationsCount = 0;
+
+      if (isOwnProfile) {
+        // Pour son propre profil, compter ses publications depuis le contexte
+        publicationsCount = followedPosts.filter(
+          (post) => post.idTatoueur === currentUser?._id
+        ).length;
+      } else {
+        // Pour les autres profils, faire un appel API
+        const response = await publicationApi.getPublicationsByTattooArtist(
+          targetUserId,
+          {
+            limit: 1,
+            page: 1,
+          }
+        );
+        publicationsCount = response.total || 0;
+      }
+
+      setUserStats((prev) => ({
+        ...prev,
+        publications: publicationsCount,
+        // Les followers/following pourraient venir d'une autre API
+        followers: Math.floor(Math.random() * 2000) + 100,
+        following: Math.floor(Math.random() * 500) + 10,
+      }));
+    } catch (error) {
+      console.error("Erreur lors du chargement des statistiques:", error);
+    }
+  };
+
   // Chargement des données utilisateur
   useEffect(() => {
     const fetchUserData = async () => {
@@ -80,16 +129,14 @@ export default function Profil() {
 
           if (result.success) {
             console.log("✅ Données utilisateur chargées:", result.data);
-            setOtherUserData({
+            const userData = {
               ...result.data,
-              stats: {
-                followers: Math.floor(Math.random() * 2000) + 100,
-                following: Math.floor(Math.random() * 500) + 10,
-                tattoos: Math.floor(Math.random() * 200) + 20,
-              },
-              gallery: generateGallery(result.data),
               about: generateAboutSection(result.data),
-            });
+            };
+            setOtherUserData(userData);
+
+            // Charger les statistiques
+            await loadUserStats(result.data._id);
           } else {
             console.error("❌ Erreur lors du chargement:", result.message);
             setOtherUserData(null);
@@ -100,13 +147,15 @@ export default function Profil() {
         } finally {
           setLoading(false);
         }
-      } else {
+      } else if (isOwnProfile && currentUser) {
         setTempBio(currentUser?.bio || "");
+        // Charger les statistiques pour son propre profil
+        await loadUserStats(currentUser._id);
       }
     };
 
     fetchUserData();
-  }, [userId, isOwnProfile, currentUser]);
+  }, [userId, isOwnProfile, currentUser, followedPosts]);
 
   // Initialisation de l'onglet selon le type d'utilisateur
   useEffect(() => {
@@ -120,47 +169,6 @@ export default function Profil() {
   }, [displayUser, isOwnProfile]);
 
   // Fonctions utilitaires pour générer les données
-  const generateGallery = (userData) => {
-    return [
-      {
-        id: 1,
-        imageUrl: userData.portfolio?.[0] || "/api/placeholder/400/300",
-        style: "Réalisme",
-        title: "Portfolio 1",
-      },
-      {
-        id: 2,
-        imageUrl: userData.portfolio?.[1] || "/api/placeholder/400/300",
-        style: "Black & Grey",
-        title: "Portfolio 2",
-      },
-      {
-        id: 3,
-        imageUrl: userData.portfolio?.[2] || "/api/placeholder/400/300",
-        style: "Réalisme",
-        title: "Portfolio 3",
-      },
-      {
-        id: 4,
-        imageUrl: "/api/placeholder/400/300",
-        style: "Portrait",
-        title: "Visage femme",
-      },
-      {
-        id: 5,
-        imageUrl: "/api/placeholder/400/300",
-        style: "Animal",
-        title: "Loup sauvage",
-      },
-      {
-        id: 6,
-        imageUrl: "/api/placeholder/400/300",
-        style: "Réalisme",
-        title: "Œil humain",
-      },
-    ];
-  };
-
   const generateAboutSection = (userData) => {
     return {
       experience: "Professionnel",
@@ -181,31 +189,6 @@ export default function Profil() {
       bio: "Tatoueur professionnel spécialisé dans le réalisme et les portraits. 10 ans d'expérience.",
       localisation: "Paris, France",
       styles: "Réalisme, Portraits, Black & Grey",
-      stats: {
-        followers: 1234,
-        following: 89,
-        tattoos: 156,
-      },
-      gallery: [
-        {
-          id: 1,
-          imageUrl: "/api/placeholder/400/300",
-          style: "Réalisme",
-          title: "Portrait réaliste",
-        },
-        {
-          id: 2,
-          imageUrl: "/api/placeholder/400/300",
-          style: "Black & Grey",
-          title: "Lion majestueux",
-        },
-        {
-          id: 3,
-          imageUrl: "/api/placeholder/400/300",
-          style: "Réalisme",
-          title: "Rose détaillée",
-        },
-      ],
       about: {
         experience: "10 ans",
         specialties: ["Réalisme", "Portraits", "Black & Grey"],
@@ -255,21 +238,35 @@ export default function Profil() {
     toast.info("Ajout de spécialité à implémenter");
   };
 
-  // Handlers pour la galerie
+  // Handlers pour la galerie avec intégration API
   const handleAddToGallery = () => {
-    toast.info("Ajout d'image à la galerie à implémenter");
+    // Redirige vers la page de création de publication
+    window.location.href = "/uploadpublication";
   };
 
-  const handleEditGalleryItem = (itemId) => {
-    toast.info(`Édition de l'élément ${itemId} à implémenter`);
+  const handleEditGalleryItem = async (itemId) => {
+    toast.info(`Édition de la publication ${itemId} à implémenter`);
+    // TODO: Implémenter l'édition des publications
   };
 
-  const handleDeleteGalleryItem = (itemId) => {
-    toast.info(`Suppression de l'élément ${itemId} à implémenter`);
+  const handleDeleteGalleryItem = async (itemId) => {
+    try {
+      await deletePublication(itemId);
+      toast.success("Publication supprimée avec succès");
+      // Recharger les statistiques
+      await loadUserStats(displayUser._id);
+    } catch (error) {
+      toast.error("Erreur lors de la suppression de la publication");
+    }
   };
 
-  const handleLikeGalleryItem = (itemId) => {
-    toast.info(`Like de l'élément ${itemId} à implémenter`);
+  const handleLikeGalleryItem = async (itemId) => {
+    try {
+      await toggleLikePost(itemId);
+      toast.success("Publication likée");
+    } catch (error) {
+      toast.error("Erreur lors du like");
+    }
   };
 
   // Handlers pour la wishlist et les artistes suivis
@@ -327,10 +324,13 @@ export default function Profil() {
   // Configuration des onglets selon le type d'utilisateur
   const getAvailableTabs = () => {
     if (displayUser?.userType === "tatoueur") {
-      const tabs = [{ id: "gallery", label: "Galerie" }];
+      const tabs = [{ id: "gallery", label: "Publications" }];
 
       if (!isOwnProfile) {
-        tabs.push({ id: "about" }, { id: "reviews" });
+        tabs.push(
+          { id: "about", label: "À propos" },
+          { id: "reviews", label: "Avis" }
+        );
       }
 
       return tabs;
@@ -384,6 +384,69 @@ export default function Profil() {
             onArtistClick={handleArtistClick}
           />
         );
+
+      case "about":
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-bold mb-4">À propos</h3>
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                  Expérience
+                </h4>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {displayUser?.about?.experience}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                  Spécialités
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {displayUser?.about?.specialties?.map((specialty, index) => (
+                    <span
+                      key={index}
+                      className="bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-200 px-3 py-1 rounded-full text-sm"
+                    >
+                      {specialty}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                  Studio
+                </h4>
+                <p className="text-gray-600 dark:text-gray-400">
+                  {displayUser?.about?.studio}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                  Certifications
+                </h4>
+                <ul className="text-gray-600 dark:text-gray-400">
+                  {displayUser?.about?.certifications?.map((cert, index) => (
+                    <li key={index}>• {cert}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        );
+
+      case "reviews":
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-bold mb-4">Avis clients</h3>
+            <div className="text-center py-8 text-gray-500">
+              <p>Fonctionnalité d'avis à implémenter</p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
     }
   };
 
@@ -426,6 +489,12 @@ export default function Profil() {
       </div>
     );
   }
+
+  // Mettre à jour les statistiques avec les données réelles
+  const displayStats = {
+    ...userStats,
+    tattoos: userStats.publications, // Adapter selon votre logique
+  };
 
   // Rendu principal
   return (
@@ -471,7 +540,7 @@ export default function Profil() {
 
         {/* Statistiques pour les tatoueurs */}
         {displayUser.userType === "tatoueur" && (
-          <ProfileStats stats={displayUser.stats} />
+          <ProfileStats stats={displayStats} />
         )}
 
         <ProfileActions

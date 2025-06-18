@@ -1,5 +1,5 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
-import { Bookmark, Heart, MessageCircle, Share, MoreVertical, Flag, Trash2, X } from "lucide-react";
+import { Bookmark, Heart, MessageCircle, Share, MoreVertical, Flag, Trash2, X, Edit } from "lucide-react";
 import { FlashContext } from "../../../context/FlashContext";
 import { PublicationContext } from "../../../context/PublicationContext";
 
@@ -12,6 +12,7 @@ export default function Post({
   comments, 
   isLiked, 
   isSaved, 
+  image,
   isOwnPost = false,
   commentsData = [],
   currentUser = "current_user",
@@ -29,7 +30,29 @@ export default function Post({
   const [localLikes, setLocalLikes] = useState(likes);
   const [localIsLiked, setLocalIsLiked] = useState(isLiked);
   const [localIsSaved, setLocalIsSaved] = useState(isSaved);
+  const [imageError, setImageError] = useState(false);
   const menuRef = useRef(null);
+
+  // Fonction pour construire l'URL de l'image
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    
+    // Si l'image commence par http, c'est déjà une URL complète
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    // Construire l'URL avec le serveur backend
+    const baseUrl = "http://localhost:3000";
+    
+    // Nettoyer le chemin (remplacer \ par /)
+    const cleanPath = imagePath.replace(/\\/g, '/');
+    
+    // S'assurer que le chemin commence par /
+    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+    
+    return `${baseUrl}${finalPath}`;
+  };
   
   const handleLike = () => {
     const wasLiked = localIsLiked;
@@ -168,6 +191,12 @@ export default function Post({
     }
   };
 
+  const handleEditPost = () => {
+    // Fonction pour éditer le post (à implémenter)
+    alert("Fonctionnalité d'édition à venir");
+    setShowMenu(false);
+  };
+
   const handleReportPost = () => {
     alert("Post signalé aux modérateurs");
     setShowMenu(false);
@@ -209,13 +238,22 @@ export default function Post({
           {showMenu && (
             <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 min-w-48">
               {isOwnPost ? (
-                <button
-                  onClick={handleDeletePost}
-                  className="w-full px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 text-red-400 hover:text-red-300"
-                >
-                  <Trash2 size={16} />
-                  Supprimer
-                </button>
+                <>
+                  <button
+                    onClick={handleEditPost}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 text-blue-400 hover:text-blue-300"
+                  >
+                    <Edit size={16} />
+                    Modifier
+                  </button>
+                  <button
+                    onClick={handleDeletePost}
+                    className="w-full px-4 py-3 text-left hover:bg-gray-700 flex items-center gap-3 text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 size={16} />
+                    Supprimer
+                  </button>
+                </>
               ) : (
                 <button
                   onClick={handleReportPost}
@@ -230,7 +268,32 @@ export default function Post({
         </div>
       </div>
 
-      <div className="w-full aspect-square bg-gray-700"></div>
+      {/* Zone d'image avec gestion d'erreur */}
+      <div className="w-full aspect-square bg-gray-700 relative overflow-hidden">
+        {image && !imageError ? (
+          <img
+            src={getImageUrl(image)}
+            alt={`Publication de ${username}`}
+            className="w-full h-full object-cover"
+            onError={() => {
+              setImageError(true);
+            }}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-gray-500">
+            {imageError ? (
+              <div className="text-center">
+                <div className="text-sm">Image non disponible</div>
+                <div className="text-xs mt-1 text-gray-600">
+                  {image && `Chemin: ${image}`}
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm">Aucune image</div>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="flex items-center p-4">
         <button className="mr-4 text-xl hover:scale-110 transition-transform" onClick={handleLike}>
