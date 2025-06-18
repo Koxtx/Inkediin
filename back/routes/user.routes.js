@@ -40,7 +40,7 @@ router.get("/currentUser", auth, currentUser);
 router.get("/verifyMail/:token", verifyMail);
 router.get("/tattooers", fetchTatoueur);
 router.get("/:id", fetchTatoueurById);
-router.get("/:id", getUserById);
+router.get("/user/:id", getUserById);
 
 // DELETE
 
