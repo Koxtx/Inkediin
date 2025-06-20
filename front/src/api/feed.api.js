@@ -63,7 +63,7 @@ export const publicationApi = {
       if (params.tatoueurId)
         queryParams.append("tatoueurId", params.tatoueurId);
 
-      const url = `${BASE_URL}/feed${
+      const url = `${BASE_URL}/feeds${
         queryParams.toString() ? `?${queryParams.toString()}` : ""
       }`;
 
@@ -82,7 +82,7 @@ export const publicationApi = {
       if (params.page) queryParams.append("page", params.page);
       if (params.limit) queryParams.append("limit", params.limit);
 
-      const url = `${BASE_URL}/feed/followed${
+      const url = `${BASE_URL}/feeds/followed${
         queryParams.toString() ? `?${queryParams.toString()}` : ""
       }`;
 
@@ -101,7 +101,7 @@ export const publicationApi = {
       if (params.page) queryParams.append("page", params.page);
       if (params.limit) queryParams.append("limit", params.limit);
 
-      const url = `${BASE_URL}/feed/recommended${
+      const url = `${BASE_URL}/feeds/recommended${
         queryParams.toString() ? `?${queryParams.toString()}` : ""
       }`;
 
@@ -117,7 +117,7 @@ export const publicationApi = {
   getPublicationById: async (publicationId) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/feed/${publicationId}`,
+        `${BASE_URL}/feeds/${publicationId}`,
         getFetchConfig("GET")
       );
 
@@ -132,30 +132,59 @@ export const publicationApi = {
     try {
       const formData = new FormData();
 
-      // Ajouter le contenu
-      if (publicationData.contenu) {
-        formData.append("contenu", publicationData.contenu);
+      // ✅ CORRECTION: Validation côté client
+      if (!publicationData.contenu || publicationData.contenu.trim().length === 0) {
+        throw new Error("Le contenu est requis");
       }
 
-      // Ajouter l'image si présente
-      if (publicationData.image) {
+      // Ajouter le contenu (toujours requis)
+      formData.append("contenu", publicationData.contenu.trim());
+
+      // ✅ CORRECTION: Ajouter l'image si présente avec vérification
+      if (publicationData.image && publicationData.image instanceof File) {
+        console.log('📷 API - Ajout image:', {
+          name: publicationData.image.name,
+          size: publicationData.image.size,
+          type: publicationData.image.type
+        });
         formData.append("image", publicationData.image);
       }
 
-      // Ajouter les tags si présents
-      if (publicationData.tags && Array.isArray(publicationData.tags)) {
-        publicationData.tags.forEach((tag) => {
-          formData.append("tags[]", tag);
-        });
+      // ✅ CORRECTION: Ajouter les tags avec une meilleure gestion
+      if (publicationData.tags && Array.isArray(publicationData.tags) && publicationData.tags.length > 0) {
+        // Nettoyer et valider les tags
+        const cleanTags = publicationData.tags
+          .map(tag => tag.toString().trim())
+          .filter(tag => tag.length > 0)
+          .map(tag => tag.replace(/^#+/, '')); // Supprimer les # en début
+        
+        console.log('🏷️ API - Tags à envoyer:', cleanTags);
+        
+        // Les envoyer comme JSON string pour éviter les problèmes de parsing
+        formData.append("tags", JSON.stringify(cleanTags));
+      }
+
+      // ✅ AJOUT: Debug du FormData
+      console.log('📤 API - FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+        } else {
+          console.log(`${key}: ${value}`);
+        }
       }
 
       const response = await fetch(
-        `${BASE_URL}/feed`,
+        `${BASE_URL}/feeds`,
         getFetchConfig("POST", formData, true)
       );
 
-      return await handleApiError(response);
+      const result = await handleApiError(response);
+      console.log('✅ API - Publication créée:', result);
+      
+      return result;
     } catch (error) {
+      console.error('❌ API - Erreur création publication:', error);
       throw error;
     }
   },
@@ -164,7 +193,7 @@ export const publicationApi = {
   updatePublication: async (publicationId, publicationData) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/feed/${publicationId}`,
+        `${BASE_URL}/feeds/${publicationId}`,
         getFetchConfig("PUT", publicationData)
       );
 
@@ -178,7 +207,7 @@ export const publicationApi = {
   deletePublication: async (publicationId) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/feed/${publicationId}`,
+        `${BASE_URL}/feeds/${publicationId}`,
         getFetchConfig("DELETE")
       );
 
@@ -192,7 +221,7 @@ export const publicationApi = {
   toggleLikePublication: async (publicationId) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/feed/${publicationId}/like`,
+        `${BASE_URL}/feeds/${publicationId}/like`,
         getFetchConfig("POST")
       );
 
@@ -206,7 +235,7 @@ export const publicationApi = {
   toggleSavePublication: async (publicationId) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/feed/${publicationId}/save`,
+        `${BASE_URL}/feeds/${publicationId}/save`,
         getFetchConfig("POST")
       );
 
@@ -223,7 +252,7 @@ export const publicationApi = {
       if (params.page) queryParams.append("page", params.page);
       if (params.limit) queryParams.append("limit", params.limit);
 
-      const url = `${BASE_URL}/feed/saved${
+      const url = `${BASE_URL}/feeds/saved${
         queryParams.toString() ? `?${queryParams.toString()}` : ""
       }`;
 
@@ -239,7 +268,7 @@ export const publicationApi = {
   addComment: async (publicationId, commentData) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/feed/${publicationId}/comments`,
+        `${BASE_URL}/feeds/${publicationId}/comments`,
         getFetchConfig("POST", commentData)
       );
 
@@ -253,7 +282,7 @@ export const publicationApi = {
   deleteComment: async (publicationId, commentId) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/feed/${publicationId}/comments/${commentId}`,
+        `${BASE_URL}/feeds/${publicationId}/comments/${commentId}`,
         getFetchConfig("DELETE")
       );
 
@@ -267,12 +296,71 @@ export const publicationApi = {
   toggleLikeComment: async (publicationId, commentId) => {
     try {
       const response = await fetch(
-        `${BASE_URL}/feed/${publicationId}/comments/${commentId}/like`,
+        `${BASE_URL}/feeds/${publicationId}/comments/${commentId}/like`,
         getFetchConfig("POST")
       );
-
       return await handleApiError(response);
     } catch (error) {
+      throw error;
+    }
+  },
+
+  // ✅ AJOUT: Ajouter une réponse à un commentaire
+  addReplyToComment: async (publicationId, commentId, replyData) => {
+    try {
+      console.log('💬 API - Ajout réponse:', { publicationId, commentId, replyData });
+      
+      const response = await fetch(
+        `${BASE_URL}/feeds/${publicationId}/comments/${commentId}/replies`,
+        getFetchConfig("POST", replyData)
+      );
+      
+      const result = await handleApiError(response);
+      console.log('✅ API - Réponse ajoutée:', result);
+      
+      return result;
+    } catch (error) {
+      console.error('❌ API - Erreur ajout réponse:', error);
+      throw error;
+    }
+  },
+
+  // ✅ AJOUT: Liker une réponse
+  toggleLikeReply: async (publicationId, commentId, replyId) => {
+    try {
+      console.log('👍 API - Toggle like réponse:', { publicationId, commentId, replyId });
+      
+      const response = await fetch(
+        `${BASE_URL}/feeds/${publicationId}/comments/${commentId}/replies/${replyId}/like`,
+        getFetchConfig("POST")
+      );
+      
+      const result = await handleApiError(response);
+      console.log('✅ API - Like réponse:', result);
+      
+      return result;
+    } catch (error) {
+      console.error('❌ API - Erreur like réponse:', error);
+      throw error;
+    }
+  },
+
+  // ✅ AJOUT: Supprimer une réponse
+  deleteReply: async (publicationId, commentId, replyId) => {
+    try {
+      console.log('🗑️ API - Suppression réponse:', { publicationId, commentId, replyId });
+      
+      const response = await fetch(
+        `${BASE_URL}/feeds/${publicationId}/comments/${commentId}/replies/${replyId}`,
+        getFetchConfig("DELETE")
+      );
+      
+      const result = await handleApiError(response);
+      console.log('✅ API - Réponse supprimée:', result);
+      
+      return result;
+    } catch (error) {
+      console.error('❌ API - Erreur suppression réponse:', error);
       throw error;
     }
   },
@@ -285,7 +373,7 @@ export const publicationApi = {
       if (params.page) queryParams.append("page", params.page);
       if (params.limit) queryParams.append("limit", params.limit);
 
-      const url = `${BASE_URL}/feed/search?${queryParams.toString()}`;
+      const url = `${BASE_URL}/feeds/search?${queryParams.toString()}`;
 
       const response = await fetch(url, getFetchConfig("GET"));
 
@@ -302,7 +390,7 @@ export const publicationApi = {
       if (params.page) queryParams.append("page", params.page);
       if (params.limit) queryParams.append("limit", params.limit);
 
-      const url = `${BASE_URL}/feed/artist/${artistId}${
+      const url = `${BASE_URL}/feeds/artist/${artistId}${
         queryParams.toString() ? `?${queryParams.toString()}` : ""
       }`;
 
@@ -331,14 +419,43 @@ export const publicationUtils = {
     );
   },
 
+  // ✅ AJOUT: Vérifier si un utilisateur a liké un commentaire
+  hasUserLikedComment: (comment, userId) => {
+    return comment.likes?.some(
+      (like) => (like.userId?._id || like.userId) === userId
+    );
+  },
+
+  // ✅ AJOUT: Vérifier si un utilisateur a liké une réponse
+  hasUserLikedReply: (reply, userId) => {
+    return reply.likes?.some(
+      (like) => (like.userId?._id || like.userId) === userId
+    );
+  },
+
   // Compter le nombre de likes
   getLikesCount: (publication) => {
     return publication.likes?.length || 0;
   },
 
+  // ✅ AJOUT: Compter le nombre de likes d'un commentaire
+  getCommentLikesCount: (comment) => {
+    return comment.likes?.length || 0;
+  },
+
+  // ✅ AJOUT: Compter le nombre de likes d'une réponse
+  getReplyLikesCount: (reply) => {
+    return reply.likes?.length || 0;
+  },
+
   // Compter le nombre de commentaires
   getCommentsCount: (publication) => {
     return publication.commentaires?.length || 0;
+  },
+
+  // ✅ AJOUT: Compter le nombre de réponses d'un commentaire
+  getRepliesCount: (comment) => {
+    return comment.reponses?.length || 0;
   },
 
   // Formater la date de publication
@@ -418,6 +535,21 @@ export const publicationUtils = {
     return errors;
   },
 
+  // ✅ AJOUT: Valider les données d'une réponse
+  validateReplyData: (replyData) => {
+    const errors = [];
+
+    if (!replyData.contenu || replyData.contenu.trim().length === 0) {
+      errors.push("Le contenu de la réponse est requis");
+    }
+
+    if (replyData.contenu && replyData.contenu.length > 300) {
+      errors.push("La réponse ne peut pas dépasser 300 caractères");
+    }
+
+    return errors;
+  },
+
   // Extraire les hashtags d'un texte
   extractHashtags: (text) => {
     const hashtags = text.match(/#\w+/g);
@@ -459,7 +591,7 @@ export const publicationUtils = {
 export const testApiConnection = async () => {
   try {
     const response = await fetch(
-      `${BASE_URL}/feed?limit=1`,
+      `${BASE_URL}/feeds?limit=1`,
       getFetchConfig("GET")
     );
 

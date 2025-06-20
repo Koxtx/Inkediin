@@ -1,26 +1,52 @@
 import React, { useContext, useState, useRef, useEffect } from "react";
-import { Bookmark, Heart, MessageCircle, Share, MoreVertical, Flag, Trash2, X, Edit } from "lucide-react";
+import {
+  Bookmark,
+  Heart,
+  MessageCircle,
+  Share,
+  MoreVertical,
+  Flag,
+  Trash2,
+  X,
+  Edit,
+} from "lucide-react";
 import { FlashContext } from "../../../context/FlashContext";
 import { PublicationContext } from "../../../context/PublicationContext";
 
-export default function Post({ 
-  id, 
-  username, 
-  time, 
-  likes, 
-  caption, 
-  comments, 
-  isLiked, 
-  isSaved, 
+export default function Post({
+  id,
+  username,
+  userAvatar,
+  time,
+  likes,
+  caption,
+  comments,
+  isLiked,
+  isSaved,
   image,
   isOwnPost = false,
   commentsData = [],
   currentUser = "current_user",
+  currentUserAvatar,
   onLike,
-  onSave
+  onSave,
+  // ✅ AJOUT: Nouveaux callbacks pour les commentaires
+  onLikeComment,
+  onLikeReply,
+  onAddComment,
+  onAddReply,
 }) {
   const { toggleLikePost } = useContext(FlashContext);
-  const { deletePost, addComment } = useContext(PublicationContext);
+  const {
+    deletePost,
+    addComment,
+    addReplyToComment,
+    toggleLikeComment,
+    toggleLikeReply,
+    currentUserId, // ✅ AJOUT: Récupérer l'ID utilisateur du contexte
+  } = useContext(PublicationContext);
+
+  // ✅ CORRECTION: États locaux initialisés correctement
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -33,148 +59,353 @@ export default function Post({
   const [imageError, setImageError] = useState(false);
   const menuRef = useRef(null);
 
-  // Fonction pour construire l'URL de l'image
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return null;
+  // ✅ CORRECTION: Fonction pour vérifier si l'utilisateur a liké
+  const checkIfUserLiked = (likesArray) => {
+    if (!likesArray || !Array.isArray(likesArray) || !currentUserId) return false;
     
-    // Si l'image commence par http, c'est déjà une URL complète
-    if (imagePath.startsWith('http')) {
+    return likesArray.some(like => {
+      const likeUserId = like.userId?._id || like.userId?.id || like.userId;
+      return likeUserId?.toString() === currentUserId?.toString();
+    });
+  };
+
+  // ✅ CORRECTION: Fonction pour compter les likes
+  const getLikesCount = (likesArray) => {
+    return likesArray && Array.isArray(likesArray) ? likesArray.length : 0;
+  };
+
+  // ✅ CORRECTION: Mettre à jour les états locaux quand les props changent
+  useEffect(() => {
+    console.log('🔄 Post - Mise à jour des props:', {
+      id,
+      likes: likes, // ✅ IMPORTANT: likes vient des props
+      commentsData: commentsData?.length || 0,
+      currentUserId,
+      isLiked: isLiked // ✅ IMPORTANT: isLiked vient des props
+    });
+
+    // ✅ CORRECTION: Toujours mettre à jour avec les props
+    setLocalLikes(likes || 0);
+    setLocalIsLiked(isLiked || false);
+
+    // Mettre à jour les commentaires
+    if (commentsData !== undefined) {
+      setLocalComments(commentsData);
+    }
+
+    // Mettre à jour l'état sauvegardé
+    if (isSaved !== undefined) {
+      setLocalIsSaved(isSaved);
+    }
+  }, [likes, isLiked, commentsData, isSaved, currentUserId]); // ✅ AJOUT: likes et isLiked dans les dépendances
+
+  // ✅ CORRECTION: handleCommentLike utilisant les callbacks du Feed
+  const handleCommentLike = async (
+    commentId,
+    isReply = false,
+    parentCommentId = null,
+    replyId = null
+  ) => {
+    try {
+      console.log('👍 Post - handleCommentLike:', { 
+        commentId, 
+        isReply, 
+        parentCommentId, 
+        replyId,
+        currentUserId
+      });
+      
+      if (isReply && parentCommentId && replyId) {
+        // Like d'une réponse - utiliser le callback du Feed
+        if (onLikeReply) {
+          await onLikeReply(parentCommentId, replyId);
+          console.log('✅ Post - Like réponse via callback');
+        } else if (toggleLikeReply) {
+          await toggleLikeReply(id, parentCommentId, replyId);
+          console.log('✅ Post - Like réponse via contexte');
+        }
+      } else {
+        // Like d'un commentaire principal - utiliser le callback du Feed
+        if (onLikeComment) {
+          await onLikeComment(commentId);
+          console.log('✅ Post - Like commentaire via callback');
+        } else if (toggleLikeComment) {
+          await toggleLikeComment(id, commentId);
+          console.log('✅ Post - Like commentaire via contexte');
+        } else {
+          console.warn('⚠️ Aucune fonction de like commentaire disponible');
+        }
+      }
+    } catch (error) {
+      console.error("❌ Erreur handleCommentLike:", error);
+      alert('Erreur lors du like. Veuillez réessayer.');
+    }
+  };
+
+  // ✅ CORRECTION: handleAddReply utilisant les callbacks du Feed
+  const handleAddReply = async (commentId) => {
+    if (replyText.trim()) {
+      try {
+        console.log('💬 Post - handleAddReply:', { commentId, replyText });
+        
+        const replyData = {
+          contenu: replyText.trim(),
+          userId: currentUserId || "current_user",
+          userType: "Tatoueur",
+        };
+
+        // Utiliser le callback du Feed en priorité
+        if (onAddReply) {
+          await onAddReply(commentId, replyData);
+          console.log('✅ Post - Réponse ajoutée via callback');
+        } else if (addReplyToComment) {
+          await addReplyToComment(id, commentId, replyData);
+          console.log('✅ Post - Réponse ajoutée via contexte');
+        } else {
+          console.warn('⚠️ Aucune fonction d\'ajout de réponse disponible');
+        }
+        
+        setReplyText("");
+        setReplyingTo(null);
+      } catch (error) {
+        console.error("❌ Erreur handleAddReply:", error);
+        alert('Erreur lors de l\'ajout de la réponse. Veuillez réessayer.');
+      }
+    }
+  };
+
+  // ✅ FONCTION AMÉLIORÉE: Gestion des URLs Cloudinary et base64
+  const getProfileImageUrl = (imagePath) => {
+    if (!imagePath) {
+      console.log("⚠️ getProfileImageUrl - Pas d'image fournie");
+      return null;
+    }
+
+    console.log("🔍 getProfileImageUrl - Input:", imagePath);
+
+    // Si c'est déjà une URL Cloudinary complète
+    if (imagePath.startsWith("https://res.cloudinary.com")) {
+      console.log("✅ URL Cloudinary détectée:", imagePath);
       return imagePath;
     }
-    
-    // Construire l'URL avec le serveur backend
+
+    // Si c'est du base64, retourner tel quel
+    if (imagePath.startsWith("data:image")) {
+      console.log("✅ Image base64 détectée");
+      return imagePath;
+    }
+
+    // Si l'image commence par http/https, c'est déjà une URL complète
+    if (imagePath.startsWith("http")) {
+      console.log("✅ URL HTTP détectée:", imagePath);
+      return imagePath;
+    }
+
+    // ✅ NOUVEAU: Gérer les IDs Cloudinary sans préfixe
+    if (imagePath && !imagePath.includes("/") && !imagePath.includes("\\")) {
+      // C'est probablement un ID Cloudinary - remplacez YOUR_CLOUD_NAME par votre nom Cloudinary
+      const cloudinaryUrl = `https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/f_auto,q_auto,w_150,h_150,c_fill,g_face/${imagePath}`;
+      console.log("🔄 ID Cloudinary transformé:", cloudinaryUrl);
+      return cloudinaryUrl;
+    }
+
+    // Fallback pour les anciennes images locales
     const baseUrl = "http://localhost:3000";
-    
-    // Nettoyer le chemin (remplacer \ par /)
-    const cleanPath = imagePath.replace(/\\/g, '/');
-    
-    // S'assurer que le chemin commence par /
-    const finalPath = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
-    
+    const cleanPath = imagePath.replace(/\\/g, "/");
+    const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
+    const fallbackUrl = `${baseUrl}${finalPath}`;
+
+    console.log("⚠️ Fallback URL:", fallbackUrl);
+    return fallbackUrl;
+  };
+
+  // ✅ FONCTION AMÉLIORÉE: Gestion des images de publication Cloudinary
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+
+    console.log("🖼️ getImageUrl - Input:", imagePath);
+
+    // Si c'est déjà une URL Cloudinary complète
+    if (imagePath.startsWith("https://res.cloudinary.com")) {
+      console.log("✅ URL Cloudinary publication détectée");
+      return imagePath;
+    }
+
+    // Si l'image commence par http, c'est déjà une URL complète
+    if (imagePath.startsWith("http")) {
+      return imagePath;
+    }
+
+    // ✅ NOUVEAU: Gérer les IDs Cloudinary pour les publications
+    if (imagePath && !imagePath.includes("/") && !imagePath.includes("\\")) {
+      const cloudinaryUrl = `https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/f_auto,q_auto/${imagePath}`;
+      console.log("🔄 ID Cloudinary publication transformé:", cloudinaryUrl);
+      return cloudinaryUrl;
+    }
+
+    // Fallback pour les anciennes images locales
+    const baseUrl = "http://localhost:3000";
+    const cleanPath = imagePath.replace(/\\/g, "/");
+    const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
+
     return `${baseUrl}${finalPath}`;
   };
-  
-  const handleLike = () => {
-    const wasLiked = localIsLiked;
-    setLocalIsLiked(!wasLiked);
-    setLocalLikes(prevLikes => wasLiked ? prevLikes - 1 : prevLikes + 1);
-    
-    // Utiliser le callback du Feed si disponible, sinon le context
-    if (onLike) {
-      onLike();
-    } else if (toggleLikePost) {
-      toggleLikePost(id);
+
+  // ✅ COMPOSANT AMÉLIORÉ: ProfileImage avec meilleur debug et gestion d'erreur
+  const ProfileImage = ({ avatar, username, size = "w-10 h-10" }) => {
+    const [imgError, setImgError] = useState(false);
+    const [imgLoading, setImgLoading] = useState(!!avatar);
+
+    const handleImageLoad = () => {
+      console.log("✅ Image chargée avec succès:", avatar);
+      setImgLoading(false);
+      setImgError(false);
+    };
+
+    const handleImageError = (error) => {
+      console.error("❌ Erreur chargement image profil:", {
+        avatar,
+        error: error.target?.error,
+        src: error.target?.src,
+      });
+      setImgLoading(false);
+      setImgError(true);
+    };
+
+    const imageUrl = getProfileImageUrl(avatar);
+    console.log("🔗 URL finale pour ProfileImage:", imageUrl);
+
+    return (
+      <div
+        className={`${size} rounded-full overflow-hidden bg-gray-600 flex-shrink-0 relative`}
+      >
+        {imageUrl && !imgError ? (
+          <>
+            {imgLoading && (
+              <div className="absolute inset-0 bg-gray-400 animate-pulse rounded-full" />
+            )}
+            <img
+              src={imageUrl}
+              alt={`Photo de profil de ${username}`}
+              className={`w-full h-full object-cover transition-opacity ${
+                imgLoading ? "opacity-0" : "opacity-100"
+              }`}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              crossOrigin="anonymous"
+            />
+          </>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-bold text-sm">
+            {username?.charAt(0)?.toUpperCase() || "U"}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ✅ CORRECTION: handleLike simplifié - déléguer au Feed
+  const handleLike = async () => {
+    try {
+      console.log('👍 Post - handleLike:', {
+        postId: id,
+        currentUserId,
+        hasCallback: !!onLike
+      });
+
+      // ✅ PRIORITÉ: Utiliser le callback du Feed si disponible
+      if (onLike) {
+        console.log('📡 Post - Utilisation callback Feed...');
+        await onLike();
+        console.log('✅ Post - Callback Feed terminé');
+        return;
+      }
+
+      // ✅ FALLBACK: Utiliser le contexte directement
+      if (toggleLikePost) {
+        console.log('📡 Post - Utilisation contexte...');
+        await toggleLikePost(id);
+        console.log('✅ Post - Contexte terminé');
+        return;
+      }
+
+      console.warn('⚠️ Aucune méthode de like disponible');
+    } catch (error) {
+      console.error('❌ Post - Erreur handleLike:', error);
+      alert('Erreur lors du like. Veuillez réessayer.');
     }
   };
 
   const handleSave = () => {
     setLocalIsSaved(!localIsSaved);
-    
+
     // Utiliser le callback du Feed si disponible
     if (onSave) {
       onSave();
     }
   };
 
-  const handleCommentLike = (commentId, isReply = false, parentCommentId = null) => {
-    if (isReply) {
-      setLocalComments(prevComments => 
-        prevComments.map(comment => 
-          comment.id === parentCommentId 
-            ? {
-                ...comment,
-                replies: comment.replies.map(reply =>
-                  reply.id === commentId
-                    ? { 
-                        ...reply, 
-                        isLiked: !reply.isLiked,
-                        likes: reply.isLiked ? reply.likes - 1 : reply.likes + 1
-                      }
-                    : reply
-                )
-              }
-            : comment
-        )
-      );
-    } else {
-      setLocalComments(prevComments => 
-        prevComments.map(comment => 
-          comment.id === commentId 
-            ? { 
-                ...comment, 
-                isLiked: !comment.isLiked,
-                likes: comment.isLiked ? comment.likes - 1 : comment.likes + 1
-              }
-            : comment
-        )
-      );
-    }
-  };
-
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (newComment.trim()) {
-      const comment = {
-        id: Date.now(),
-        username: currentUser,
-        text: newComment.trim(),
-        time: "maintenant",
-        likes: 0,
-        isLiked: false,
-        replies: []
-      };
-      setLocalComments(prev => [...prev, comment]);
-      setNewComment("");
-      
-      // Aussi ajouter via le context si disponible
-      if (addComment) {
-        addComment(id, {
-          userId: "current_user",
+      try {
+        console.log('💬 Post - handleAddComment:', { newComment, currentUserId });
+        
+        const commentData = {
+          userId: currentUserId || "current_user",
           userType: "Tatoueur",
           username: currentUser,
-          contenu: newComment.trim()
-        });
-      }
-    }
-  };
+          contenu: newComment.trim(),
+        };
 
-  const handleAddReply = (commentId) => {
-    if (replyText.trim()) {
-      const reply = {
-        id: Date.now(),
-        username: currentUser,
-        text: replyText.trim(),
-        time: "maintenant",
-        likes: 0,
-        isLiked: false
-      };
-      
-      setLocalComments(prevComments => 
-        prevComments.map(comment => 
-          comment.id === commentId 
-            ? { ...comment, replies: [...(comment.replies || []), reply] }
-            : comment
-        )
-      );
-      
-      setReplyText("");
-      setReplyingTo(null);
+        // ✅ CORRECTION: Utiliser le callback du Feed en priorité
+        if (onAddComment) {
+          await onAddComment(commentData);
+          console.log('✅ Post - Commentaire ajouté via callback');
+        } else if (addComment) {
+          await addComment(id, commentData);
+          console.log('✅ Post - Commentaire ajouté via contexte');
+        } else {
+          console.warn('⚠️ Aucune fonction d\'ajout de commentaire disponible');
+          // Fallback: mise à jour locale
+          const comment = {
+            id: Date.now(),
+            username: currentUser,
+            userAvatar: currentUserAvatar,
+            text: newComment.trim(),
+            time: "maintenant",
+            likes: [],
+            isLiked: false,
+            replies: [],
+          };
+          setLocalComments((prev) => [...prev, comment]);
+        }
+        
+        setNewComment("");
+      } catch (error) {
+        console.error("❌ Erreur handleAddComment:", error);
+        alert('Erreur lors de l\'ajout du commentaire. Veuillez réessayer.');
+      }
     }
   };
 
   const handleDeleteComment = (commentId) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")) {
-      setLocalComments(prev => prev.filter(comment => comment.id !== commentId));
+      setLocalComments((prev) =>
+        prev.filter((comment) => comment.id !== commentId)
+      );
     }
   };
 
   const handleDeleteReply = (commentId, replyId) => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer cette réponse ?")) {
-      setLocalComments(prevComments => 
-        prevComments.map(comment => 
-          comment.id === commentId 
-            ? { 
-                ...comment, 
-                replies: comment.replies.filter(reply => reply.id !== replyId) 
+      setLocalComments((prevComments) =>
+        prevComments.map((comment) =>
+          comment.id === commentId
+            ? {
+                ...comment,
+                replies: comment.replies.filter(
+                  (reply) => reply.id !== replyId
+                ),
               }
             : comment
         )
@@ -218,23 +449,35 @@ export default function Post({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showMenu]);
-  
+
+  // ✅ CORRECTION: Calculer le nombre total de commentaires + réponses
+  const totalCommentsCount = localComments.reduce(
+    (total, comment) => total + 1 + (comment.replies?.length || 0),
+    0
+  );
+
   return (
     <article className="mb-6 border-b border-gray-700">
       <div className="flex items-center p-4">
-        <div className="w-10 h-10 rounded-full bg-gray-600 mr-3"></div>
+        {/* Photo de profil de l'auteur du post */}
+        <div className="mr-3">
+          <ProfileImage
+            avatar={userAvatar}
+            username={username}
+          />
+        </div>
         <div className="flex-1">
           <div className="font-bold">{username}</div>
           <div className="text-xs text-gray-500">{time}</div>
         </div>
         <div className="relative" ref={menuRef}>
-          <button 
+          <button
             className="text-xl text-gray-500 hover:text-white transition-colors p-1"
             onClick={() => setShowMenu(!showMenu)}
           >
             <MoreVertical size={20} />
           </button>
-          
+
           {showMenu && (
             <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 min-w-48">
               {isOwnPost ? (
@@ -268,7 +511,7 @@ export default function Post({
         </div>
       </div>
 
-      {/* Zone d'image avec gestion d'erreur */}
+      {/* Zone d'image avec gestion d'erreur Cloudinary améliorée */}
       <div className="w-full aspect-square bg-gray-700 relative overflow-hidden">
         {image && !imageError ? (
           <img
@@ -276,7 +519,11 @@ export default function Post({
             alt={`Publication de ${username}`}
             className="w-full h-full object-cover"
             onError={() => {
+              console.warn(`❌ Erreur chargement image publication: ${image}`);
               setImageError(true);
+            }}
+            onLoad={() => {
+              console.log(`✅ Image publication chargée: ${image}`);
             }}
           />
         ) : (
@@ -285,7 +532,7 @@ export default function Post({
               <div className="text-center">
                 <div className="text-sm">Image non disponible</div>
                 <div className="text-xs mt-1 text-gray-600">
-                  {image && `Chemin: ${image}`}
+                  {image && `Chemin: ${image.substring(0, 50)}...`}
                 </div>
               </div>
             ) : (
@@ -296,25 +543,28 @@ export default function Post({
       </div>
 
       <div className="flex items-center p-4">
-        <button className="mr-4 text-xl hover:scale-110 transition-transform" onClick={handleLike}>
-          <Heart 
-            fill={localIsLiked ? "#ef4444" : "none"} 
-            color={localIsLiked ? "#ef4444" : "currentColor"} 
+        <button
+          className="mr-4 text-xl hover:scale-110 transition-transform"
+          onClick={handleLike}
+        >
+          <Heart
+            fill={localIsLiked ? "#ef4444" : "none"}
+            color={localIsLiked ? "#ef4444" : "currentColor"}
           />
         </button>
-        <button 
+        <button
           className="mr-4 text-xl hover:scale-110 transition-transform"
           onClick={() => setShowComments(!showComments)}
         >
           <MessageCircle />
         </button>
-        <button 
+        <button
           className="ml-auto text-xl hover:scale-110 transition-transform"
           onClick={handleSave}
         >
-          <Bookmark 
-            fill={localIsSaved ? "#ef4444" : "none"} 
-            color={localIsSaved ? "#ef4444" : "currentColor"} 
+          <Bookmark
+            fill={localIsSaved ? "#ef4444" : "none"}
+            color={localIsSaved ? "#ef4444" : "currentColor"}
           />
         </button>
       </div>
@@ -325,11 +575,11 @@ export default function Post({
         <span className="font-bold">{username}</span> {caption}
       </div>
 
-      <button 
+      <button
         className="p-4 text-sm text-gray-500 hover:text-gray-300 transition-colors"
         onClick={() => setShowComments(!showComments)}
       >
-        Voir les {localComments.reduce((total, comment) => total + 1 + (comment.replies?.length || 0), 0)} commentaires
+        Voir les {totalCommentsCount} commentaires
       </button>
 
       {showComments && (
@@ -337,35 +587,60 @@ export default function Post({
           {/* Zone des commentaires */}
           <div className="max-h-80 overflow-y-auto">
             {localComments.map((comment) => (
-              <div key={comment.id} className="border-b border-gray-700/50">
+              <div key={comment.id || comment._id} className="border-b border-gray-700/50">
                 {/* Commentaire principal */}
                 <div className="flex items-start p-4">
-                  <div className="w-8 h-8 rounded-full bg-gray-600 mr-3 flex-shrink-0"></div>
+                  {/* Photo de profil du commentateur */}
+                  <div className="mr-3">
+                    <ProfileImage
+                      avatar={
+                        comment.userAvatar ||
+                        comment.userId?.photoProfil ||
+                        comment.userId?.avatar ||
+                        comment.userId?.profilePicture
+                      }
+                      username={
+                        comment.username ||
+                        comment.userId?.nom ||
+                        comment.userId?.name ||
+                        comment.userId?.username ||
+                        "Utilisateur"
+                      }
+                      size="w-8 h-8"
+                    />
+                  </div>
                   <div className="flex-1">
                     <div className="text-sm">
-                      <span className="font-bold mr-2">{comment.username}</span>
-                      {comment.text}
+                      <span className="font-bold mr-2">
+                        {comment.username ||
+                          comment.userId?.nom ||
+                          "Utilisateur"}
+                      </span>
+                      {comment.text || comment.contenu}
                     </div>
                     <div className="flex items-center mt-1 text-xs text-gray-500 gap-4">
                       <span>{comment.time}</span>
-                      <span>{comment.likes} j'aime</span>
-                      <button 
-                        onClick={() => handleCommentLike(comment.id)}
+                      <span>{getLikesCount(comment.likes)} j'aime</span>
+
+                      <button
+                        onClick={() => handleCommentLike(comment.id || comment._id)}
                         className={`hover:text-red-400 transition-colors ${
-                          comment.isLiked ? 'text-red-400' : ''
+                          checkIfUserLiked(comment.likes) ? "text-red-400" : ""
                         }`}
                       >
                         J'aime
                       </button>
-                      <button 
-                        onClick={() => setReplyingTo(comment.id)}
+                      <button
+                        onClick={() => setReplyingTo(comment.id || comment._id)}
                         className="hover:text-blue-400 transition-colors"
                       >
                         Répondre
                       </button>
-                      {(comment.username === currentUser || isOwnPost) && (
-                        <button 
-                          onClick={() => handleDeleteComment(comment.id)}
+                      {(comment.username === currentUser ||
+                        comment.userId?.nom === currentUser ||
+                        isOwnPost) && (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id || comment._id)}
                           className="hover:text-red-400 transition-colors"
                         >
                           Supprimer
@@ -379,27 +654,58 @@ export default function Post({
                 {comment.replies && comment.replies.length > 0 && (
                   <div className="ml-11 border-l border-gray-700 pl-4">
                     {comment.replies.map((reply) => (
-                      <div key={reply.id} className="flex items-start py-3">
-                        <div className="w-6 h-6 rounded-full bg-gray-600 mr-3 flex-shrink-0"></div>
+                      <div key={reply.id || reply._id} className="flex items-start py-3">
+                        {/* Photo de profil pour les réponses */}
+                        <div className="mr-3">
+                          <ProfileImage
+                            avatar={
+                              reply.userAvatar ||
+                              reply.userId?.photoProfil ||
+                              reply.userId?.avatar
+                            }
+                            username={
+                              reply.username ||
+                              reply.userId?.nom ||
+                              reply.userId?.name ||
+                              "Utilisateur"
+                            }
+                            size="w-6 h-6"
+                          />
+                        </div>
                         <div className="flex-1">
                           <div className="text-sm">
-                            <span className="font-bold mr-2">{reply.username}</span>
-                            {reply.text}
+                            <span className="font-bold mr-2">
+                              {reply.username ||
+                                reply.userId?.nom ||
+                                "Utilisateur"}
+                            </span>
+                            {reply.text || reply.contenu}
                           </div>
                           <div className="flex items-center mt-1 text-xs text-gray-500 gap-4">
                             <span>{reply.time}</span>
-                            <span>{reply.likes} j'aime</span>
-                            <button 
-                              onClick={() => handleCommentLike(reply.id, true, comment.id)}
+                            <span>{getLikesCount(reply.likes)} j'aime</span>
+                            <button
+                              onClick={() => 
+                                handleCommentLike(
+                                  reply.id || reply._id, 
+                                  true, 
+                                  comment.id || comment._id, 
+                                  reply.id || reply._id
+                                )
+                              }
                               className={`hover:text-red-400 transition-colors ${
-                                reply.isLiked ? 'text-red-400' : ''
+                                checkIfUserLiked(reply.likes) ? "text-red-400" : ""
                               }`}
                             >
                               J'aime
                             </button>
-                            {(reply.username === currentUser || isOwnPost) && (
-                              <button 
-                                onClick={() => handleDeleteReply(comment.id, reply.id)}
+                            {(reply.username === currentUser ||
+                              reply.userId?.nom === currentUser ||
+                              isOwnPost) && (
+                              <button
+                                onClick={() =>
+                                  handleDeleteReply(comment.id || comment._id, reply.id || reply._id)
+                                }
                                 className="hover:text-red-400 transition-colors"
                               >
                                 Supprimer
@@ -413,16 +719,29 @@ export default function Post({
                 )}
 
                 {/* Zone de réponse */}
-                {replyingTo === comment.id && (
+                {replyingTo === (comment.id || comment._id) && (
                   <div className="ml-11 p-4 border-t border-gray-700/50">
                     <div className="flex items-center">
-                      <div className="w-6 h-6 rounded-full bg-gray-600 mr-3"></div>
+                      {/* Photo de profil dans la zone de réponse */}
+                      <div className="mr-3">
+                        <ProfileImage
+                          avatar={currentUserAvatar}
+                          username={currentUser}
+                          size="w-6 h-6"
+                        />
+                      </div>
                       <input
                         type="text"
-                        placeholder={`Répondre à ${comment.username}...`}
+                        placeholder={`Répondre à ${
+                          comment.username ||
+                          comment.userId?.nom ||
+                          "cet utilisateur"
+                        }...`}
                         value={replyText}
                         onChange={(e) => setReplyText(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleAddReply(comment.id)}
+                        onKeyPress={(e) =>
+                          e.key === "Enter" && handleAddReply(comment.id || comment._id)
+                        }
                         className="flex-1 bg-transparent border-none outline-none text-sm placeholder-gray-500"
                         autoFocus
                       />
@@ -434,7 +753,7 @@ export default function Post({
                       </button>
                       {replyText.trim() && (
                         <button
-                          onClick={() => handleAddReply(comment.id)}
+                          onClick={() => handleAddReply(comment.id || comment._id)}
                           className="ml-2 text-blue-400 hover:text-blue-300 font-semibold text-sm"
                         >
                           Publier
@@ -449,13 +768,20 @@ export default function Post({
 
           {/* Zone d'ajout de commentaire */}
           <div className="flex items-center p-4 border-t border-gray-700">
-            <div className="w-8 h-8 rounded-full bg-gray-600 mr-3"></div>
+            {/* Photo de profil dans la zone d'ajout de commentaire */}
+            <div className="mr-3">
+              <ProfileImage
+                avatar={currentUserAvatar}
+                username={currentUser}
+                size="w-8 h-8"
+              />
+            </div>
             <input
               type="text"
               placeholder="Ajouter un commentaire..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleAddComment()}
+              onKeyPress={(e) => e.key === "Enter" && handleAddComment()}
               className="flex-1 bg-transparent border-none outline-none text-sm placeholder-gray-500"
             />
             {newComment.trim() && (

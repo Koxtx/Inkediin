@@ -57,21 +57,11 @@ export default function TattooGallery({
       setError(null);
 
       let response;
-      if (isOwnProfile) {
-        // Pour son propre profil, récupérer toutes ses publications
-        response = await publicationApi.getPublications({
-          page,
-          limit: 12,
-          sortBy: 'datePublication',
-          order: 'desc'
-        });
-      } else {
-        // Pour les autres profils, récupérer les publications de cet artiste
-        response = await publicationApi.getPublicationsByTattooArtist(displayUser._id, {
-          page,
-          limit: 12
-        });
-      }
+      // ✅ CORRECTION: Toujours utiliser getPublicationsByTattooArtist pour récupérer les publications d'un utilisateur spécifique
+      response = await publicationApi.getPublicationsByTattooArtist(displayUser._id, {
+        page,
+        limit: 12
+      });
 
       if (response.publications) {
         const adaptedPublications = response.publications.map(pub => ({

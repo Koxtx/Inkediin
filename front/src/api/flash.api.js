@@ -6,12 +6,8 @@ const getHeaders = (includeAuth = true) => {
     'Content-Type': 'application/json',
   };
   
-  if (includeAuth) {
-    const token = localStorage.getItem('token');
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
-  }
+  // Le token est maintenant géré par les cookies HTTP-only
+  // Pas besoin d'ajouter Authorization header manuellement
   
   return headers;
 };
@@ -19,10 +15,8 @@ const getHeaders = (includeAuth = true) => {
 // Configuration des headers pour FormData (multipart)
 const getFormDataHeaders = () => {
   const headers = {};
-  const token = localStorage.getItem('token');
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  // Le token est maintenant géré par les cookies HTTP-only
+  // Pas besoin d'ajouter Authorization header manuellement
   return headers;
 };
 
@@ -47,16 +41,22 @@ export const flashApi = {
       if (params.tatoueur) queryParams.append('tatoueur', params.tatoueur);
       if (params.prixMin) queryParams.append('prixMin', params.prixMin);
       if (params.prixMax) queryParams.append('prixMax', params.prixMax);
+      if (params.style) queryParams.append('style', params.style);
+      if (params.taille) queryParams.append('taille', params.taille);
+      if (params.tags) queryParams.append('tags', params.tags);
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.order) queryParams.append('order', params.order);
       
       // Paramètres de pagination
       if (params.page) queryParams.append('page', params.page);
       if (params.limit) queryParams.append('limit', params.limit);
       
-      const url = `${BASE_URL}/api/flashs${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `${BASE_URL}/flashs${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       
       const response = await fetch(url, {
         method: 'GET',
         headers: getHeaders(false), // Les flashs publics ne nécessitent pas d'auth
+        credentials: 'include', // Important pour inclure les cookies
       });
       
       return await handleApiError(response);
@@ -69,9 +69,10 @@ export const flashApi = {
   // Récupérer un flash par ID
   getFlashById: async (flashId) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/flashs/${flashId}`, {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}`, {
         method: 'GET',
         headers: getHeaders(false), // Flash public
+        credentials: 'include', // Important pour inclure les cookies
       });
       
       return await handleApiError(response);
@@ -93,11 +94,12 @@ export const flashApi = {
       if (params.page) queryParams.append('page', params.page);
       if (params.limit) queryParams.append('limit', params.limit);
       
-      const url = `${BASE_URL}/api/flashs/tatoueur/${tatoueurId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const url = `${BASE_URL}/flashs/tatoueur/${tatoueurId}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
       
       const response = await fetch(url, {
         method: 'GET',
         headers: getHeaders(false), // Flash public
+        credentials: 'include', // Important pour inclure les cookies
       });
       
       return await handleApiError(response);
@@ -120,16 +122,50 @@ export const flashApi = {
       if (flashData.description) {
         formData.append('description', flashData.description);
       }
+
+      // Nouvelles données selon le contrôleur
+      if (flashData.title) {
+        formData.append('title', flashData.title);
+      }
+
+      if (flashData.artist) {
+        formData.append('artist', flashData.artist);
+      }
+
+      if (flashData.style) {
+        formData.append('style', flashData.style);
+      }
+
+      if (flashData.taille) {
+        formData.append('taille', flashData.taille);
+      }
+
+      if (flashData.emplacement) {
+        // Si c'est un array, le stringifier
+        const emplacementValue = Array.isArray(flashData.emplacement) 
+          ? JSON.stringify(flashData.emplacement) 
+          : flashData.emplacement;
+        formData.append('emplacement', emplacementValue);
+      }
+
+      if (flashData.tags) {
+        // Si c'est un array, le stringifier
+        const tagsValue = Array.isArray(flashData.tags) 
+          ? JSON.stringify(flashData.tags) 
+          : flashData.tags;
+        formData.append('tags', tagsValue);
+      }
       
       // Ajouter l'image (obligatoire)
       if (flashData.image) {
         formData.append('image', flashData.image);
       }
       
-      const response = await fetch(`${BASE_URL}/api/flashs`, {
+      const response = await fetch(`${BASE_URL}/flashs`, {
         method: 'POST',
         headers: getFormDataHeaders(),
         body: formData,
+        credentials: 'include', // Important pour inclure les cookies
       });
       
       return await handleApiError(response);
@@ -142,13 +178,41 @@ export const flashApi = {
   // Mettre à jour un flash
   updateFlash: async (flashId, flashData) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/flashs/${flashId}`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify(flashData),
-      });
-      
-      return await handleApiError(response);
+      // Si on a une nouvelle image, utiliser FormData
+      if (flashData.image && flashData.image instanceof File) {
+        const formData = new FormData();
+        
+        // Ajouter tous les champs
+        Object.keys(flashData).forEach(key => {
+          if (key === 'emplacement' || key === 'tags') {
+            const value = Array.isArray(flashData[key]) 
+              ? JSON.stringify(flashData[key]) 
+              : flashData[key];
+            formData.append(key, value);
+          } else {
+            formData.append(key, flashData[key]);
+          }
+        });
+
+        const response = await fetch(`${BASE_URL}/flashs/${flashId}`, {
+          method: 'PUT',
+          headers: getFormDataHeaders(),
+          body: formData,
+          credentials: 'include', // Important pour inclure les cookies
+        });
+        
+        return await handleApiError(response);
+      } else {
+        // Sinon, utiliser JSON
+        const response = await fetch(`${BASE_URL}/flashs/${flashId}`, {
+          method: 'PUT',
+          headers: getHeaders(),
+          body: JSON.stringify(flashData),
+          credentials: 'include', // Important pour inclure les cookies
+        });
+        
+        return await handleApiError(response);
+      }
     } catch (error) {
       console.error('Erreur lors de la mise à jour du flash:', error);
       throw error;
@@ -158,9 +222,10 @@ export const flashApi = {
   // Supprimer un flash
   deleteFlash: async (flashId) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/flashs/${flashId}`, {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}`, {
         method: 'DELETE',
         headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
       });
       
       return await handleApiError(response);
@@ -173,9 +238,10 @@ export const flashApi = {
   // Basculer le statut de réservation
   toggleReserve: async (flashId) => {
     try {
-      const response = await fetch(`${BASE_URL}/api/flashs/${flashId}/reserve`, {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/reserve`, {
         method: 'PATCH',
         headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
       });
       
       return await handleApiError(response);
@@ -184,9 +250,199 @@ export const flashApi = {
       throw error;
     }
   },
+
+  // ✅ NOUVELLES FONCTIONS SELON LE CONTRÔLEUR
+
+  // Liker/Unliker un flash
+  likeFlash: async (flashId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/like`, {
+        method: 'POST',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors du like du flash:', error);
+      throw error;
+    }
+  },
+
+  // Noter un flash
+  rateFlash: async (flashId, rating) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/rate`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ rating }),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la notation du flash:', error);
+      throw error;
+    }
+  },
+
+  // Réserver un flash
+  reserveFlash: async (flashId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/reserve-flash`, {
+        method: 'POST',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la réservation du flash:', error);
+      throw error;
+    }
+  },
+
+  // Sauvegarder/Unsauvegarder un flash
+  saveFlash: async (flashId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/save`, {
+        method: 'POST',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde du flash:', error);
+      throw error;
+    }
+  },
+
+  // Récupérer les flashs sauvegardés
+  getSavedFlashs: async (params = {}) => {
+    try {
+      const queryParams = new URLSearchParams();
+      
+      if (params.page) queryParams.append('page', params.page);
+      if (params.limit) queryParams.append('limit', params.limit);
+      
+      const url = `${BASE_URL}/flashs/saved${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des flashs sauvegardés:', error);
+      throw error;
+    }
+  },
+
+  // ✅ FONCTIONS POUR LES COMMENTAIRES
+
+  // Ajouter un commentaire
+  addComment: async (flashId, contenu) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ contenu }),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du commentaire:', error);
+      throw error;
+    }
+  },
+
+  // Supprimer un commentaire
+  deleteComment: async (flashId, commentId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la suppression du commentaire:', error);
+      throw error;
+    }
+  },
+
+  // Liker un commentaire
+  likeComment: async (flashId, commentId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}/like`, {
+        method: 'POST',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors du like du commentaire:', error);
+      throw error;
+    }
+  },
+
+  // Ajouter une réponse à un commentaire
+  addReplyToComment: async (flashId, commentId, contenu) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}/replies`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ contenu }),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de la réponse:', error);
+      throw error;
+    }
+  },
+
+  // Liker une réponse
+  likeReply: async (flashId, commentId, replyId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}/replies/${replyId}/like`, {
+        method: 'POST',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors du like de la réponse:', error);
+      throw error;
+    }
+  },
+
+  // Supprimer une réponse
+  deleteReply: async (flashId, commentId, replyId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}/replies/${replyId}`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la réponse:', error);
+      throw error;
+    }
+  },
 };
 
-// Fonctions utilitaires pour les flashs
+// Fonctions utilitaires pour les flashs (mises à jour selon le contrôleur)
 export const flashUtils = {
   // Vérifier si un flash est disponible
   isAvailable: (flash) => {
@@ -262,10 +518,19 @@ export const flashUtils = {
       errors.push('La description ne peut pas dépasser 500 caractères');
     }
     
+    // Validation pour les nouveaux champs
+    if (flashData.title && flashData.title.length > 100) {
+      errors.push('Le titre ne peut pas dépasser 100 caractères');
+    }
+    
+    if (flashData.artist && flashData.artist.length > 100) {
+      errors.push('Le nom de l\'artiste ne peut pas dépasser 100 caractères');
+    }
+    
     return errors;
   },
 
-  // Filtrer les flashs par critères
+  // Filtrer les flashs par critères (mis à jour avec nouveaux filtres)
   filterFlashs: (flashs, filters) => {
     return flashs.filter(flash => {
       // Filtre par disponibilité
@@ -287,12 +552,35 @@ export const flashUtils = {
       if (filters.tatoueur && flash.idTatoueur._id !== filters.tatoueur) {
         return false;
       }
+
+      // Filtre par style
+      if (filters.style && flash.style !== filters.style) {
+        return false;
+      }
+
+      // Filtre par taille
+      if (filters.taille && flash.taille !== filters.taille) {
+        return false;
+      }
+
+      // Filtre par tags
+      if (filters.tags && filters.tags.length > 0) {
+        const flashTags = flash.tags || [];
+        const hasMatchingTag = filters.tags.some(tag => 
+          flashTags.some(flashTag => 
+            flashTag.toLowerCase().includes(tag.toLowerCase())
+          )
+        );
+        if (!hasMatchingTag) {
+          return false;
+        }
+      }
       
       return true;
     });
   },
 
-  // Trier les flashs
+  // Trier les flashs (mis à jour avec nouvelles options)
   sortFlashs: (flashs, sortBy = 'date', order = 'desc') => {
     return flashs.sort((a, b) => {
       let valueA, valueB;
@@ -302,10 +590,22 @@ export const flashUtils = {
           valueA = a.prix;
           valueB = b.prix;
           break;
+        case 'views':
+          valueA = a.views || 0;
+          valueB = b.views || 0;
+          break;
+        case 'likes':
+          valueA = a.likesCount || a.likes?.length || 0;
+          valueB = b.likesCount || b.likes?.length || 0;
+          break;
+        case 'rating':
+          valueA = a.averageRating || 0;
+          valueB = b.averageRating || 0;
+          break;
         case 'date':
         default:
-          valueA = new Date(a.date);
-          valueB = new Date(b.date);
+          valueA = new Date(a.date || a.createdAt);
+          valueB = new Date(b.date || b.createdAt);
           break;
       }
       
@@ -317,7 +617,7 @@ export const flashUtils = {
     });
   },
 
-  // Calculer les statistiques des flashs
+  // Calculer les statistiques des flashs (mis à jour)
   getStats: (flashs) => {
     const total = flashs.length;
     const disponibles = flashs.filter(f => f.disponible && !f.reserve).length;
@@ -329,6 +629,13 @@ export const flashUtils = {
     const prixMin = prix.length > 0 ? Math.min(...prix) : 0;
     const prixMax = prix.length > 0 ? Math.max(...prix) : 0;
     
+    // Nouvelles stats
+    const totalLikes = flashs.reduce((acc, f) => acc + (f.likesCount || f.likes?.length || 0), 0);
+    const totalViews = flashs.reduce((acc, f) => acc + (f.views || 0), 0);
+    const averageRating = flashs.filter(f => f.averageRating > 0).length > 0 
+      ? flashs.filter(f => f.averageRating > 0).reduce((acc, f) => acc + f.averageRating, 0) / flashs.filter(f => f.averageRating > 0).length 
+      : 0;
+    
     return {
       total,
       disponibles,
@@ -338,8 +645,36 @@ export const flashUtils = {
         moyen: prixMoyen,
         min: prixMin,
         max: prixMax
+      },
+      engagement: {
+        totalLikes,
+        totalViews,
+        averageRating: Math.round(averageRating * 10) / 10
       }
     };
+  },
+
+  // Vérifier si l'utilisateur a liké un flash
+  hasUserLiked: (flash, userId) => {
+    if (!flash.likes || !userId) return false;
+    return flash.likes.some(like => like.userId._id === userId || like.userId === userId);
+  },
+
+  // Vérifier si l'utilisateur a noté un flash
+  getUserRating: (flash, userId) => {
+    if (!flash.ratings || !userId) return null;
+    const userRating = flash.ratings.find(rating => 
+      rating.userId._id === userId || rating.userId === userId
+    );
+    return userRating ? userRating.rating : null;
+  },
+
+  // Vérifier si l'utilisateur a sauvegardé un flash
+  hasUserSaved: (savedFlashs, flashId) => {
+    if (!savedFlashs || !flashId) return false;
+    return savedFlashs.some(saved => 
+      (saved._id || saved) === flashId
+    );
   },
 };
 

@@ -1,8 +1,94 @@
 import { BASE_URL } from "../utils/url";
 
+// ✅ FONCTION AMÉLIORÉE: Normaliser les données utilisateur avec debug
+export function normalizeUserData(userData) {
+  if (!userData) {
+    console.warn("⚠️ normalizeUserData - userData est null/undefined");
+    return null;
+  }
+
+  console.group("🔄 normalizeUserData - Processing");
+  console.log("Input data:", userData);
+  console.log("Input keys:", Object.keys(userData));
+
+  // ✅ AMÉLIORATION: Chercher la photo de profil dans tous les champs possibles
+  const photoProfil =
+    userData.photoProfil ||
+    userData.avatar ||
+    userData.profilePicture ||
+    userData.profileImage ||
+    userData.photo ||
+    userData.image ||
+    userData.picture ||
+    null;
+
+  console.log("📷 Photos trouvées:", {
+    photoProfil: userData.photoProfil,
+    avatar: userData.avatar,
+    profilePicture: userData.profilePicture,
+    profileImage: userData.profileImage,
+    photo: userData.photo,
+    image: userData.image,
+    picture: userData.picture,
+    final: photoProfil,
+  });
+
+  const normalized = {
+    ...userData,
+    // Conserver l'ID original
+    _id: userData._id || userData.id,
+    id: userData._id || userData.id,
+
+    // ✅ AMÉLIORATION: Photo de profil avec fallback multiple
+    photoProfil: photoProfil,
+
+    // Normaliser le nom avec fallback multiple
+    nom:
+      userData.nom ||
+      userData.name ||
+      userData.username ||
+      userData.displayName ||
+      userData.firstName ||
+      userData.prenom ||
+      "Utilisateur",
+
+    // Autres champs normalisés
+    email: userData.email || "",
+    userType: userData.userType || userData.type || userData.role || "tatoueur",
+    localisation:
+      userData.localisation || userData.location || userData.address || "",
+    bio: userData.bio || userData.description || userData.about || "",
+    styles: userData.styles || userData.specialties || userData.tags || "",
+
+    // Champs additionnels utiles
+    phone: userData.phone || userData.telephone || userData.tel || "",
+    website: userData.website || userData.site || "",
+    instagram: userData.instagram || userData.insta || "",
+    createdAt: userData.createdAt || userData.dateCreation || new Date(),
+  };
+
+  console.log("✅ Normalized output:", normalized);
+  console.log("📷 Final photo:", normalized.photoProfil);
+  console.groupEnd();
+
+  return normalized;
+}
+
+// ✅ FONCTION AMÉLIORÉE: Gestion des erreurs d'API avec plus de détails
+const handleApiError = (error) => {
+  console.error("API Error Details:", {
+    message: error.message,
+    stack: error.stack,
+    name: error.name,
+  });
+  throw new Error(error.message || "Erreur lors de la requête");
+};
+
 // Dans auth.api.js - Fonction signup corrigée
 export async function signup(values) {
   try {
+    console.log("📤 Signup API call with:", values);
+
     const response = await fetch(`${BASE_URL}/users`, {
       method: "POST",
       body: JSON.stringify(values),
@@ -12,6 +98,7 @@ export async function signup(values) {
     });
 
     const data = await response.json();
+    console.log("📥 Signup response:", data);
 
     // Vérifier le statut HTTP
     if (response.ok) {
@@ -37,9 +124,11 @@ export async function signup(values) {
   }
 }
 
-// Fonction signin également corrigée pour cohérence
+// ✅ CORRECTION: Fonction signin avec normalisation des données améliorée
 export async function signin(values) {
   try {
+    console.log("📤 Signin API call with:", values);
+
     const response = await fetch(`${BASE_URL}/users/login`, {
       method: "POST",
       body: JSON.stringify(values),
@@ -50,16 +139,22 @@ export async function signin(values) {
     });
 
     const data = await response.json();
+    console.log("📥 Signin response:", data);
 
     if (response.ok) {
-      // Succès de la connexion
+      // ✅ AMÉLIORATION: Normaliser les données utilisateur avec debug
+      const rawUser = data.user || data;
+      console.log("👤 Raw user data:", rawUser);
+
+      const normalizedUser = normalizeUserData(rawUser);
+      console.log("✅ Normalized user data:", normalizedUser);
+
       return {
         success: true,
-        user: data.user || data,
+        user: normalizedUser,
         message: data.message,
       };
     } else {
-      // Erreur de connexion
       return {
         success: false,
         message: data.message || "Erreur lors de la connexion",
@@ -74,23 +169,51 @@ export async function signin(values) {
   }
 }
 
+// ✅ NOUVEAU: Fonction completeProfile avec support Cloudinary amélioré
 export async function completeProfile(profileData) {
   try {
+    console.log("📤 API - Envoi completeProfile:", profileData);
+
+    // Créer FormData pour supporter l'upload de fichier
+    const formData = new FormData();
+
+    // Ajouter les champs texte
+    Object.keys(profileData).forEach((key) => {
+      if (
+        key !== "photoProfil" &&
+        profileData[key] !== null &&
+        profileData[key] !== undefined
+      ) {
+        formData.append(key, profileData[key]);
+      }
+    });
+
+    // Ajouter le fichier image s'il existe
+    if (profileData.photoProfil && profileData.photoProfil instanceof File) {
+      formData.append("photoProfil", profileData.photoProfil);
+      console.log(
+        "📷 API - Fichier photo ajouté:",
+        profileData.photoProfil.name
+      );
+    }
+
+    console.log("📤 API - FormData créée");
+
     const response = await fetch(`${BASE_URL}/users/completeProfile`, {
       method: "POST",
-      body: JSON.stringify(profileData),
-      headers: {
-        "Content-type": "application/json",
-      },
-      credentials: "include", // Important pour envoyer les cookies
+      body: formData, // ✅ CHANGEMENT: FormData au lieu de JSON
+      // ✅ SUPPRESSION: Pas de Content-Type header avec FormData
+      credentials: "include",
     });
 
     const data = await response.json();
+    console.log("📥 CompleteProfile response:", data);
 
     if (response.ok) {
+      const normalizedUser = normalizeUserData(data);
       return {
         success: true,
-        user: data,
+        user: normalizedUser,
         message: data.message || "Profil complété avec succès",
       };
     } else {
@@ -108,65 +231,116 @@ export async function completeProfile(profileData) {
   }
 }
 
-// CORRECTION IMPORTANTE : Ajouter credentials: "include"
-export async function update(values) {
-  const user = {
-    _id: values._id,
-    email: values.email,
-    nom: values.nom,
-    userType: values.userType,
-    localisation: values.localisation,
-    bio: values.bio,
-    styles: values.styles,
-    portfolio: values.portfolio,
-    followers: values.followers,
-  };
+// ✅ AMÉLIORATION: Fonction update avec support Cloudinary et debug
+export async function update(values, photoFile = null) {
   try {
+    console.log("📤 API - Mise à jour profil:", values);
+    console.log("📷 API - Fichier photo:", photoFile);
+
+    // Créer FormData pour supporter l'upload de fichier
+    const formData = new FormData();
+
+    // Ajouter les champs utilisateur
+    const userFields = [
+      "nom",
+      "email",
+      "localisation",
+      "bio",
+      "styles",
+      "userType",
+      "phone",
+      "website",
+      "instagram",
+    ];
+    userFields.forEach((field) => {
+      if (values[field] !== undefined && values[field] !== null) {
+        formData.append(field, values[field]);
+      }
+    });
+
+    // Ajouter le fichier image s'il existe
+    if (photoFile instanceof File) {
+      formData.append("photoProfil", photoFile);
+      console.log("📷 API - Fichier photo ajouté pour update:", {
+        name: photoFile.name,
+        size: photoFile.size,
+        type: photoFile.type,
+      });
+    }
+
     const response = await fetch(`${BASE_URL}/users`, {
       method: "PUT",
-      body: JSON.stringify(user),
-      headers: {
-        "Content-type": "application/json",
-      },
-      credentials: "include", // AJOUT IMPORTANT
+      body: formData, // ✅ CHANGEMENT: FormData au lieu de JSON
+      credentials: "include",
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
     }
 
     const updatedUser = await response.json();
-    return updatedUser;
+    console.log("📥 Update response:", updatedUser);
+
+    const normalizedUser = normalizeUserData(updatedUser);
+
+    console.log("✅ API - Utilisateur mis à jour:", normalizedUser);
+    return normalizedUser;
   } catch (error) {
     console.error("Erreur lors de la mise à jour:", error);
-    throw error; // Relancer l'erreur pour la gestion dans le composant
+    handleApiError(error);
   }
 }
 
-export async function updateAvatar(values) {
+// ✅ AMÉLIORATION: Fonction updateAvatar avec support Cloudinary et debug
+export async function updateAvatar(photoFile) {
   try {
+    console.log("📷 API - Mise à jour avatar:", {
+      file: photoFile,
+      name: photoFile?.name,
+      size: photoFile?.size,
+      type: photoFile?.type,
+    });
+
+    if (!photoFile || !(photoFile instanceof File)) {
+      throw new Error("Fichier image requis");
+    }
+
+    // Créer FormData pour l'upload
+    const formData = new FormData();
+    formData.append("photoProfil", photoFile);
+
+    console.log("📤 API - Upload avatar vers Cloudinary...");
+
     const response = await fetch(`${BASE_URL}/users/avatar`, {
       method: "PUT",
-      body: JSON.stringify(values),
-      headers: {
-        "Content-type": "application/json",
-      },
-      credentials: "include", // AJOUT IMPORTANT
+      body: formData,
+      credentials: "include",
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || `HTTP error! status: ${response.status}`
+      );
     }
 
-    const updatedUserAvatar = await response.json();
-    return updatedUserAvatar;
+    const updatedUser = await response.json();
+    console.log("📥 UpdateAvatar response:", updatedUser);
+
+    const normalizedUser = normalizeUserData(updatedUser);
+
+    console.log("✅ API - Avatar mis à jour:", normalizedUser.photoProfil);
+    return normalizedUser;
   } catch (error) {
     console.error("Erreur lors de la mise à jour de l'avatar:", error);
-    throw error;
+    handleApiError(error);
   }
 }
 
-// Dans auth.api.js - Fonction getCurrentUser optimisée
+// ✅ CORRECTION: getCurrentUser avec normalisation des données améliorée
 export async function getCurrentUser() {
   try {
     // Vérifier si on est sur une page publique
@@ -182,37 +356,56 @@ export async function getCurrentUser() {
 
     // Si on est sur une page publique, ne pas faire la requête
     if (isPublicPath) {
+      console.log("🚫 getCurrentUser - Page publique, pas de requête");
       return null;
     }
+
+    console.log("📤 getCurrentUser - Récupération utilisateur actuel...");
 
     const response = await fetch(`${BASE_URL}/users/currentUser`, {
       method: "GET",
       credentials: "include",
     });
 
+    console.log("📡 getCurrentUser - Response status:", response.status);
+
     if (response.status === 401) {
       // Session expirée ou pas connecté
+      console.log("🚫 getCurrentUser - Non authentifié (401)");
       return null;
     }
 
     if (response.ok) {
-      return await response.json();
+      const userData = await response.json();
+      console.log("📥 getCurrentUser - Raw data:", userData);
+
+      // ✅ AMÉLIORATION: Normaliser les données utilisateur récupérées
+      const normalizedUser = normalizeUserData(userData);
+      console.log("✅ getCurrentUser - Normalized data:", normalizedUser);
+
+      return normalizedUser;
     } else {
-      console.log(`Erreur ${response.status}: ${response.statusText}`);
+      console.log(
+        `❌ getCurrentUser - Erreur ${response.status}: ${response.statusText}`
+      );
       return null;
     }
   } catch (error) {
-    console.log("Erreur réseau:", error);
+    console.log("❌ getCurrentUser - Erreur réseau:", error);
     return null;
   }
 }
 
 export async function signOut() {
   try {
+    console.log("📤 SignOut - Déconnexion...");
+
     await fetch(`${BASE_URL}/users/deleteToken`, {
       method: "DELETE",
       credentials: "include",
     });
+
+    console.log("✅ SignOut - Déconnexion réussie");
   } catch (error) {
     console.error("Erreur lors de la déconnexion:", error);
   }
@@ -323,13 +516,15 @@ export async function resetPassword(values) {
 
 export async function changePassword(values) {
   try {
+    console.log("📤 ChangePassword API call");
+
     const response = await fetch(`${BASE_URL}/users/changePassword`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(values),
-      credentials: "include", // AJOUT IMPORTANT
+      credentials: "include",
     });
 
     if (!response.ok) {
@@ -342,6 +537,8 @@ export async function changePassword(values) {
     }
 
     const data = await response.json();
+    console.log("📥 ChangePassword response:", data);
+
     return {
       success: true,
       message: data.message || "Mot de passe modifié avec succès",
@@ -356,74 +553,74 @@ export async function changePassword(values) {
   }
 }
 
+// ✅ FONCTIONS TATOUEURS AMÉLIORÉES avec meilleure gestion des avatars
 const determineExperience = (createdAt) => {
   if (!createdAt) return "Non spécifié";
-  
+
   const now = new Date();
   const created = new Date(createdAt);
   const years = (now - created) / (1000 * 60 * 60 * 24 * 365);
-  
+
   if (years < 1) return "Junior (0-3 ans)";
   if (years < 3) return "Intermédiaire (3-7 ans)";
   return "Expert (7+ ans)";
 };
 
-// Fonction pour générer un prix aléatoire (temporaire)
 const generateRandomPrice = () => {
-  return Math.floor(Math.random() * 400) + 80; // Entre 80 et 480€
+  return Math.floor(Math.random() * 400) + 80;
 };
 
-// Fonction pour générer une note aléatoire (temporaire)
 const generateRandomRating = () => {
-  return Math.round((Math.random() * 2 + 3) * 10) / 10; // Entre 3.0 et 5.0
+  return Math.round((Math.random() * 2 + 3) * 10) / 10;
 };
 
-// Fonction pour obtenir les coordonnées approximatives d'une ville
 const getCoordinatesFromLocation = (location) => {
-  if (!location) return { lat: 48.8566, lng: 2.3522 }; // Paris par défaut
-  
+  if (!location) return { lat: 48.8566, lng: 2.3522 };
+
   const coordinates = {
-    "Paris": { lat: 48.8566, lng: 2.3522 },
-    "Lyon": { lat: 45.7578, lng: 4.832 },
-    "Marseille": { lat: 43.2965, lng: 5.3698 },
-    "Bordeaux": { lat: 44.8378, lng: -0.5792 },
-    "Lille": { lat: 50.6292, lng: 3.0573 },
-    "Toulouse": { lat: 43.6047, lng: 1.4442 },
-    "Strasbourg": { lat: 48.5734, lng: 7.7521 },
-    "Nantes": { lat: 47.2184, lng: -1.5536 },
-    "Montpellier": { lat: 43.6110, lng: 3.8767 },
-    "Nice": { lat: 43.7102, lng: 7.2620 },
-    "Rennes": { lat: 49.7439, lng: -1.6806 },
-    "Dijon": { lat: 47.3220, lng: 5.0415 },
-    "Angers": { lat: 47.4784, lng: -0.5632 },
+    Paris: { lat: 48.8566, lng: 2.3522 },
+    Lyon: { lat: 45.7578, lng: 4.832 },
+    Marseille: { lat: 43.2965, lng: 5.3698 },
+    Bordeaux: { lat: 44.8378, lng: -0.5792 },
+    Lille: { lat: 50.6292, lng: 3.0573 },
+    Toulouse: { lat: 43.6047, lng: 1.4442 },
+    Strasbourg: { lat: 48.5734, lng: 7.7521 },
+    Nantes: { lat: 47.2184, lng: -1.5536 },
+    Montpellier: { lat: 43.611, lng: 3.8767 },
+    Nice: { lat: 43.7102, lng: 7.262 },
+    Rennes: { lat: 49.7439, lng: -1.6806 },
+    Dijon: { lat: 47.322, lng: 5.0415 },
+    Angers: { lat: 47.4784, lng: -0.5632 },
     "Saint-Étienne": { lat: 45.4397, lng: 4.3872 },
     "Le Havre": { lat: 49.4944, lng: 0.1079 },
-    "Grenoble": { lat: 45.1885, lng: 5.7245 },
-    "Toulon": { lat: 43.1242, lng: 5.9280 },
-    "Annecy": { lat: 45.8992, lng: 6.1294 },
-    "Metz": { lat: 49.1193, lng: 6.1757 },
-    "Besançon": { lat: 47.2380, lng: 6.0243 }
+    Grenoble: { lat: 45.1885, lng: 5.7245 },
+    Toulon: { lat: 43.1242, lng: 5.928 },
+    Annecy: { lat: 45.8992, lng: 6.1294 },
+    Metz: { lat: 49.1193, lng: 6.1757 },
+    Besançon: { lat: 47.238, lng: 6.0243 },
   };
-  
-  // Recherche exacte d'abord
+
   if (coordinates[location]) {
     return coordinates[location];
   }
-  
-  // Recherche approximative (contient)
+
   const locationLower = location.toLowerCase();
   for (const [city, coords] of Object.entries(coordinates)) {
-    if (city.toLowerCase().includes(locationLower) || locationLower.includes(city.toLowerCase())) {
+    if (
+      city.toLowerCase().includes(locationLower) ||
+      locationLower.includes(city.toLowerCase())
+    ) {
       return coords;
     }
   }
-  
-  return { lat: 48.8566, lng: 2.3522 }; // Paris par défaut
+
+  return { lat: 48.8566, lng: 2.3522 };
 };
 
-// Fonction principale pour récupérer les tatoueurs
 export async function getTattooers() {
   try {
+    console.log("📤 getTattooers - Récupération des tatoueurs...");
+
     const response = await fetch(`${BASE_URL}/users/tattooers`, {
       method: "GET",
       headers: {
@@ -437,22 +634,34 @@ export async function getTattooers() {
     }
 
     const data = await response.json();
-    console.log("Données reçues du backend:", data);
-    
-    // Transformer les données du backend pour correspondre à l'interface
-    const transformedArtists = data.map(user => {
+    console.log("📥 getTattooers - Données reçues du backend:", data);
+
+    const transformedArtists = data.map((user) => {
+      console.log("🔄 Transformation tatoueur:", {
+        id: user._id,
+        nom: user.nom,
+        photoProfil: user.photoProfil,
+        avatar: user.avatar,
+      });
+
       const coordinates = getCoordinatesFromLocation(user.localisation);
-      
+
       return {
         _id: user._id,
         name: user.nom || "Nom non renseigné",
-        category: user.styles ? user.styles.split(',')[0].trim() : "Non spécifié",
+        category: user.styles
+          ? user.styles.split(",")[0].trim()
+          : "Non spécifié",
         location: user.localisation || "Non renseigné",
         experience: determineExperience(user.createdAt),
-        price: generateRandomPrice(), // À remplacer par vraies données quand disponibles
-        rating: generateRandomRating(), // À remplacer par vraies données quand disponibles
-        availability: Math.random() > 0.3 ? "Disponible" : "Complet", // À remplacer par vraies données
-        avatar: user.avatar || "/api/placeholder/150/150",
+        price: generateRandomPrice(),
+        rating: generateRandomRating(),
+        availability: Math.random() > 0.3 ? "Disponible" : "Complet",
+        avatar:
+          user.photoProfil ||
+          user.avatar ||
+          user.profilePicture ||
+          "/api/placeholder/150/150", // ✅ AMÉLIORATION: Fallback multiple
         portfolio: user.portfolio?.[0] || "/api/placeholder/400/300",
         bio: user.bio || "",
         styles: user.styles || "",
@@ -461,33 +670,36 @@ export async function getTattooers() {
         longitude: coordinates.lng,
         distance: 0,
         createdAt: user.createdAt,
-        email: user.email, // Utile pour le contact
+        email: user.email,
       };
     });
 
-    console.log("Artistes transformés:", transformedArtists);
-    
+    console.log("✅ getTattooers - Artistes transformés:", transformedArtists);
+
     return {
       success: true,
       data: transformedArtists,
-      count: transformedArtists.length
+      count: transformedArtists.length,
     };
-    
   } catch (error) {
-    console.error("Erreur lors de la récupération des artistes:", error);
+    console.error(
+      "❌ getTattooers - Erreur lors de la récupération des artistes:",
+      error
+    );
     return {
       success: false,
-      message: error.message || "Impossible de charger les artistes. Veuillez réessayer.",
-      data: []
+      message:
+        error.message ||
+        "Impossible de charger les artistes. Veuillez réessayer.",
+      data: [],
     };
   }
 }
 
-// Fonction pour récupérer un tatoueur spécifique par ID
 export async function getTattooerById(id) {
   try {
     console.log("🔍 API - Récupération utilisateur ID:", id);
-    
+
     const response = await fetch(`${BASE_URL}/users/${id}`, {
       method: "GET",
       headers: {
@@ -504,51 +716,51 @@ export async function getTattooerById(id) {
 
     const user = await response.json();
     console.log("📥 API - Données brutes reçues:", user);
-    
-    // Normalisation des données pour assurer la cohérence
-    const transformedUser = {
-      _id: user._id || user.id,
+
+    const transformedUser = normalizeUserData({
+      ...user,
       nom: user.nom || user.name || user.username || "Utilisateur",
       email: user.email,
       userType: user.userType || user.type || "tatoueur",
-      photoProfil: user.photoProfil || user.avatar || user.profilePicture || null,
+      photoProfil:
+        user.photoProfil || user.avatar || user.profilePicture || null,
       bio: user.bio || user.description || "",
       localisation: user.localisation || user.location || user.address || "",
       styles: user.styles || user.specialties || "",
       portfolio: user.portfolio || user.images || [],
       followers: user.followers || 0,
       following: user.following || 0,
-      // Ajout de champs supplémentaires s'ils existent
       phone: user.phone || user.telephone || "",
       website: user.website || "",
       instagram: user.instagram || "",
       experience: user.experience || "",
       studio: user.studio || "",
-    };
+    });
 
     console.log("✅ API - Données transformées:", transformedUser);
 
     return {
       success: true,
       data: transformedUser,
-      message: "Utilisateur récupéré avec succès"
+      message: "Utilisateur récupéré avec succès",
     };
-    
   } catch (error) {
-    console.error("❌ API - Erreur lors de la récupération du tatoueur:", error);
+    console.error(
+      "❌ API - Erreur lors de la récupération du tatoueur:",
+      error
+    );
     return {
       success: false,
       message: error.message || "Impossible de charger le tatoueur.",
-      data: null
+      data: null,
     };
   }
 }
 
-// Fonction alternative si vous avez besoin de récupérer n'importe quel type d'utilisateur
 export async function getUserById(id) {
   try {
     console.log("🔍 API - Récupération utilisateur (générique) ID:", id);
-    
+
     const response = await fetch(`${BASE_URL}/users/${id}`, {
       method: "GET",
       headers: {
@@ -563,37 +775,40 @@ export async function getUserById(id) {
 
     const user = await response.json();
     console.log("📥 API - Données utilisateur reçues:", user);
-    
+
     return {
       success: true,
-      data: user,
-      message: "Utilisateur récupéré avec succès"
+      data: normalizeUserData(user),
+      message: "Utilisateur récupéré avec succès",
     };
-    
   } catch (error) {
-    console.error("❌ API - Erreur lors de la récupération de l'utilisateur:", error);
+    console.error(
+      "❌ API - Erreur lors de la récupération de l'utilisateur:",
+      error
+    );
     return {
       success: false,
       message: error.message || "Impossible de charger l'utilisateur.",
-      data: null
+      data: null,
     };
   }
 }
 
-// Fonction pour rechercher des tatoueurs avec filtres
 export async function searchTattooers(filters = {}) {
   try {
-    // Construire les paramètres de requête
+    console.log("📤 searchTattooers - Recherche avec filtres:", filters);
+
     const queryParams = new URLSearchParams();
-    
-    if (filters.search) queryParams.append('search', filters.search);
-    if (filters.location) queryParams.append('location', filters.location);
-    if (filters.styles) queryParams.append('styles', filters.styles);
-    if (filters.minPrice) queryParams.append('minPrice', filters.minPrice);
-    if (filters.maxPrice) queryParams.append('maxPrice', filters.maxPrice);
-    
+
+    if (filters.search) queryParams.append("search", filters.search);
+    if (filters.location) queryParams.append("location", filters.location);
+    if (filters.styles) queryParams.append("styles", filters.styles);
+    if (filters.minPrice) queryParams.append("minPrice", filters.minPrice);
+    if (filters.maxPrice) queryParams.append("maxPrice", filters.maxPrice);
+
     const url = `${BASE_URL}/users/tattooers/search?${queryParams.toString()}`;
-    
+    console.log("🔗 searchTattooers - URL:", url);
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -607,21 +822,27 @@ export async function searchTattooers(filters = {}) {
     }
 
     const data = await response.json();
-    
-    // Transformer les données
-    const transformedArtists = data.map(user => {
+    console.log("📥 searchTattooers - Résultats:", data);
+
+    const transformedArtists = data.map((user) => {
       const coordinates = getCoordinatesFromLocation(user.localisation);
-      
+
       return {
         _id: user._id,
         name: user.nom || "Nom non renseigné",
-        category: user.styles ? user.styles.split(',')[0].trim() : "Non spécifié",
+        category: user.styles
+          ? user.styles.split(",")[0].trim()
+          : "Non spécifié",
         location: user.localisation || "Non renseigné",
         experience: determineExperience(user.createdAt),
         price: generateRandomPrice(),
         rating: generateRandomRating(),
         availability: Math.random() > 0.3 ? "Disponible" : "Complet",
-        avatar: user.avatar || "/api/placeholder/150/150",
+        avatar:
+          user.photoProfil ||
+          user.avatar ||
+          user.profilePicture ||
+          "/api/placeholder/150/150", // ✅ AMÉLIORATION
         portfolio: user.portfolio?.[0] || "/api/placeholder/400/300",
         bio: user.bio || "",
         styles: user.styles || "",
@@ -637,22 +858,20 @@ export async function searchTattooers(filters = {}) {
     return {
       success: true,
       data: transformedArtists,
-      count: transformedArtists.length
+      count: transformedArtists.length,
     };
-    
   } catch (error) {
-    console.error("Erreur lors de la recherche:", error);
+    console.error("❌ searchTattooers - Erreur lors de la recherche:", error);
     return {
       success: false,
       message: error.message || "Erreur lors de la recherche.",
-      data: []
+      data: [],
     };
   }
 }
 
-// Fonction utilitaire pour calculer la distance entre deux points GPS
 export function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Rayon de la Terre en km
+  const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -662,6 +881,6 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
       Math.sin(dLon / 2) *
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c; // Distance en km
+  const distance = R * c;
   return distance;
 }

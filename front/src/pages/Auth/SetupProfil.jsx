@@ -12,7 +12,7 @@ export default function SetupProfil() {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [profileImage, setProfileImage] = useState(null);
+  const [profileImageFile, setProfileImageFile] = useState(null); // ✅ CHANGEMENT: Stocker le File
   const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -24,11 +24,9 @@ export default function SetupProfil() {
       window.history.pushState(null, null, "/setupprofil");
     };
 
-    // Ajouter un état à l'historique pour capturer le retour
     window.history.pushState(null, null, "/setupprofil");
     window.addEventListener("popstate", handlePopState);
 
-    // Empêcher la fermeture/actualisation de la page
     const handleBeforeUnload = (event) => {
       event.preventDefault();
       event.returnValue = "Votre profil n'est pas encore configuré. Êtes-vous sûr de vouloir quitter ?";
@@ -87,7 +85,7 @@ export default function SetupProfil() {
   const bioLength = watch("bio")?.length || 0;
   const watchedUserType = watch("userType");
 
-  // Fonction simple pour valider l'image
+  // ✅ AMÉLIORATION: Validation d'image plus robuste
   const validateImageFile = (file) => {
     const maxSize = 5 * 1024 * 1024; // 5MB
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -99,7 +97,7 @@ export default function SetupProfil() {
     if (!allowedTypes.includes(file.type)) {
       return { 
         valid: false, 
-        error: `Type de fichier non autorisé. Types acceptés: ${allowedTypes.join(', ')}` 
+        error: `Type de fichier non autorisé. Types acceptés: JPEG, PNG, WebP` 
       };
     }
 
@@ -113,7 +111,7 @@ export default function SetupProfil() {
     return { valid: true };
   };
 
-  // Gestion de l'upload d'image (version simple sans Supabase)
+  // ✅ NOUVEAU: Gestion de l'upload d'image avec Cloudinary
   const handleImageChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -128,9 +126,10 @@ export default function SetupProfil() {
     try {
       setUploadingImage(true);
       
-      setProfileImage(file);
+      // ✅ CHANGEMENT: Stocker le fichier réel pour l'envoi plus tard
+      setProfileImageFile(file);
       
-      // Créer une prévisualisation
+      // Créer une prévisualisation locale
       const reader = new FileReader();
       reader.onload = (e) => {
         setProfileImagePreview(e.target.result);
@@ -148,8 +147,14 @@ export default function SetupProfil() {
   };
 
   const removeImage = () => {
-    setProfileImage(null);
+    setProfileImageFile(null); // ✅ CHANGEMENT: Reset du fichier
     setProfileImagePreview(null);
+    
+    // Reset de l'input file
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+      fileInput.value = '';
+    }
   };
 
   const submit = async (values) => {
@@ -157,20 +162,21 @@ export default function SetupProfil() {
 
     try {
       console.log("🔧 Configuration du profil avec:", values);
+      console.log("📷 Fichier image:", profileImageFile);
       console.log("👤 Utilisateur actuel:", user);
 
-      // Pour l'instant, on stocke l'image en base64
-      // Dans un vrai projet, vous uploaderiez vers un service comme Supabase Storage
+      // ✅ CHANGEMENT: Préparer les données avec le fichier
       const profileData = {
         userType: values.userType,
         nom: values.nom,
         localisation: values.localisation,
         bio: values.bio || "",
         styles: values.styles || "",
-        // Stocker l'image en base64 temporairement
-        photoProfil: profileImagePreview || "",
+        // ✅ IMPORTANT: Passer le fichier File pour l'upload Cloudinary
+        photoProfil: profileImageFile, // File object ou null
       };
 
+      console.log("📤 Envoi des données vers l'API...");
       const result = await completeProfile(profileData);
       console.log("📝 Résultat complétion profil:", result);
 
@@ -180,13 +186,13 @@ export default function SetupProfil() {
           console.log("✅ Mise à jour du contexte avec:", result.user);
           setUser(result.user);
         } else {
-          // Si le serveur ne renvoie pas l'utilisateur complet,
-          // on met à jour avec les données locales
+          // Fallback: mise à jour locale
           const updatedUser = {
             ...user,
-            ...profileData,
+            ...values,
             isProfileCompleted: true,
             needsProfileCompletion: false,
+            // La photo sera mise à jour par la réponse du serveur
           };
           console.log("🔄 Mise à jour locale du contexte avec:", updatedUser);
           setUser(updatedUser);
@@ -197,7 +203,7 @@ export default function SetupProfil() {
         // Petit délai pour s'assurer que le contexte est mis à jour
         setTimeout(() => {
           navigate("/", { replace: true });
-        }, 500);
+        }, 1000);
       } else {
         console.log("❌ Erreur configuration profil:", result.message);
         toast.error(
@@ -277,13 +283,13 @@ export default function SetupProfil() {
                   {uploadingImage ? "Traitement..." : "Choisir une photo"}
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
                     onChange={handleImageChange}
                     className="hidden"
                     disabled={uploadingImage || isSubmitting}
                   />
                 </label>
-                {profileImage && (
+                {profileImageFile && (
                   <button
                     type="button"
                     onClick={removeImage}
@@ -295,7 +301,7 @@ export default function SetupProfil() {
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                PNG, JPG jusqu'à 5MB
+                PNG, JPG, WebP jusqu'à 5MB
               </p>
             </div>
           </div>

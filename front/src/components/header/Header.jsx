@@ -74,25 +74,78 @@ export default function Header() {
   // Fonction pour obtenir les initiales de l'utilisateur
   const getInitials = (name) => {
     if (!name) return "U";
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  // Fonction pour afficher l'image de profil ou les initiales
-  const getProfileImage = () => {
-    if (user?.photoProfil && user.photoProfil.startsWith('data:image')) {
-      return (
-        <img 
-          src={user.photoProfil} 
-          alt="Profil" 
-          className="w-full h-full object-cover"
-        />
-      );
+  // ✅ NOUVELLE FONCTION: Gestion des URLs Cloudinary pour Header
+  const getProfileImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+
+    console.log("🖼️ Header - Image path:", imagePath);
+
+    // Si c'est déjà une URL Cloudinary complète
+    if (imagePath.startsWith("https://res.cloudinary.com")) {
+      console.log("✅ Header - URL Cloudinary détectée");
+      return imagePath;
     }
-    return (
-      <span className="text-sm font-bold">
-        {getInitials(user?.nom)}
-      </span>
-    );
+
+    // Si c'est du base64, retourner tel quel
+    if (imagePath.startsWith("data:image")) {
+      console.log("✅ Header - Image base64 détectée");
+      return imagePath;
+    }
+
+    // Si l'image commence par http, c'est déjà une URL complète
+    if (imagePath.startsWith("http")) {
+      console.log("✅ Header - URL HTTP détectée");
+      return imagePath;
+    }
+
+    // Fallback pour les anciennes images locales
+    console.log("⚠️ Header - Fallback vers serveur local");
+    const baseUrl = "http://localhost:3000";
+    const cleanPath = imagePath.replace(/\\/g, "/");
+    const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
+
+    return `${baseUrl}${finalPath}`;
+  };
+
+  // ✅ FONCTION AMÉLIORÉE: Affichage image de profil avec gestion d'erreur
+  const getProfileImage = () => {
+    const photoPath = user?.photoProfil;
+
+    console.log("🔍 Header - Photo profil utilisateur:", photoPath);
+
+    if (photoPath) {
+      const imageUrl = getProfileImageUrl(photoPath);
+
+      if (imageUrl) {
+        return (
+          <img
+            src={imageUrl}
+            alt="Profil"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error("❌ Header - Erreur chargement image:", imageUrl);
+              // Cacher l'image et afficher les initiales
+              e.target.style.display = "none";
+              e.target.nextSibling.style.display = "flex";
+            }}
+            onLoad={() => {
+              console.log("✅ Header - Image profil chargée avec succès");
+            }}
+          />
+        );
+      }
+    }
+
+    // Fallback vers les initiales (toujours affiché en cas d'erreur)
+    return <span className="text-sm font-bold">{getInitials(user?.nom)}</span>;
   };
 
   return (
@@ -249,12 +302,19 @@ export default function Header() {
           </button>
         </div>
 
-        {/* Profil utilisateur avec menu */}
+        {/* ✅ Profil utilisateur avec menu (Version Desktop) */}
         <div className="mt-6 relative" ref={userMenuRef}>
           <div className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full cursor-pointer">
             <Link to={"/profil"} className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden">
+              <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden relative">
                 {getProfileImage()}
+                {/* Fallback toujours présent mais caché par défaut */}
+                <span
+                  className="text-sm font-bold absolute inset-0 flex items-center justify-center"
+                  style={{ display: "none" }}
+                >
+                  {getInitials(user?.nom)}
+                </span>
               </div>
               <div>
                 <p className="font-semibold">{user?.nom || "Utilisateur"}</p>
@@ -325,8 +385,15 @@ export default function Header() {
             </button>
           </div>
           <div className="relative cursor-pointer" onClick={toggleMenu}>
-            <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden">
+            <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden relative">
               {getProfileImage()}
+              {/* Fallback toujours présent mais caché par défaut */}
+              <span
+                className="text-sm font-bold absolute inset-0 flex items-center justify-center"
+                style={{ display: "none" }}
+              >
+                {getInitials(user?.nom)}
+              </span>
             </div>
           </div>
         </div>
@@ -335,11 +402,18 @@ export default function Header() {
       {/* Menu latéral mobile */}
       {isMenuOpen && (
         <div className="md:hidden fixed top-0 right-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg z-50 overflow-y-auto">
-          {/* En-tête du menu avec profil utilisateur */}
+          {/* ✅ En-tête du menu avec profil utilisateur (Version Mobile) */}
           <div className="mt-6 flex items-center justify-between p-4 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
             <Link to={"/profil"} className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden">
+              <div className="h-10 w-10 rounded-full bg-red-400 flex items-center justify-center text-white overflow-hidden relative">
                 {getProfileImage()}
+                {/* Fallback toujours présent mais caché par défaut */}
+                <span
+                  className="text-sm font-bold absolute inset-0 flex items-center justify-center"
+                  style={{ display: "none" }}
+                >
+                  {getInitials(user?.nom)}
+                </span>
               </div>
               <div>
                 <p className="font-semibold">{user?.nom || "Utilisateur"}</p>
