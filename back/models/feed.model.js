@@ -1,9 +1,11 @@
+// ✅ CORRECTION du modèle Feed - Vérification du schema des likes
+
 const mongoose = require('mongoose');
 
 const feedSchema = new mongoose.Schema({
   idTatoueur: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User', // Référence vers le modèle User unifié
+    ref: 'User',
     required: true,
     index: true
   },
@@ -20,8 +22,7 @@ const feedSchema = new mongoose.Schema({
   tags: [{
     type: String,
     trim: true,
-    lowercase: true,
-    maxlength: 30
+    lowercase: true
   }],
   datePublication: {
     type: Date,
@@ -31,14 +32,15 @@ const feedSchema = new mongoose.Schema({
   likes: [{
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User' // Référence vers User au lieu de refPath
+      ref: 'User',
+      required: true
     },
     userType: {
       type: String,
-      enum: ['client', 'tatoueur'], // Correspond aux valeurs de votre userType
+      enum: ['client', 'tatoueur'],
       required: true
     },
-    date: {
+    dateLike: {
       type: Date,
       default: Date.now
     }
@@ -46,11 +48,12 @@ const feedSchema = new mongoose.Schema({
   commentaires: [{
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User' // Référence vers User au lieu de refPath
+      ref: 'User',
+      required: true
     },
     userType: {
       type: String,
-      enum: ['client', 'tatoueur'], // Correspond aux valeurs de votre userType
+      enum: ['client', 'tatoueur'],
       required: true
     },
     contenu: {
@@ -59,60 +62,115 @@ const feedSchema = new mongoose.Schema({
       maxlength: 500,
       trim: true
     },
-    date: {
+    dateCommentaire: {
       type: Date,
       default: Date.now
+    },
+    // ✅ CORRECTION: S'assurer que les likes des commentaires sont bien définis
+    likes: {
+      type: [{
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
+        },
+        userType: {
+          type: String,
+          enum: ['client', 'tatoueur'],
+          required: true
+        },
+        dateLike: {
+          type: Date,
+          default: Date.now
+        }
+      }],
+      default: [] // ✅ AJOUT: Valeur par défaut
+    },
+    replies: {
+      type: [{
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
+        },
+        userType: {
+          type: String,
+          enum: ['client', 'tatoueur'],
+          required: true
+        },
+        contenu: {
+          type: String,
+          required: true,
+          maxlength: 500,
+          trim: true
+        },
+        dateReponse: {
+          type: Date,
+          default: Date.now
+        },
+        likes: {
+          type: [{
+            userId: {
+              type: mongoose.Schema.Types.ObjectId,
+              ref: 'User',
+              required: true
+            },
+            userType: {
+              type: String,
+              enum: ['client', 'tatoueur'],
+              required: true
+            },
+            dateLike: {
+              type: Date,
+              default: Date.now
+            }
+          }],
+          default: [] // ✅ AJOUT: Valeur par défaut
+        }
+      }],
+      default: [] // ✅ AJOUT: Valeur par défaut
     }
-  }],
-  visibility: {
-    type: String,
-    enum: ['public', 'followers', 'private'],
-    default: 'public'
-  }
+  }]
 }, {
   timestamps: true
+});
+
+// ✅ AJOUT: Middleware pour initialiser les arrays si undefined
+feedSchema.pre('save', function(next) {
+  // Initialiser les likes de la publication
+  if (!this.likes) this.likes = [];
+  
+  // Initialiser les arrays des commentaires
+  if (this.commentaires) {
+    this.commentaires.forEach(comment => {
+      if (!comment.likes) comment.likes = [];
+      if (!comment.replies) comment.replies = [];
+      
+      // Initialiser les likes des réponses
+      if (comment.replies) {
+        comment.replies.forEach(reply => {
+          if (!reply.likes) reply.likes = [];
+        });
+      }
+    });
+  }
+  
+  next();
 });
 
 // Index composé pour améliorer les performances
 feedSchema.index({ idTatoueur: 1, datePublication: -1 });
 feedSchema.index({ datePublication: -1 });
 feedSchema.index({ tags: 1 });
-feedSchema.index({ 'likes.userId': 1 });
 
 // Méthode virtuelle pour compter les likes
 feedSchema.virtual('likesCount').get(function() {
-  return this.likes.length;
+  return this.likes ? this.likes.length : 0;
 });
 
 // Méthode virtuelle pour compter les commentaires
 feedSchema.virtual('commentsCount').get(function() {
-  return this.commentaires.length;
-});
-
-// Méthode pour vérifier si un utilisateur a liké la publication
-feedSchema.methods.isLikedBy = function(userId) {
-  return this.likes.some(like => like.userId.toString() === userId.toString());
-};
-
-// Méthode pour obtenir les tags les plus populaires
-feedSchema.statics.getPopularTags = function(limit = 10) {
-  return this.aggregate([
-    { $unwind: '$tags' },
-    { $group: { _id: '$tags', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: limit }
-  ]);
-};
-
-// Middleware pre-save pour nettoyer les tags
-feedSchema.pre('save', function(next) {
-  if (this.tags) {
-    this.tags = this.tags
-      .filter(tag => tag && tag.trim())
-      .map(tag => tag.trim().toLowerCase())
-      .slice(0, 10); // Limiter à 10 tags maximum
-  }
-  next();
+  return this.commentaires ? this.commentaires.length : 0;
 });
 
 // Inclure les virtuels dans JSON

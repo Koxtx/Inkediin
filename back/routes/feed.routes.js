@@ -17,11 +17,16 @@ const {
   getSavedFeeds,
   saveFeed,
   unsaveFeed,
-  searchFeedsByTag
+  searchFeedsByTag,
+  // ✅ AJOUT: Nouvelles fonctions
+  addReplyToComment,
+  likeReply,
+  deleteReply
 } = require("../controllers/feed.controllers");
 
 const authentification = require("../middlewares/auth");
-const { uploadFeed } = require("../middlewares/upload");
+// ✅ CORRECTION: Import du middleware Cloudinary uniquement
+const { uploadFeed, uploadFeedToCloudinary } = require("../middlewares/uplodCloudinary");
 
 // ⚠️ ORDRE IMPORTANT : Routes spécifiques AVANT les routes avec paramètres
 
@@ -39,8 +44,8 @@ router.get('/search', searchFeedsByTag);
 // 4. Routes avec préfixe spécifique + paramètre
 router.get('/artist/:artistId', getFeedsByTattooArtist);
 
-// 5. Routes de création (sans conflit avec les paramètres)
-router.post('/', authentification, uploadFeed.single('image'), createFeed);
+// 5. Routes de création avec upload Cloudinary
+router.post('/', authentification, uploadFeed, uploadFeedToCloudinary, createFeed);
 
 // 6. Routes avec paramètre simple - APRÈS toutes les routes spécifiques
 router.get('/:id', getFeedById);
@@ -56,5 +61,10 @@ router.delete('/:id/save', authentification, unsaveFeed);
 router.post('/:id/comments', authentification, addComment);
 router.delete('/:id/comments/:commentId', authentification, deleteComment);
 router.post('/:id/comments/:commentId/like', authentification, likeComment);
+
+// ✅ AJOUT: Nouvelles routes pour les réponses aux commentaires
+router.post('/:id/comments/:commentId/replies', authentification, addReplyToComment);
+router.post('/:id/comments/:commentId/replies/:replyId/like', authentification, likeReply);
+router.delete('/:id/comments/:commentId/replies/:replyId', authentification, deleteReply);
 
 module.exports = router;

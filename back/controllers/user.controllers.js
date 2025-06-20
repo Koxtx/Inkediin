@@ -9,6 +9,7 @@ const {
   validateNewPassword,
 } = require("../email/email");
 const TempUser = require("../models/tempuser.model");
+const { deleteAvatarFromCloudinary } = require("../middlewares/userUpload");
 
 const SECRET_KEY = process.env.SECRET_KEY;
 
@@ -95,13 +96,12 @@ const signin = async (req, res) => {
       console.log('🔐 Token créé pour:', user.nom);
       console.log('🎫 Token:', token.substring(0, 20) + '...');
 
-      // CORRECTION IMPORTANTE: httpOnly doit être false pour WebSocket
       res.cookie("token", token, {
-        httpOnly: false,  // ⚠️ CHANGÉ: false au lieu de true pour permettre l'accès via JavaScript
-        secure: process.env.NODE_ENV === 'production', // HTTPS en production seulement
-        sameSite: 'lax',  // Protection CSRF
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
-        path: '/',        // Disponible sur tout le site
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
       });
 
       console.log('🍪 Cookie défini avec les options:');
@@ -110,7 +110,6 @@ const signin = async (req, res) => {
       console.log('- sameSite: lax');
       console.log('- maxAge: 7 jours');
 
-      // Ajouter l'information sur le statut du profil
       res.status(200).json({
         ...userWithoutPassword,
         needsProfileCompletion: !user.isProfileCompleted || !user.userType,
@@ -124,10 +123,10 @@ const signin = async (req, res) => {
   }
 };
 
-// méthodes pour mettre à jour les utilisateurs
-
 const updateUser = async (req, res) => {
-  console.log(req.body);
+  console.log('📝 UpdateUser - Body reçu:', req.body);
+  console.log('📝 UpdateUser - Fichier reçu:', !!req.file);
+  
   try {
     const {
       email,
@@ -139,47 +138,76 @@ const updateUser = async (req, res) => {
       portfolio,
       followers,
     } = req.body;
+
+    const updateData = {
+      email,
+      nom,
+      userType,
+      localisation,
+      bio,
+      styles,
+      portfolio,
+      followers,
+    };
+
+    // ✅ AJOUT: Si un avatar a été uploadé via Cloudinary
+    if (req.avatarUrl) {
+      updateData.photoProfil = req.avatarUrl;
+      updateData.cloudinaryAvatarId = req.avatarPublicId;
+      console.log('👤 Avatar Cloudinary ajouté:', {
+        url: req.avatarUrl,
+        publicId: req.avatarPublicId
+      });
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
-      {
-        email,
-        nom,
-        userType,
-        localisation,
-        bio,
-        styles,
-        portfolio,
-        followers,
-      },
+      updateData,
       {
         new: true,
         runValidators: true,
       }
     );
+
+    console.log('✅ Utilisateur mis à jour:', updatedUser.nom);
     res.status(200).json(updatedUser);
   } catch (error) {
-    console.log(error);
+    console.error('❌ Erreur updateUser:', error);
+    res.status(500).json({ message: "Erreur lors de la mise à jour" });
   }
 };
 
+// ✅ NOUVEAU: Méthode spécifique pour l'avatar avec Cloudinary
 const updateAvatar = async (req, res) => {
-  console.log(req.body);
+  console.log('🖼️ UpdateAvatar - Fichier reçu:', !!req.file);
+  console.log('🖼️ UpdateAvatar - Avatar URL:', req.avatarUrl);
+  
   try {
-    const { photoProfil } = req.body;
+    if (!req.avatarUrl) {
+      return res.status(400).json({ message: "Aucun fichier d'avatar fourni" });
+    }
+
+    const updateData = {
+      photoProfil: req.avatarUrl,
+      cloudinaryAvatarId: req.avatarPublicId
+    };
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user._id,
-      {
-        photoProfil,
-      },
+      updateData,
       {
         new: true,
         runValidators: true,
       }
     );
-    res.status(200).json(updatedUser);
+
+    console.log('✅ Avatar mis à jour pour:', updatedUser.nom);
+    
+    const { password: _, ...userWithoutPassword } = updatedUser.toObject();
+    res.status(200).json(userWithoutPassword);
   } catch (error) {
-    console.log(error);
+    console.error('❌ Erreur updateAvatar:', error);
+    res.status(500).json({ message: "Erreur lors de la mise à jour de l'avatar" });
   }
 };
 
@@ -194,9 +222,8 @@ const currentUser = async (req, res) => {
 const logoutUser = async (req, res) => {
   console.log('👋 Déconnexion utilisateur');
   
-  // Supprimer le cookie avec les mêmes options que lors de la création
   res.clearCookie("token", {
-    httpOnly: false,  // Doit correspondre aux options de création
+    httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/'
@@ -231,7 +258,6 @@ const forgotMyPassword = async (req, res) => {
       );
       console.log("💾 Résultat de la mise à jour:", updateResult);
 
-      // Vérifier que le token a bien été sauvegardé
       const updatedUser = await User.findOne({ email });
       console.log("🔍 Token sauvegardé en base:", updatedUser.resetToken);
     }
@@ -240,6 +266,7 @@ const forgotMyPassword = async (req, res) => {
     console.log("❌ Erreur dans forgotMyPassword:", error);
   }
 };
+
 const resetPassword = async (req, res) => {
   console.log("🔐 Reset password - Body reçu:", req.body);
 
@@ -247,11 +274,9 @@ const resetPassword = async (req, res) => {
   try {
     console.log("🔍 Vérification du token:", token);
 
-    // 1- Vérifier le token
     let decodedToken = jsonwebtoken.verify(token, process.env.SECRET_KEY);
     console.log("✅ Token décodé:", decodedToken);
 
-    // 3- Trouvez l'utilisateur qui a ce token
     const user = await User.findOne({ resetToken: token });
     console.log("👤 Utilisateur trouvé:", user ? "OUI" : "NON");
 
@@ -262,39 +287,31 @@ const resetPassword = async (req, res) => {
         .json({ message: "Token invalide ou utilisateur introuvable" });
     }
 
-    // 4- hashé le nouveau mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 5- Modifier mot de passe en BDD et passer resetToken à null
     user.password = hashedPassword;
     user.resetToken = null;
     await user.save();
 
     console.log("✅ Mot de passe mis à jour avec succès");
 
-    // 6- Envoyer mail "mot de passe modifié"
     await validateNewPassword(user.email);
 
-    // 7- Feedback réussite
     res.status(200).json({ messageOk: "Mot de passe mis à jour avec succès" });
   } catch (error) {
     console.log("❌ Erreur dans resetPassword:", error.message);
-    // 2- Gestion de l'erreur
     res.status(400).json({ message: "Jeton d'authentification invalide" });
   }
 };
 
 const changePassword = async (req, res) => {
-  // récupérer l'ID
   const { currentPassword, newPassword } = req.body;
   try {
-    // vérifier que le mot de passe actuel est bien celui de l'utilisateur connecté
     const isMatch = await bcrypt.compare(currentPassword, req.user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Mot de passe actuel incorrect" });
     }
 
-    // vérifier que le nouveau mot de passe est différent de l'actuel
     const isSameAsOld = await bcrypt.compare(newPassword, req.user.password);
     if (isSameAsOld) {
       return res.status(401).json({
@@ -302,34 +319,33 @@ const changePassword = async (req, res) => {
       });
     }
 
-    // tout est OK, on hash le nouveau de mot de passe et on modifie l'utilisateur en BDD
     const hashed = await bcrypt.hash(newPassword, 10);
     req.user.password = hashed;
     await req.user.save();
-    // envoi mail et feedback
 
     await validateNewPassword(req.user.email);
     return res
       .status(200)
       .json({ messageOk: "Mot de passe modifié avec succès" });
-  } catch (error) {}
-
-  // redirection page accueil côté front
+  } catch (error) {
+    console.error('❌ Erreur changePassword:', error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
 };
 
 const completeProfile = async (req, res) => {
+  console.log('📝 CompleteProfile - Body reçu:', req.body);
+  console.log('📝 CompleteProfile - Fichier reçu:', !!req.file);
+  
   try {
-    const { userType, nom, photoProfil, localisation, bio, styles, portfolio } =
-      req.body;
+    const { userType, nom, localisation, bio, styles, portfolio } = req.body;
 
-    // Validation du type d'utilisateur
     if (!userType || !["client", "tatoueur"].includes(userType)) {
       return res
         .status(400)
         .json({ message: "Type d'utilisateur requis (client ou tatoueur)" });
     }
 
-    // Validation des champs obligatoires
     if (!nom || !localisation) {
       return res
         .status(400)
@@ -343,10 +359,16 @@ const completeProfile = async (req, res) => {
       isProfileCompleted: true,
     };
 
-    // Ajouter les champs optionnels s'ils sont fournis
-    if (photoProfil) updateData.photoProfil = photoProfil;
+    // ✅ AJOUT: Si un avatar a été uploadé via Cloudinary
+    if (req.avatarUrl) {
+      updateData.photoProfil = req.avatarUrl;
+      updateData.cloudinaryAvatarId = req.avatarPublicId;
+      console.log('👤 Avatar Cloudinary ajouté lors de la complétion:', {
+        url: req.avatarUrl,
+        publicId: req.avatarPublicId
+      });
+    }
 
-    // Champs spécifiques aux tatoueurs
     if (userType === "tatoueur") {
       if (bio) updateData.bio = bio;
       if (styles) updateData.styles = styles;
@@ -364,7 +386,7 @@ const completeProfile = async (req, res) => {
       message: "Profil complété avec succès",
     });
   } catch (error) {
-    console.log(error);
+    console.error('❌ Erreur completeProfile:', error);
     res.status(500).json({ message: "Erreur lors de la complétion du profil" });
   }
 };
@@ -374,7 +396,7 @@ const fetchTatoueur = async (req, res) => {
     const tattooers = await User.find({
       userType: "tatoueur",
     }).select(
-      "nom localisation styles avatar portfolio bio followers createdAt"
+      "nom localisation styles photoProfil portfolio bio followers createdAt"
     );
 
     res.json(tattooers);
@@ -382,6 +404,7 @@ const fetchTatoueur = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 const fetchTatoueurById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -389,7 +412,7 @@ const fetchTatoueurById = async (req, res) => {
       _id: id,
       userType: "tatoueur",
     }).select(
-      "nom localisation styles avatar portfolio bio followers createdAt email userType"
+      "nom localisation styles photoProfil portfolio bio followers createdAt email userType"
     );
 
     if (!tatoueur) {
@@ -406,20 +429,48 @@ const fetchTatoueurById = async (req, res) => {
 const getUserById = async (req, res) => {
   const { id } = req.params;
   try {
-    const tatoueur = await User.findOne({
+    const user = await User.findOne({
       _id: id,
     }).select(
-      "nom localisation styles avatar portfolio bio followers createdAt email userType"
+      "nom localisation styles photoProfil portfolio bio followers createdAt email userType"
     );
 
-    if (!tatoueur) {
-      return res.status(404).json({ message: "Tatoueur non trouvé" });
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
 
-    res.json(tatoueur);
+    res.json(user);
   } catch (error) {
     console.error("Erreur serveur :", error);
     res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// ✅ NOUVEAU: Fonction pour supprimer un utilisateur et son avatar
+const deleteUser = async (req, res) => {
+  try {
+    const user = req.user;
+
+    // Supprimer l'avatar de Cloudinary s'il existe
+    if (user.cloudinaryAvatarId) {
+      await deleteAvatarFromCloudinary(user.cloudinaryAvatarId);
+    }
+
+    // Supprimer l'utilisateur de la base de données
+    await User.findByIdAndDelete(user._id);
+
+    // Supprimer le cookie
+    res.clearCookie("token", {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
+    });
+
+    res.status(200).json({ message: "Compte supprimé avec succès" });
+  } catch (error) {
+    console.error('❌ Erreur deleteUser:', error);
+    res.status(500).json({ message: "Erreur lors de la suppression du compte" });
   }
 };
 
@@ -438,4 +489,5 @@ module.exports = {
   fetchTatoueur,
   fetchTatoueurById,
   getUserById,
+  deleteUser,
 };
