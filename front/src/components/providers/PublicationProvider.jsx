@@ -18,7 +18,7 @@ export default function PublicationProvider({ children }) {
   // ✅ FONCTION AMÉLIORÉE: Enrichir les données avec avatars et debug
   const enrichPublicationData = (publications) => {
     console.group("🔄 enrichPublicationData - Processing");
-    console.log("Input publications:", publications?.length || 0);
+   
 
     if (!publications || !Array.isArray(publications)) {
       console.warn("⚠️ Publications invalides:", publications);
@@ -27,14 +27,11 @@ export default function PublicationProvider({ children }) {
     }
 
     const enriched = publications.map((publication, index) => {
-      console.log(
-        `📝 Publication ${index + 1}/${publications.length}:`,
-        publication._id
-      );
+    
 
       // ✅ AMÉLIORATION: Enrichir l'auteur avec debug
       const originalAuthor = publication.idTatoueur;
-      console.log("👤 Auteur original:", originalAuthor);
+
 
       const enrichedAuthor = originalAuthor
         ? {
@@ -51,21 +48,15 @@ export default function PublicationProvider({ children }) {
           }
         : null;
 
-      console.log("✅ Auteur enrichi:", {
-        nom: enrichedAuthor?.nom,
-        photoProfil: enrichedAuthor?.photoProfil,
-      });
+      
 
       // ✅ AMÉLIORATION: Enrichir les commentaires avec debug
       const originalComments = publication.commentaires || [];
-      console.log("💬 Commentaires originaux:", originalComments.length);
+      
 
       const enrichedComments = originalComments.map((comment, commentIndex) => {
         const originalCommentUser = comment.userId;
-        console.log(
-          `💬 Commentaire ${commentIndex + 1} - Utilisateur original:`,
-          originalCommentUser
-        );
+      
 
         const enrichedCommentUser = originalCommentUser
           ? {
@@ -82,13 +73,7 @@ export default function PublicationProvider({ children }) {
             }
           : null;
 
-        console.log(
-          `✅ Commentaire ${commentIndex + 1} - Utilisateur enrichi:`,
-          {
-            nom: enrichedCommentUser?.nom,
-            photoProfil: enrichedCommentUser?.photoProfil,
-          }
-        );
+       
 
         return {
           ...comment,
@@ -96,7 +81,7 @@ export default function PublicationProvider({ children }) {
         };
       });
 
-      console.log("✅ Commentaires enrichis:", enrichedComments.length);
+     
 
       const enrichedPublication = {
         ...publication,
@@ -104,11 +89,11 @@ export default function PublicationProvider({ children }) {
         commentaires: enrichedComments,
       };
 
-      console.log("✅ Publication enrichie complète");
+
       return enrichedPublication;
     });
 
-    console.log("✅ enrichPublicationData - Terminé:", enriched.length);
+  
     console.groupEnd();
     return enriched;
   };
@@ -117,7 +102,7 @@ export default function PublicationProvider({ children }) {
   useEffect(() => {
     const getCurrentUser = () => {
       try {
-        console.log("🔍 PublicationProvider - Initialisation utilisateur...");
+       
 
         const cookies = document.cookie.split("; ");
         const tokenCookie = cookies.find((row) => row.startsWith("token="));
@@ -130,14 +115,14 @@ export default function PublicationProvider({ children }) {
 
           if (userId) {
             setCurrentUserId(userId);
-            console.log("✅ PublicationProvider - User ID défini:", userId);
+            
             return;
           }
         }
 
         // Fallback temporaire
         setCurrentUserId("68492f8aff76a60093ccb90b");
-        console.log("⚠️ PublicationProvider - ID temporaire utilisé");
+       
       } catch (error) {
         console.error("❌ PublicationProvider - Erreur init user:", error);
         setCurrentUserId("68492f8aff76a60093ccb90b");
@@ -150,10 +135,7 @@ export default function PublicationProvider({ children }) {
   // Charger les données initiales
   useEffect(() => {
     if (currentUserId) {
-      console.log(
-        "🚀 PublicationProvider - Chargement initial avec userId:",
-        currentUserId
-      );
+      
       loadInitialData();
     }
   }, [currentUserId]);
@@ -165,7 +147,7 @@ export default function PublicationProvider({ children }) {
 
     try {
       console.group("🌐 PublicationProvider - Chargement données");
-      console.log("Utilisateur actuel:", currentUserId);
+      
 
       // Charger les publications en parallèle
       const [followedData, recommendedData, savedData] =
@@ -178,25 +160,13 @@ export default function PublicationProvider({ children }) {
       // ✅ TRAITEMENT: Publications suivies
       if (followedData.status === "fulfilled") {
         const rawFollowed = followedData.value.publications || [];
-        console.log("📦 Raw followed publications:", rawFollowed.length);
+      
 
-        // Debug de la première publication
-        if (rawFollowed.length > 0) {
-          console.log("🔍 Première publication suivie:", {
-            id: rawFollowed[0]._id,
-            auteur: rawFollowed[0].idTatoueur,
-            auteurPhoto:
-              rawFollowed[0].idTatoueur?.photoProfil ||
-              rawFollowed[0].idTatoueur?.avatar,
-          });
-        }
+     
 
         const enrichedFollowed = enrichPublicationData(rawFollowed);
         setFollowedPosts(enrichedFollowed);
-        console.log(
-          "✅ Publications suivies enrichies:",
-          enrichedFollowed.length
-        );
+      
       } else {
         console.error(
           "❌ Erreur chargement publications suivies:",
@@ -207,25 +177,12 @@ export default function PublicationProvider({ children }) {
       // ✅ TRAITEMENT: Publications recommandées
       if (recommendedData.status === "fulfilled") {
         const rawRecommended = recommendedData.value.publications || [];
-        console.log("📦 Raw recommended publications:", rawRecommended.length);
+       
 
-        // Debug de la première publication
-        if (rawRecommended.length > 0) {
-          console.log("🔍 Première publication recommandée:", {
-            id: rawRecommended[0]._id,
-            auteur: rawRecommended[0].idTatoueur,
-            auteurPhoto:
-              rawRecommended[0].idTatoueur?.photoProfil ||
-              rawRecommended[0].idTatoueur?.avatar,
-          });
-        }
-
+    
         const enrichedRecommended = enrichPublicationData(rawRecommended);
         setRecommendedPosts(enrichedRecommended);
-        console.log(
-          "✅ Publications recommandées enrichies:",
-          enrichedRecommended.length
-        );
+       
       } else {
         console.error(
           "❌ Erreur chargement publications recommandées:",
@@ -236,7 +193,7 @@ export default function PublicationProvider({ children }) {
       // ✅ TRAITEMENT: Publications sauvegardées
       if (savedData.status === "fulfilled") {
         const rawSaved = savedData.value.publications || [];
-        console.log("📦 Raw saved publications:", rawSaved.length);
+        
 
         // Pour les sauvegardées, adaptation avec avatars
         const adaptedSaved = rawSaved.map((post) => {
@@ -255,20 +212,13 @@ export default function PublicationProvider({ children }) {
             datePublication: new Date(post.datePublication || post.createdAt),
           };
 
-          console.log("💾 Publication sauvegardée adaptée:", {
-            id: adapted.id,
-            username: adapted.username,
-            userAvatar: adapted.userAvatar,
-          });
+        
 
           return adapted;
         });
 
         setSavedPosts(adaptedSaved);
-        console.log(
-          "✅ Publications sauvegardées adaptées:",
-          adaptedSaved.length
-        );
+       
       } else {
         console.error(
           "❌ Erreur chargement publications sauvegardées:",
@@ -291,7 +241,7 @@ export default function PublicationProvider({ children }) {
       setLoading(true);
       setError(null);
 
-      console.log("📤 addPublication - Données:", publicationData);
+  
 
       // Valider les données
       const validationErrors =
@@ -305,10 +255,7 @@ export default function PublicationProvider({ children }) {
         publicationData
       );
 
-      console.log(
-        "✅ PublicationProvider - Nouvelle publication reçue:",
-        newPublication
-      );
+     
 
       // ✅ AMÉLIORATION: Enrichir la nouvelle publication avec les infos utilisateur
       const userInfo = getCurrentUserInfo();
@@ -323,7 +270,7 @@ export default function PublicationProvider({ children }) {
 
       // Ajouter la publication enrichie en première position
       setFollowedPosts((prev) => [enrichedNewPublication, ...prev]);
-      console.log("✅ Publication ajoutée au state local");
+      
 
       return newPublication;
     } catch (error) {
@@ -338,20 +285,17 @@ export default function PublicationProvider({ children }) {
 const toggleLikePost = async (postId) => {
   try {
     console.group("👍 PublicationProvider - Toggle like POST");
-    console.log("Post ID:", postId);
-    console.log("User ID:", currentUserId);
+    
+    
 
     // Appel API direct
-    console.log("📡 Appel API toggleLike...");
+  
     const result = await publicationApi.toggleLikePublication(postId);
-    console.log("✅ API toggleLike result:", {
-      likesCount: result.likesCount || result.likes?.length,
-      likes: result.likes
-    });
+   
 
     // ✅ CORRECTION: Forcer le rechargement des données depuis l'API
     if (result) {
-      console.log("🔄 Rechargement des données pour synchroniser...");
+     
       
       // Recharger les données suivies
       try {
@@ -359,7 +303,7 @@ const toggleLikePost = async (postId) => {
         if (followedData.publications) {
           const enrichedFollowed = enrichPublicationData(followedData.publications);
           setFollowedPosts(enrichedFollowed);
-          console.log("✅ followedPosts rechargés");
+          
         }
       } catch (error) {
         console.warn("⚠️ Erreur rechargement followedPosts:", error);
@@ -371,7 +315,7 @@ const toggleLikePost = async (postId) => {
         if (recommendedData.publications) {
           const enrichedRecommended = enrichPublicationData(recommendedData.publications);
           setRecommendedPosts(enrichedRecommended);
-          console.log("✅ recommendedPosts rechargés");
+          
         }
       } catch (error) {
         console.warn("⚠️ Erreur rechargement recommendedPosts:", error);
@@ -394,14 +338,14 @@ const toggleLikePost = async (postId) => {
         (savedPost) => savedPost.id === postId
       );
 
-      console.log("💾 toggleSavePost:", { postId, isAlreadySaved });
+     
 
       // Mise à jour optimiste
       if (isAlreadySaved) {
         setSavedPosts((prev) =>
           prev.filter((savedPost) => savedPost.id !== postId)
         );
-        console.log("➖ Post retiré des sauvegardés");
+      
       } else {
         const postToSave = {
           id: postId,
@@ -418,12 +362,12 @@ const toggleLikePost = async (postId) => {
           datePublication: new Date(post.datePublication || post.createdAt),
         };
         setSavedPosts((prev) => [postToSave, ...prev]);
-        console.log("➕ Post ajouté aux sauvegardés:", postToSave);
+       
       }
 
       // Appel API
       await publicationApi.toggleSavePublication(postId);
-      console.log("✅ API toggleSave success");
+      
     } catch (error) {
       console.error("❌ PublicationProvider - Erreur sauvegarde:", error);
       await loadInitialData(); // Recharger en cas d'erreur
@@ -447,7 +391,7 @@ const toggleLikePost = async (postId) => {
         return;
       }
 
-      console.log("🗑️ Suppression publication:", postId);
+   
       setLoading(true);
       await publicationApi.deletePublication(postId);
 
@@ -459,7 +403,7 @@ const toggleLikePost = async (postId) => {
       setRecommendedPosts(removeFromArray);
       setSavedPosts(removeFromArray);
 
-      console.log("✅ Publication supprimée localement");
+   
     } catch (error) {
       console.error("❌ PublicationProvider - Erreur suppression:", error);
       setError("Erreur lors de la suppression de la publication");
@@ -472,7 +416,7 @@ const toggleLikePost = async (postId) => {
   // Fonction pour obtenir les publications par tag
   const getPostsByTag = async (tag) => {
     try {
-      console.log("🏷️ Recherche par tag:", tag);
+    
       const response = await publicationApi.getPublicationsByTag(tag);
       const enrichedPosts = enrichPublicationData(response.publications || []);
       return enrichedPosts;

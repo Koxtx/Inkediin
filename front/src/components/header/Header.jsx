@@ -289,10 +289,6 @@ export default function Header() {
           </div>
         </nav>
 
-        {/* Bouton Poster */}
-        <button className="mt-4 bg-red-400 text-white py-3 px-6 rounded-full font-bold hover:bg-red-600">
-          Poster
-        </button>
         <div className="flex items-center justify-center gap-4 w-full mt-4">
           <button
             onClick={toggleTheme}

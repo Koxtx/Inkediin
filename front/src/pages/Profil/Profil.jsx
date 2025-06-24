@@ -15,7 +15,7 @@ import ProfileSpecialties from "./components/ProfileSpecialties";
 import ProfileTabs from "./components/ProfileTabs";
 import TattooGallery from "./components/TattooGallery";
 import FlashGallery from "./components/FlashGallery";
-import FlashStatistics from "./components/FlashStatistics";
+
 import ClientPreferences from "./components/ClientPreferences";
 import ClientWishlist from "./components/ClientWishlist";
 import FollowedArtists from "./components/FollowedArtists";
@@ -517,13 +517,7 @@ export default function Profil() {
         />
       )}
 
-      {/* Statistiques des flashs pour le propriétaire */}
-      {isOwnProfile && displayUser?.userType === "tatoueur" && (
-        <FlashStatistics
-          isOwnProfile={isOwnProfile}
-          displayUser={displayUser}
-        />
-      )}
+   
 
       {/* Recommandations d'artistes pour les clients */}
       {isOwnProfile &&

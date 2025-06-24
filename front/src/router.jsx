@@ -157,7 +157,6 @@ export const router = createBrowserRouter([
           </UserConnected>
         ),
       },
-
       {
         path: "/tag",
         element: (
@@ -238,8 +237,9 @@ export const router = createBrowserRouter([
           </UserConnected>
         ),
       },
+      // ✅ ROUTE CORRIGÉE: FlashDetail avec paramètre ID
       {
-        path: "/flashdetail",
+        path: "/flashdetail/:id", // ✅ Ajout du paramètre :id
         element: (
           <UserConnected>
             <FlashDetail />
@@ -270,7 +270,6 @@ export const router = createBrowserRouter([
           </UserConnected>
         ),
       },
-
       {
         path: "/uploadpublication",
         element: (
@@ -295,7 +294,7 @@ export const router = createBrowserRouter([
           </UserConnected>
         ),
       },
-          {
+      {
         path: "/modifierprofil",
         element: (
           <UserConnected>

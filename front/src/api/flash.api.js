@@ -110,7 +110,7 @@ export const flashApi = {
   },
 
   // Créer un nouveau flash
-  createFlash: async (flashData) => {
+   createFlash: async (flashData) => {
     try {
       const formData = new FormData();
       
@@ -136,6 +136,14 @@ export const flashApi = {
         formData.append('style', flashData.style);
       }
 
+      // ✅ AJOUT MANQUANT: Le style personnalisé
+      if (flashData.styleCustom) {
+        formData.append('styleCustom', flashData.styleCustom);
+        console.log("📤 API - StyleCustom ajouté:", flashData.styleCustom);
+      } else {
+        console.log("📤 API - Pas de styleCustom dans flashData:", flashData.styleCustom);
+      }
+
       if (flashData.taille) {
         formData.append('taille', flashData.taille);
       }
@@ -159,6 +167,12 @@ export const flashApi = {
       // Ajouter l'image (obligatoire)
       if (flashData.image) {
         formData.append('image', flashData.image);
+      }
+
+      // ✅ DEBUG: Afficher le contenu du FormData
+      console.log("📤 API - Contenu FormData envoyé:");
+      for (let [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value instanceof File ? `File: ${value.name}` : value);
       }
       
       const response = await fetch(`${BASE_URL}/flashs`, {
@@ -269,27 +283,10 @@ export const flashApi = {
     }
   },
 
-  // Noter un flash
-  rateFlash: async (flashId, rating) => {
-    try {
-      const response = await fetch(`${BASE_URL}/flashs/${flashId}/rate`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ rating }),
-        credentials: 'include', // Important pour inclure les cookies
-      });
-      
-      return await handleApiError(response);
-    } catch (error) {
-      console.error('Erreur lors de la notation du flash:', error);
-      throw error;
-    }
-  },
-
   // Réserver un flash
   reserveFlash: async (flashId) => {
     try {
-      const response = await fetch(`${BASE_URL}/flashs/${flashId}/reserve-flash`, {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/reserve`, {
         method: 'POST',
         headers: getHeaders(),
         credentials: 'include', // Important pour inclure les cookies
@@ -314,6 +311,22 @@ export const flashApi = {
       return await handleApiError(response);
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du flash:', error);
+      throw error;
+    }
+  },
+
+  // Supprimer un flash des favoris
+  unsaveFlash: async (flashId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/flashs/${flashId}/save`, {
+        method: 'DELETE',
+        headers: getHeaders(),
+        credentials: 'include', // Important pour inclure les cookies
+      });
+      
+      return await handleApiError(response);
+    } catch (error) {
+      console.error('Erreur lors de la suppression du flash des favoris:', error);
       throw error;
     }
   },
@@ -442,7 +455,7 @@ export const flashApi = {
   },
 };
 
-// Fonctions utilitaires pour les flashs (mises à jour selon le contrôleur)
+// Fonctions utilitaires pour les flashs (nettoyées sans rating)
 export const flashUtils = {
   // Vérifier si un flash est disponible
   isAvailable: (flash) => {
@@ -580,7 +593,7 @@ export const flashUtils = {
     });
   },
 
-  // Trier les flashs (mis à jour avec nouvelles options)
+  // Trier les flashs (nettoyé sans rating)
   sortFlashs: (flashs, sortBy = 'date', order = 'desc') => {
     return flashs.sort((a, b) => {
       let valueA, valueB;
@@ -598,10 +611,6 @@ export const flashUtils = {
           valueA = a.likesCount || a.likes?.length || 0;
           valueB = b.likesCount || b.likes?.length || 0;
           break;
-        case 'rating':
-          valueA = a.averageRating || 0;
-          valueB = b.averageRating || 0;
-          break;
         case 'date':
         default:
           valueA = new Date(a.date || a.createdAt);
@@ -617,7 +626,7 @@ export const flashUtils = {
     });
   },
 
-  // Calculer les statistiques des flashs (mis à jour)
+  // Calculer les statistiques des flashs (nettoyé sans rating)
   getStats: (flashs) => {
     const total = flashs.length;
     const disponibles = flashs.filter(f => f.disponible && !f.reserve).length;
@@ -629,12 +638,9 @@ export const flashUtils = {
     const prixMin = prix.length > 0 ? Math.min(...prix) : 0;
     const prixMax = prix.length > 0 ? Math.max(...prix) : 0;
     
-    // Nouvelles stats
+    // Stats d'engagement (sans rating)
     const totalLikes = flashs.reduce((acc, f) => acc + (f.likesCount || f.likes?.length || 0), 0);
     const totalViews = flashs.reduce((acc, f) => acc + (f.views || 0), 0);
-    const averageRating = flashs.filter(f => f.averageRating > 0).length > 0 
-      ? flashs.filter(f => f.averageRating > 0).reduce((acc, f) => acc + f.averageRating, 0) / flashs.filter(f => f.averageRating > 0).length 
-      : 0;
     
     return {
       total,
@@ -648,8 +654,7 @@ export const flashUtils = {
       },
       engagement: {
         totalLikes,
-        totalViews,
-        averageRating: Math.round(averageRating * 10) / 10
+        totalViews
       }
     };
   },
@@ -658,15 +663,6 @@ export const flashUtils = {
   hasUserLiked: (flash, userId) => {
     if (!flash.likes || !userId) return false;
     return flash.likes.some(like => like.userId._id === userId || like.userId === userId);
-  },
-
-  // Vérifier si l'utilisateur a noté un flash
-  getUserRating: (flash, userId) => {
-    if (!flash.ratings || !userId) return null;
-    const userRating = flash.ratings.find(rating => 
-      rating.userId._id === userId || rating.userId === userId
-    );
-    return userRating ? userRating.rating : null;
   },
 
   // Vérifier si l'utilisateur a sauvegardé un flash

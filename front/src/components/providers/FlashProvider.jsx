@@ -1,349 +1,710 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { flashApi } from "../../api/flash.api";
 import { FlashContext } from "../../context/FlashContext";
 
 export default function FlashProvider({ children }) {
-  // État pour les flashs suivis
-  const [followedFlashes, setFollowedFlashes] = useState([
-    {
-      id: 1,
-      title: "Rose Old School",
-      artist: "TattooArtist1",
-      artistId: "artist_1",
-      price: 90,
-      currency: "€",
-      description: "Rose traditionnelle style old school avec des couleurs vives",
-      image: null,
-      tags: ["Old School", "Rose", "Couleur"],
-      availability: "limited",
-      limitNumber: 3,
-      remainingSpots: 2,
-      size: "m",
-      placement: "arm",
-      dateCreation: new Date("2024-06-10"),
-      likes: 24,
-      isLiked: false,
-      isSaved: false,
-      views: 145,
-      comments: 3
-    },
-    {
-      id: 2,
-      title: "Dragon Japonais",
-      artist: "InkMaster",
-      artistId: "artist_2",
-      price: 150,
-      currency: "€",
-      description: "Dragon traditionnel japonais en noir et gris",
-      image: null,
-      tags: ["Japonais", "Dragon", "Noir et gris"],
-      availability: "exclusive",
-      limitNumber: 1,
-      remainingSpots: 1,
-      size: "l",
-      placement: "back",
-      dateCreation: new Date("2024-06-12"),
-      likes: 67,
-      isLiked: true,
-      isSaved: false,
-      views: 234,
-      comments: 8
-    }
-  ]);
+  // ✅ États pour les flashs
+  const [followedFlashes, setFollowedFlashes] = useState([]);
+  const [recommendedFlashes, setRecommendedFlashes] = useState([]);
+  const [savedFlashes, setSavedFlashes] = useState([]);
+  const [allFlashes, setAllFlashes] = useState([]);
 
-  // État pour les flashs recommandés
-  const [recommendedFlashes, setRecommendedFlashes] = useState([
-    {
-      id: 3,
-      title: "Géométrique",
-      artist: "ArtistInk",
-      artistId: "artist_3",
-      price: 120,
-      currency: "€",
-      description: "Motif géométrique minimaliste",
-      image: null,
-      tags: ["Géométrique", "Minimaliste", "Lignes"],
-      availability: "unlimited",
-      limitNumber: null,
-      remainingSpots: null,
-      size: "s",
-      placement: "forearm",
-      dateCreation: new Date("2024-06-08"),
-      likes: 45,
-      isLiked: false,
-      isSaved: false,
-      views: 189,
-      comments: 12
-    },
-    {
-      id: 4,
-      title: "Tribal",
-      artist: "InkCreator",
-      artistId: "artist_4",
-      price: 80,
-      currency: "€",
-      description: "Design tribal moderne",
-      image: null,
-      tags: ["Tribal", "Noir"],
-      availability: "limited",
-      limitNumber: 5,
-      remainingSpots: 3,
-      size: "m",
-      placement: "shoulder",
-      dateCreation: new Date("2024-06-11"),
-      likes: 32,
-      isLiked: false,
-      isSaved: true,
-      views: 167,
-      comments: 5
-    },
-    {
-      id: 5,
-      title: "Minimaliste",
-      artist: "TattooQueen",
-      artistId: "artist_5",
-      price: 70,
-      currency: "€",
-      description: "Design fin et élégant",
-      image: null,
-      tags: ["Minimaliste", "Fine Line"],
-      availability: "unlimited",
-      limitNumber: null,
-      remainingSpots: null,
-      size: "xs",
-      placement: "ankle",
-      dateCreation: new Date("2024-06-09"),
-      likes: 78,
-      isLiked: false,
-      isSaved: false,
-      views: 201,
-      comments: 15
-    },
-    {
-      id: 6,
-      title: "Blackwork",
-      artist: "InkDreamer",
-      artistId: "artist_6",
-      price: 110,
-      currency: "€",
-      description: "Design blackwork complexe",
-      image: null,
-      tags: ["Blackwork", "Géométrique"],
-      availability: "limited",
-      limitNumber: 2,
-      remainingSpots: 1,
-      size: "l",
-      placement: "leg",
-      dateCreation: new Date("2024-06-13"),
-      likes: 89,
-      isLiked: false,
-      isSaved: false,
-      views: 289,
-      comments: 21
-    }
-  ]);
+  // ✅ NOUVEAU: Cache des flashs individuels pour synchronisation
+  const [flashsCache, setFlashsCache] = useState(new Map());
 
-  // État pour les flashs sauvegardés (wishlist)
-  const [savedFlashes, setSavedFlashes] = useState([
-    {
-      id: 1,
-      title: "Rose Traditionnelle",
-      artist: "TattooArtist1",
-      artistId: "artist_1",
-      category: "Old School",
-      price: 90,
-      currency: "€",
-      comments: 3,
-      views: 145,
-      dateSaved: new Date("2024-06-10")
-    },
-    {
-      id: 4,
-      title: "Tribal",
-      artist: "InkCreator",
-      artistId: "artist_4",
-      category: "Tribal",
-      price: 80,
-      currency: "€",
-      comments: 5,
-      views: 167,
-      dateSaved: new Date("2024-06-11")
-    }
-  ]);
+  // ✅ États de contrôle
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
-  // Fonction pour ajouter un nouveau flash
-  const addFlash = (flashData) => {
-    const newFlash = {
-      id: Date.now(),
-      ...flashData,
-      dateCreation: new Date(),
-      likes: 0,
-      isLiked: false,
-      isSaved: false,
-      views: 0,
-      comments: 0,
-      remainingSpots: flashData.availability === "limited" ? flashData.limitNumber : null
+  // ✅ États de pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  // ✅ NOUVELLE FONCTION: Mettre à jour un flash dans toutes les listes
+  const updateFlashInAllLists = useCallback((flashId, updatedFlash) => {
+    const updateFlashInList = (flashList, setFlashList) => {
+      setFlashList((prev) =>
+        prev.map((flash) =>
+          (flash._id === flashId || flash.id === flashId) ? updatedFlash : flash
+        )
+      );
     };
 
-    setFollowedFlashes(prev => [newFlash, ...prev]);
-    return newFlash;
-  };
+    updateFlashInList(allFlashes, setAllFlashes);
+    updateFlashInList(followedFlashes, setFollowedFlashes);
+    updateFlashInList(recommendedFlashes, setRecommendedFlashes);
+    updateFlashInList(savedFlashes, setSavedFlashes);
+  }, [allFlashes, followedFlashes, recommendedFlashes, savedFlashes]);
 
-  // Fonction pour liker/unliker un flash
-  const toggleLikeFlash = (flashId) => {
-    const updateFlashInArray = (flashArray, setFlashArray) => {
-      const flashIndex = flashArray.findIndex(flash => flash.id === flashId);
-      if (flashIndex !== -1) {
-        const updatedFlashes = [...flashArray];
-        const flash = updatedFlashes[flashIndex];
-        updatedFlashes[flashIndex] = {
-          ...flash,
-          isLiked: !flash.isLiked,
-          likes: flash.isLiked ? flash.likes - 1 : flash.likes + 1
-        };
-        setFlashArray(updatedFlashes);
-        return true;
-      }
-      return false;
+  // ✅ NOUVELLE FONCTION: Mettre à jour un flash dans le cache et toutes les listes
+  const updateFlashInCache = useCallback((flashId, updatedFlash) => {
+    // Mettre à jour le cache
+    setFlashsCache(prev => {
+      const newCache = new Map(prev);
+      newCache.set(flashId, updatedFlash);
+      return newCache;
+    });
+
+    // Mettre à jour dans toutes les listes
+    updateFlashInAllLists(flashId, updatedFlash);
+
+    // Émettre un événement global pour notifier tous les composants
+    window.dispatchEvent(new CustomEvent('flashUpdated', {
+      detail: { flashId, updatedFlash }
+    }));
+  }, [updateFlashInAllLists]);
+
+  // ✅ NOUVEAU: Système d'événements pour synchronisation
+  useEffect(() => {
+    const handleFlashUpdated = (event) => {
+      const { flashId, updatedFlash } = event.detail;
+      console.log("🔄 FlashContext - Flash mis à jour via événement:", flashId);
+      
+      // Mettre à jour dans toutes les listes
+      updateFlashInAllLists(flashId, updatedFlash);
     };
 
-    // Essayer de mettre à jour dans les flashs suivis
-    if (updateFlashInArray(followedFlashes, setFollowedFlashes)) return;
+    window.addEventListener('flashUpdated', handleFlashUpdated);
     
-    // Sinon, essayer dans les flashs recommandés
-    updateFlashInArray(recommendedFlashes, setRecommendedFlashes);
-  };
-
-  // Fonction pour sauvegarder/désauvegarder un flash
-  const toggleSaveFlash = (flash) => {
-    const isAlreadySaved = savedFlashes.some(savedFlash => savedFlash.id === flash.id);
-
-    if (isAlreadySaved) {
-      // Retirer de la wishlist
-      setSavedFlashes(prev => prev.filter(savedFlash => savedFlash.id !== flash.id));
-    } else {
-      // Ajouter à la wishlist
-      const flashToSave = {
-        id: flash.id,
-        title: flash.title,
-        artist: flash.artist,
-        artistId: flash.artistId,
-        category: flash.tags?.[0] || "Divers",
-        price: flash.price,
-        currency: flash.currency,
-        comments: flash.comments,
-        views: flash.views,
-        dateSaved: new Date()
-      };
-      setSavedFlashes(prev => [flashToSave, ...prev]);
-    }
-
-    // Mettre à jour le statut isSaved dans les listes de flashs
-    const updateSaveStatus = (flashArray, setFlashArray) => {
-      const flashIndex = flashArray.findIndex(f => f.id === flash.id);
-      if (flashIndex !== -1) {
-        const updatedFlashes = [...flashArray];
-        updatedFlashes[flashIndex] = {
-          ...updatedFlashes[flashIndex],
-          isSaved: !isAlreadySaved
-        };
-        setFlashArray(updatedFlashes);
-      }
+    return () => {
+      window.removeEventListener('flashUpdated', handleFlashUpdated);
     };
+  }, [updateFlashInAllLists]);
 
-    updateSaveStatus(followedFlashes, setFollowedFlashes);
-    updateSaveStatus(recommendedFlashes, setRecommendedFlashes);
-  };
+  // ✅ NOUVELLE FONCTION: Récupérer un flash depuis le cache ou l'API
+  const getFlashFromCache = useCallback((flashId) => {
+    return flashsCache.get(flashId);
+  }, [flashsCache]);
 
-  // Fonction pour vérifier si un flash est sauvegardé
-  const isFlashSaved = (flashId) => {
-    return savedFlashes.some(flash => flash.id === flashId);
-  };
+  // ✅ Fonction pour récupérer l'utilisateur actuel
+  const getCurrentUser = useCallback(() => {
+    try {
+      // Méthode 1: localStorage 'user'
+      const userFromStorage = localStorage.getItem("user");
+      if (userFromStorage) {
+        const user = JSON.parse(userFromStorage);
+        return user._id || user.id;
+      }
 
-  // Fonction pour supprimer un flash (si l'utilisateur en est l'auteur)
-  const deleteFlash = (flashId) => {
-    setFollowedFlashes(prev => prev.filter(flash => flash.id !== flashId));
-    setRecommendedFlashes(prev => prev.filter(flash => flash.id !== flashId));
-    setSavedFlashes(prev => prev.filter(flash => flash.id !== flashId));
-  };
-
-  // Fonction pour réserver un flash (diminuer le nombre de spots disponibles)
-  const reserveFlash = (flashId) => {
-    const updateFlashReservation = (flashArray, setFlashArray) => {
-      const flashIndex = flashArray.findIndex(flash => flash.id === flashId);
-      if (flashIndex !== -1) {
-        const updatedFlashes = [...flashArray];
-        const flash = updatedFlashes[flashIndex];
-        
-        if (flash.availability === "limited" && flash.remainingSpots > 0) {
-          updatedFlashes[flashIndex] = {
-            ...flash,
-            remainingSpots: flash.remainingSpots - 1
-          };
-          setFlashArray(updatedFlashes);
-          return true;
-        } else if (flash.availability === "exclusive" && flash.remainingSpots === 1) {
-          updatedFlashes[flashIndex] = {
-            ...flash,
-            remainingSpots: 0
-          };
-          setFlashArray(updatedFlashes);
-          return true;
+      // Méthode 2: localStorage alternatives
+      const altKeys = ["currentUser", "authUser", "loggedUser"];
+      for (const key of altKeys) {
+        const userData = localStorage.getItem(key);
+        if (userData) {
+          const user = JSON.parse(userData);
+          return user._id || user.id;
         }
       }
-      return false;
-    };
 
-    // Essayer de réserver dans les flashs suivis
-    if (updateFlashReservation(followedFlashes, setFollowedFlashes)) return true;
-    
-    // Sinon, essayer dans les flashs recommandés
-    return updateFlashReservation(recommendedFlashes, setRecommendedFlashes);
-  };
+      // Méthode 3: Cookies JWT
+      const cookies = document.cookie.split("; ");
+      const tokenCookie = cookies.find((row) => row.startsWith("token="));
+      if (tokenCookie) {
+        const token = tokenCookie.split("=")[1];
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1]));
+          return payload.sub || payload.userId || payload.id || payload._id;
+        } catch (jwtError) {
+          console.error("Erreur décodage JWT:", jwtError);
+        }
+      }
 
-  // Fonction pour obtenir les flashs par catégorie/tag
-  const getFlashesByTag = (tag) => {
-    const allFlashes = [...followedFlashes, ...recommendedFlashes];
-    return allFlashes.filter(flash => 
-      flash.tags.some(flashTag => flashTag.toLowerCase().includes(tag.toLowerCase()))
+      return null;
+    } catch (error) {
+      console.error("Erreur récupération utilisateur:", error);
+      return null;
+    }
+  }, []);
+
+  // ✅ FONCTION: Charger les flashs sauvegardés
+  const loadSavedFlashes = useCallback(async () => {
+    if (!currentUserId) return;
+
+    try {
+      console.log("💾 FlashContext - Chargement flashs sauvegardés");
+
+      const response = await flashApi.getSavedFlashs({
+        page: 1,
+        limit: 50,
+      });
+
+      console.log("✅ FlashContext - Flashs sauvegardés:", response);
+      const savedFlashs = response.flashs || [];
+      setSavedFlashes(savedFlashs);
+
+      // ✅ NOUVEAU: Mettre à jour le cache avec les flashs sauvegardés
+      setFlashsCache(prev => {
+        const newCache = new Map(prev);
+        savedFlashs.forEach(flash => {
+          const flashId = flash._id || flash.id;
+          newCache.set(flashId, flash);
+        });
+        return newCache;
+      });
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur flashs sauvegardés:", err);
+    }
+  }, [currentUserId]);
+
+  // ✅ FONCTION: Charger les flashs initiaux
+  const loadInitialFlashes = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log("📥 FlashContext - Chargement flashs initiaux");
+
+      // Charger tous les flashs (pour recommendations)
+      const response = await flashApi.getFlashs({
+        page: 1,
+        limit: 20,
+        sortBy: "date",
+        order: "desc",
+      });
+
+      console.log("✅ FlashContext - Flashs chargés:", response);
+
+      const flashs = response.flashs || [];
+      setAllFlashes(flashs);
+
+      // ✅ NOUVEAU: Mettre à jour le cache avec les flashs chargés
+      setFlashsCache(prev => {
+        const newCache = new Map(prev);
+        flashs.forEach(flash => {
+          const flashId = flash._id || flash.id;
+          newCache.set(flashId, flash);
+        });
+        return newCache;
+      });
+
+      // Pour l'instant, on met tout dans recommended
+      // Plus tard, on pourra filtrer selon les tatoueurs suivis
+      setRecommendedFlashes(flashs);
+      setFollowedFlashes([]); // À implémenter avec le système de follow
+
+      setCurrentPage(response.currentPage || 1);
+      setTotalPages(response.totalPages || 1);
+      setHasMore(response.currentPage < response.totalPages);
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur chargement flashs:", err);
+      setError(err.message || "Erreur lors du chargement des flashs");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ✅ Initialiser l'utilisateur au montage
+  useEffect(() => {
+    const userId = getCurrentUser();
+    setCurrentUserId(userId);
+    console.log("👤 FlashContext - User ID:", userId);
+  }, [getCurrentUser]);
+
+  // ✅ Charger les flashs au montage
+  useEffect(() => {
+    if (currentUserId) {
+      loadInitialFlashes();
+      loadSavedFlashes();
+    } else {
+      // Charger les flashs publics même sans utilisateur
+      loadInitialFlashes();
+    }
+  }, [currentUserId, loadInitialFlashes, loadSavedFlashes]);
+
+  // ✅ FIX: Stabiliser getFlashesByTatoueur avec useCallback
+  const getFlashesByTatoueur = useCallback(async (tatoueurId, params = {}) => {
+    try {
+      console.log("👨‍🎨 FlashContext - getFlashesByTatoueur:", tatoueurId);
+
+      const response = await flashApi.getFlashsByTatoueur(tatoueurId, params);
+      console.log("✅ FlashContext - Flashs tatoueur:", response);
+
+      const flashs = response.flashs || [];
+
+      // Mettre à jour le cache
+      setFlashsCache(prev => {
+        const newCache = new Map(prev);
+        flashs.forEach(flash => {
+          const flashId = flash._id || flash.id;
+          newCache.set(flashId, flash);
+        });
+        return newCache;
+      });
+
+      return flashs;
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur flashs tatoueur:", err);
+      throw err;
+    }
+  }, []); // Pas de dépendances car la fonction est stable
+
+  // ✅ FONCTION MODIFIÉE: Récupérer un flash par ID avec cache
+  const getFlashById = useCallback(async (flashId) => {
+    try {
+      console.log("🔍 FlashContext - getFlashById:", flashId);
+
+      // Vérifier d'abord le cache
+      const cachedFlash = getFlashFromCache(flashId);
+      if (cachedFlash) {
+        console.log("📋 FlashContext - Flash trouvé dans le cache:", flashId);
+        return cachedFlash;
+      }
+
+      // Sinon, charger depuis l'API
+      const flash = await flashApi.getFlashById(flashId);
+      console.log("✅ FlashContext - Flash chargé depuis l'API:", flash);
+
+      // Mettre à jour le cache
+      updateFlashInCache(flashId, flash);
+
+      return flash;
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur getFlashById:", err);
+      throw err;
+    }
+  }, [getFlashFromCache, updateFlashInCache]);
+
+  // ✅ NOUVELLES FONCTIONS: Gestion des commentaires avec synchronisation
+  const addCommentToFlash = useCallback(async (flashId, contenu) => {
+    try {
+      console.log("💬 FlashContext - Ajout commentaire:", flashId, contenu);
+      
+      const updatedFlash = await flashApi.addComment(flashId, contenu);
+      
+      // Mettre à jour le cache et toutes les listes
+      updateFlashInCache(flashId, updatedFlash);
+      
+      return updatedFlash;
+    } catch (error) {
+      console.error("❌ FlashContext - Erreur ajout commentaire:", error);
+      throw error;
+    }
+  }, [updateFlashInCache]);
+
+  const likeCommentInFlash = useCallback(async (flashId, commentId) => {
+    try {
+      console.log("👍 FlashContext - Like commentaire:", flashId, commentId);
+      
+      const updatedFlash = await flashApi.likeComment(flashId, commentId);
+      
+      // Mettre à jour le cache et toutes les listes
+      updateFlashInCache(flashId, updatedFlash);
+      
+      return updatedFlash;
+    } catch (error) {
+      console.error("❌ FlashContext - Erreur like commentaire:", error);
+      throw error;
+    }
+  }, [updateFlashInCache]);
+
+  const addReplyToComment = useCallback(async (flashId, commentId, contenu) => {
+    try {
+      console.log("💬 FlashContext - Ajout réponse:", flashId, commentId, contenu);
+      
+      const updatedFlash = await flashApi.addReplyToComment(flashId, commentId, contenu);
+      
+      // Mettre à jour le cache et toutes les listes
+      updateFlashInCache(flashId, updatedFlash);
+      
+      return updatedFlash;
+    } catch (error) {
+      console.error("❌ FlashContext - Erreur ajout réponse:", error);
+      throw error;
+    }
+  }, [updateFlashInCache]);
+
+  const likeReplyInFlash = useCallback(async (flashId, commentId, replyId) => {
+    try {
+      console.log("👍 FlashContext - Like réponse:", flashId, commentId, replyId);
+      
+      const updatedFlash = await flashApi.likeReply(flashId, commentId, replyId);
+      
+      // Mettre à jour le cache et toutes les listes
+      updateFlashInCache(flashId, updatedFlash);
+      
+      return updatedFlash;
+    } catch (error) {
+      console.error("❌ FlashContext - Erreur like réponse:", error);
+      throw error;
+    }
+  }, [updateFlashInCache]);
+
+  const deleteCommentFromFlash = useCallback(async (flashId, commentId) => {
+    try {
+      console.log("🗑️ FlashContext - Suppression commentaire:", flashId, commentId);
+      
+      await flashApi.deleteComment(flashId, commentId);
+      
+      // Recharger le flash depuis l'API pour avoir les données à jour
+      const updatedFlash = await flashApi.getFlashById(flashId);
+      
+      // Mettre à jour le cache et toutes les listes
+      updateFlashInCache(flashId, updatedFlash);
+      
+      return updatedFlash;
+    } catch (error) {
+      console.error("❌ FlashContext - Erreur suppression commentaire:", error);
+      throw error;
+    }
+  }, [updateFlashInCache]);
+
+  const deleteReplyFromFlash = useCallback(async (flashId, commentId, replyId) => {
+    try {
+      console.log("🗑️ FlashContext - Suppression réponse:", flashId, commentId, replyId);
+      
+      await flashApi.deleteReply(flashId, commentId, replyId);
+      
+      // Recharger le flash depuis l'API pour avoir les données à jour
+      const updatedFlash = await flashApi.getFlashById(flashId);
+      
+      // Mettre à jour le cache et toutes les listes
+      updateFlashInCache(flashId, updatedFlash);
+      
+      return updatedFlash;
+    } catch (error) {
+      console.error("❌ FlashContext - Erreur suppression réponse:", error);
+      throw error;
+    }
+  }, [updateFlashInCache]);
+
+  // ✅ FONCTION: Créer un nouveau flash
+  const addFlash = useCallback(async (flashData) => {
+    try {
+      console.log("📤 FlashContext - Création flash:", flashData);
+      setLoading(true);
+
+      const newFlash = await flashApi.createFlash(flashData);
+      console.log("✅ FlashContext - Flash créé:", newFlash);
+
+      // Ajouter le nouveau flash en haut de la liste et dans le cache
+      const flashId = newFlash._id || newFlash.id;
+      setFlashsCache(prev => {
+        const newCache = new Map(prev);
+        newCache.set(flashId, newFlash);
+        return newCache;
+      });
+
+      setAllFlashes((prev) => [newFlash, ...prev]);
+      setFollowedFlashes((prev) => [newFlash, ...prev]);
+
+      return newFlash;
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur création flash:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ✅ FONCTION MODIFIÉE: Liker/Unliker un flash avec synchronisation
+  const toggleLikeFlash = useCallback(async (flashId) => {
+    try {
+      console.log("👍 FlashContext - toggleLikeFlash:", flashId);
+
+      const updatedFlash = await flashApi.likeFlash(flashId);
+      console.log("✅ FlashContext - Flash liké:", updatedFlash);
+
+      // Mettre à jour le cache et toutes les listes
+      updateFlashInCache(flashId, updatedFlash);
+
+      return updatedFlash;
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur like flash:", err);
+      throw err;
+    }
+  }, [updateFlashInCache]);
+
+  // ✅ FONCTION: Sauvegarder/Désauvegarder un flash
+  const toggleSaveFlash = useCallback(async (flash) => {
+    if (!currentUserId) {
+      throw new Error("Vous devez être connecté pour sauvegarder un flash");
+    }
+
+    try {
+      console.log("💾 FlashContext - toggleSaveFlash:", flash._id || flash.id);
+
+      const flashId = flash._id || flash.id;
+      const isAlreadySaved = savedFlashes.some(
+        (saved) => (saved._id || saved.id) === flashId
+      );
+
+      if (isAlreadySaved) {
+        // Désauvegarder
+        await flashApi.unsaveFlash(flashId);
+        setSavedFlashes((prev) =>
+          prev.filter((saved) => (saved._id || saved.id) !== flashId)
+        );
+        console.log("✅ Flash retiré des favoris");
+      } else {
+        // Sauvegarder
+        await flashApi.saveFlash(flashId);
+        // Recharger la liste complète pour avoir les données à jour
+        await loadSavedFlashes();
+        console.log("✅ Flash ajouté aux favoris");
+      }
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur save flash:", err);
+      throw err;
+    }
+  }, [currentUserId, savedFlashes, loadSavedFlashes]);
+
+  // ✅ FONCTION: Réserver un flash
+  const reserveFlash = useCallback(async (flashId) => {
+    try {
+      console.log("📅 FlashContext - reserveFlash:", flashId);
+
+      const response = await flashApi.reserveFlash(flashId);
+      console.log("✅ FlashContext - Flash réservé:", response);
+
+      // Mettre à jour le flash dans toutes les listes et le cache
+      const updatedFlash = {
+        ...getFlashFromCache(flashId),
+        reserve: true,
+        reservedBy: currentUserId,
+        reservedAt: new Date(),
+      };
+
+      updateFlashInCache(flashId, updatedFlash);
+
+      return response;
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur réservation flash:", err);
+      throw err;
+    }
+  }, [getFlashFromCache, updateFlashInCache, currentUserId]);
+
+  // ✅ FONCTION: Supprimer un flash
+  const deleteFlash = useCallback(async (flashId) => {
+    try {
+      console.log("🗑️ FlashContext - deleteFlash:", flashId);
+
+      await flashApi.deleteFlash(flashId);
+      console.log("✅ FlashContext - Flash supprimé");
+
+      // Retirer le flash du cache
+      setFlashsCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(flashId);
+        return newCache;
+      });
+
+      // Retirer le flash de toutes les listes
+      const removeFlashFromList = (flashList, setFlashList) => {
+        setFlashList((prev) =>
+          prev.filter((flash) => flash._id !== flashId && flash.id !== flashId)
+        );
+      };
+
+      removeFlashFromList(allFlashes, setAllFlashes);
+      removeFlashFromList(followedFlashes, setFollowedFlashes);
+      removeFlashFromList(recommendedFlashes, setRecommendedFlashes);
+      removeFlashFromList(savedFlashes, setSavedFlashes);
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur suppression flash:", err);
+      throw err;
+    }
+  }, [allFlashes, followedFlashes, recommendedFlashes, savedFlashes]);
+
+  // ✅ FONCTION: Charger plus de flashs
+  const loadMoreFlashes = useCallback(async () => {
+    if (!hasMore || loading) return;
+
+    try {
+      setLoading(true);
+
+      const nextPage = currentPage + 1;
+      console.log("📥 FlashContext - Chargement page:", nextPage);
+
+      const response = await flashApi.getFlashs({
+        page: nextPage,
+        limit: 20,
+        sortBy: "date",
+        order: "desc",
+      });
+
+      const newFlashes = response.flashs || [];
+
+      if (newFlashes.length > 0) {
+        // Ajouter au cache
+        setFlashsCache(prev => {
+          const newCache = new Map(prev);
+          newFlashes.forEach(flash => {
+            const flashId = flash._id || flash.id;
+            newCache.set(flashId, flash);
+          });
+          return newCache;
+        });
+
+        setAllFlashes((prev) => [...prev, ...newFlashes]);
+        setRecommendedFlashes((prev) => [...prev, ...newFlashes]);
+        setCurrentPage(nextPage);
+        setHasMore(nextPage < response.totalPages);
+      } else {
+        setHasMore(false);
+      }
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur load more:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [hasMore, loading, currentPage]);
+
+  // ✅ FONCTION: Rechercher des flashs
+  const searchFlashes = useCallback(async (searchParams) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log("🔍 FlashContext - Recherche flashs:", searchParams);
+
+      const response = await flashApi.getFlashs({
+        ...searchParams,
+        page: 1,
+        limit: 20,
+      });
+
+      const flashs = response.flashs || [];
+      setAllFlashes(flashs);
+      setRecommendedFlashes(flashs);
+      setCurrentPage(1);
+      setTotalPages(response.totalPages || 1);
+      setHasMore(response.currentPage < response.totalPages);
+
+      // Mettre à jour le cache
+      setFlashsCache(prev => {
+        const newCache = new Map(prev);
+        flashs.forEach(flash => {
+          const flashId = flash._id || flash.id;
+          newCache.set(flashId, flash);
+        });
+        return newCache;
+      });
+
+      return response;
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur recherche:", err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // ✅ FONCTION: Vérifier si un flash est sauvegardé
+  const isFlashSaved = useCallback((flashId) => {
+    return savedFlashes.some((flash) => (flash._id || flash.id) === flashId);
+  }, [savedFlashes]);
+
+  // ✅ FONCTION: Vérifier si l'utilisateur a liké un flash
+  const hasUserLiked = useCallback((flash) => {
+    if (!flash.likes || !currentUserId) return false;
+    return flash.likes.some(
+      (like) => (like.userId?._id || like.userId) === currentUserId
     );
-  };
+  }, [currentUserId]);
 
-  // Fonction pour obtenir les flashs par artiste
-  const getFlashesByArtist = (artistId) => {
-    const allFlashes = [...followedFlashes, ...recommendedFlashes];
-    return allFlashes.filter(flash => flash.artistId === artistId);
-  };
+  // ✅ FONCTION: Obtenir le nombre de likes d'un flash
+  const getLikesCount = useCallback((flash) => {
+    return flash.likesCount || flash.likes?.length || 0;
+  }, []);
 
-  // Valeur partagée via le contexte
+  // ✅ FONCTION: Rafraîchir les données
+  const refreshData = useCallback(async () => {
+    try {
+      setError(null);
+      await loadInitialFlashes();
+      if (currentUserId) {
+        await loadSavedFlashes();
+      }
+    } catch (err) {
+      console.error("❌ FlashContext - Erreur refresh:", err);
+      setError(err.message);
+    }
+  }, [loadInitialFlashes, loadSavedFlashes, currentUserId]);
+
+  // ✅ FONCTION: Nettoyer les erreurs
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  // ✅ FONCTIONS UTILITAIRES (compatibilité avec l'ancien contexte)
+  const getFlashesByTag = useCallback((tag) => {
+    return allFlashes.filter((flash) =>
+      flash.tags?.some((flashTag) =>
+        flashTag.toLowerCase().includes(tag.toLowerCase())
+      )
+    );
+  }, [allFlashes]);
+
+  const getFlashesByArtist = useCallback((artistId) => {
+    return allFlashes.filter(
+      (flash) => (flash.idTatoueur?._id || flash.idTatoueur) === artistId
+    );
+  }, [allFlashes]);
+
+  // ✅ Valeur du contexte
   const value = {
     // États
     followedFlashes,
     recommendedFlashes,
     savedFlashes,
-    
-    // Fonctions CRUD
+    allFlashes,
+    loading,
+    error,
+    currentUserId,
+    flashsCache,
+
+    // Pagination
+    currentPage,
+    totalPages,
+    hasMore,
+
+    // Fonctions principales
+    getFlashById,
     addFlash,
     deleteFlash,
-    
-    // Fonctions d'interaction
+
+    // Interactions
     toggleLikeFlash,
     toggleSaveFlash,
-    isFlashSaved,
     reserveFlash,
-    
-    // Fonctions de recherche/filtrage
+
+    // ✅ NOUVELLES FONCTIONS: Gestion des commentaires
+    addCommentToFlash,
+    likeCommentInFlash,
+    addReplyToComment,
+    likeReplyInFlash,
+    deleteCommentFromFlash,
+    deleteReplyFromFlash,
+
+    // Cache et synchronisation
+    updateFlashInCache,
+    getFlashFromCache,
+
+    // Recherche et filtrage
+    searchFlashes,
+    getFlashesByTatoueur,
     getFlashesByTag,
     getFlashesByArtist,
-    
-    // Setters pour mise à jour externe si nécessaire
+    loadMoreFlashes,
+
+    // Utilitaires
+    isFlashSaved,
+    hasUserLiked,
+    getLikesCount,
+    refreshData,
+    clearError,
+
+    // Setters pour compatibilité
     setFollowedFlashes,
     setRecommendedFlashes,
-    setSavedFlashes
+    setSavedFlashes,
+    setAllFlashes,
   };
 
   return (
-    <FlashContext.Provider value={value}>
-      {children}
-    </FlashContext.Provider>
+    <FlashContext.Provider value={value}>{children}</FlashContext.Provider>
   );
 }
