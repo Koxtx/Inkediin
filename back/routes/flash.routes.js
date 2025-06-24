@@ -8,7 +8,7 @@ const {
   toggleReserve,
   // ✅ NOUVELLES FONCTIONS
   likeFlash,
-  rateFlash,
+
   reserveFlash,
   // ✅ FONCTIONS SAVE ET COMMENTAIRES
   saveFlash,
@@ -23,7 +23,10 @@ const {
 
 const router = require("express").Router();
 const authentification = require("../middlewares/auth");
-const { uploadFlash, uploadFlashToCloudinary } = require("../middlewares/uplodCloudinary");
+const {
+  uploadFlash,
+  uploadFlashToCloudinary,
+} = require("../middlewares/uplodCloudinary");
 
 // ⚠️ ORDRE IMPORTANT : Routes spécifiques AVANT les routes avec paramètres
 
@@ -40,16 +43,28 @@ router.get("/search", getFlashs); // Utilise les mêmes filtres que getFlashs
 router.get("/tatoueur/:tatoueurId", getFlashsByTatoueur);
 
 // 5. Routes de création avec upload Cloudinary
-router.post("/", authentification, uploadFlash, uploadFlashToCloudinary, createFlash);
+router.post(
+  "/",
+  authentification,
+  uploadFlash,
+  uploadFlashToCloudinary,
+  createFlash
+);
 
 // 6. Routes avec paramètre simple - APRÈS toutes les routes spécifiques
 router.get("/:id", getFlashById);
-router.put("/:id", authentification, uploadFlash, uploadFlashToCloudinary, updateFlash);
+router.put(
+  "/:id",
+  authentification,
+  uploadFlash,
+  uploadFlashToCloudinary,
+  updateFlash
+);
 router.delete("/:id", authentification, deleteFlash);
 
 // 7. Routes d'actions sur un flash spécifique
 router.post("/:id/like", authentification, likeFlash);
-router.post("/:id/rate", authentification, rateFlash);
+
 router.post("/:id/reserve", authentification, reserveFlash);
 router.patch("/:id/reserve", authentification, toggleReserve);
 
@@ -63,8 +78,20 @@ router.delete("/:id/comments/:commentId", authentification, deleteComment);
 router.post("/:id/comments/:commentId/like", authentification, likeComment);
 
 // ✅ NOUVELLES ROUTES: Réponses aux commentaires
-router.post("/:id/comments/:commentId/replies", authentification, addReplyToComment);
-router.post("/:id/comments/:commentId/replies/:replyId/like", authentification, likeReply);
-router.delete("/:id/comments/:commentId/replies/:replyId", authentification, deleteReply);
+router.post(
+  "/:id/comments/:commentId/replies",
+  authentification,
+  addReplyToComment
+);
+router.post(
+  "/:id/comments/:commentId/replies/:replyId/like",
+  authentification,
+  likeReply
+);
+router.delete(
+  "/:id/comments/:commentId/replies/:replyId",
+  authentification,
+  deleteReply
+);
 
 module.exports = router;

@@ -47,7 +47,6 @@ const getFlashs = async (req, res) => {
         "nom photoProfil localisation styles userType bio ville"
       )
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .populate("commentaires.userId", "nom photoProfil userType")
       .populate("commentaires.replies.userId", "nom photoProfil userType")
       .populate("commentaires.likes.userId", "nom photoProfil userType")
@@ -61,16 +60,7 @@ const getFlashs = async (req, res) => {
     const flashsWithCounts = flashs.map((flash) => ({
       ...flash,
       likesCount: flash.likes ? flash.likes.length : 0,
-      ratingsCount: flash.ratings ? flash.ratings.length : 0,
       commentsCount: flash.commentaires ? flash.commentaires.length : 0,
-      averageRating:
-        flash.ratings && flash.ratings.length > 0
-          ? Math.round(
-              (flash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                flash.ratings.length) *
-                10
-            ) / 10
-          : 0,
     }));
 
     const total = await Flash.countDocuments(filter);
@@ -108,7 +98,6 @@ const getFlashById = async (req, res) => {
         "nom photoProfil email localisation styles userType bio ville telephone instagram"
       )
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .populate("commentaires.userId", "nom photoProfil userType")
       .populate("commentaires.replies.userId", "nom photoProfil userType")
       .populate("commentaires.likes.userId", "nom photoProfil userType")
@@ -123,16 +112,7 @@ const getFlashById = async (req, res) => {
     const flashWithCounts = {
       ...flash,
       likesCount: flash.likes ? flash.likes.length : 0,
-      ratingsCount: flash.ratings ? flash.ratings.length : 0,
       commentsCount: flash.commentaires ? flash.commentaires.length : 0,
-      averageRating:
-        flash.ratings && flash.ratings.length > 0
-          ? Math.round(
-              (flash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                flash.ratings.length) *
-                10
-            ) / 10
-          : 0,
     };
 
     console.log("✅ getFlashById - Flash trouvé:", {
@@ -157,6 +137,7 @@ const createFlash = async (req, res) => {
       title,
       artist,
       style,
+      styleCustom, // ✅ NOUVEAU CHAMP
       taille,
       emplacement,
       tags,
@@ -169,12 +150,22 @@ const createFlash = async (req, res) => {
       title,
       artist,
       style,
+      styleCustom, // ✅ Log du style personnalisé
       taille,
       emplacement,
       tags,
       hasImage: !!req.imageUrl,
       imageUrl: req.imageUrl,
       cloudinaryPublicId: req.imagePublicId,
+    });
+
+    // ✅ DEBUG SPÉCIFIQUE pour styleCustom
+    console.log("🔍 DEBUG styleCustom:", {
+      style,
+      styleCustom,
+      styleCustomExists: !!styleCustom,
+      styleCustomTrimmed: styleCustom?.trim(),
+      styleCustomLength: styleCustom?.length,
     });
 
     // Vérifier que l'utilisateur est un tatoueur
@@ -191,6 +182,19 @@ const createFlash = async (req, res) => {
 
     if (!prix || isNaN(prix) || prix <= 0) {
       return res.status(400).json({ error: "Prix invalide (doit être > 0)" });
+    }
+
+    // ✅ VALIDATION DU STYLE PERSONNALISÉ
+    if (style === "autre" && (!styleCustom || !styleCustom.trim())) {
+      return res.status(400).json({ 
+        error: "Le style personnalisé est requis quand 'Autre' est sélectionné" 
+      });
+    }
+
+    if (styleCustom && styleCustom.length > 50) {
+      return res.status(400).json({ 
+        error: "Le style personnalisé ne peut pas dépasser 50 caractères" 
+      });
     }
 
     // Traitement des tags
@@ -238,6 +242,7 @@ const createFlash = async (req, res) => {
       title: title?.trim() || "",
       artist: artist?.trim() || "",
       style: style || "autre",
+      styleCustom: style === "autre" ? styleCustom?.trim() : undefined, // ✅ Ajouter styleCustom seulement si style = "autre"
       taille: taille || "moyen",
       emplacement: parsedEmplacement,
       tags: parsedTags,
@@ -245,7 +250,6 @@ const createFlash = async (req, res) => {
       reserve: false,
       likes: [],
       views: 0,
-      ratings: [],
       commentaires: [], // ✅ AJOUT: Initialiser les commentaires
     };
 
@@ -264,9 +268,7 @@ const createFlash = async (req, res) => {
     const flashWithCounts = {
       ...populatedFlash,
       likesCount: 0,
-      ratingsCount: 0,
       commentsCount: 0,
-      averageRating: 0,
     };
 
     console.log("✅ createFlash - Flash créé:", flashWithCounts);
@@ -337,21 +339,11 @@ const likeFlash = async (req, res) => {
         "nom photoProfil localisation styles userType bio"
       )
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .lean();
 
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      ratingsCount: updatedFlash.ratings ? updatedFlash.ratings.length : 0,
-      averageRating:
-        updatedFlash.ratings && updatedFlash.ratings.length > 0
-          ? Math.round(
-              (updatedFlash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                updatedFlash.ratings.length) *
-                10
-            ) / 10
-          : 0,
     };
 
     console.log("🎉 likeFlash - Succès:", {
@@ -362,72 +354,6 @@ const likeFlash = async (req, res) => {
     res.status(200).json(flashWithCounts);
   } catch (error) {
     console.error("❌ Erreur likeFlash:", error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// ✅ NOUVELLE FONCTION: Noter un Flash
-const rateFlash = async (req, res) => {
-  try {
-    const { rating } = req.body;
-    const flashId = req.params.id;
-    const userId = req.user._id;
-
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ error: "Note invalide (1-5)" });
-    }
-
-    const flash = await Flash.findById(flashId);
-    if (!flash) {
-      return res.status(404).json({ error: "Flash non trouvé" });
-    }
-
-    // Vérifier si l'utilisateur a déjà noté
-    const existingRatingIndex = flash.ratings.findIndex(
-      (r) => r.userId.toString() === userId.toString()
-    );
-
-    if (existingRatingIndex !== -1) {
-      // Mettre à jour la note existante
-      flash.ratings[existingRatingIndex].rating = parseInt(rating);
-      flash.ratings[existingRatingIndex].dateRating = new Date();
-    } else {
-      // Ajouter une nouvelle note
-      flash.ratings.push({
-        userId,
-        rating: parseInt(rating),
-        dateRating: new Date(),
-      });
-    }
-
-    await flash.save();
-
-    const updatedFlash = await Flash.findById(flashId)
-      .populate(
-        "idTatoueur",
-        "nom photoProfil localisation styles userType bio"
-      )
-      .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
-      .lean();
-
-    const flashWithCounts = {
-      ...updatedFlash,
-      likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      ratingsCount: updatedFlash.ratings ? updatedFlash.ratings.length : 0,
-      averageRating:
-        updatedFlash.ratings && updatedFlash.ratings.length > 0
-          ? Math.round(
-              (updatedFlash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                updatedFlash.ratings.length) *
-                10
-            ) / 10
-          : 0,
-    };
-
-    res.status(200).json(flashWithCounts);
-  } catch (error) {
-    console.error("❌ Erreur rateFlash:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -495,6 +421,7 @@ const updateFlash = async (req, res) => {
       title,
       artist,
       style,
+      styleCustom, // ✅ NOUVEAU CHAMP
       taille,
       emplacement,
       tags,
@@ -525,7 +452,45 @@ const updateFlash = async (req, res) => {
     if (description !== undefined) updateData.description = description.trim();
     if (title !== undefined) updateData.title = title.trim();
     if (artist !== undefined) updateData.artist = artist.trim();
-    if (style !== undefined) updateData.style = style;
+    
+    // ✅ GESTION DU STYLE ET STYLE PERSONNALISÉ
+    if (style !== undefined) {
+      updateData.style = style;
+      
+      // Si on passe à "autre", on peut ajouter un styleCustom
+      if (style === "autre" && styleCustom !== undefined) {
+        if (!styleCustom.trim()) {
+          return res.status(400).json({ 
+            error: "Le style personnalisé est requis quand 'Autre' est sélectionné" 
+          });
+        }
+        if (styleCustom.length > 50) {
+          return res.status(400).json({ 
+            error: "Le style personnalisé ne peut pas dépasser 50 caractères" 
+          });
+        }
+        updateData.styleCustom = styleCustom.trim();
+      } else if (style !== "autre") {
+        // Si on change pour un style prédéfini, supprimer le styleCustom
+        updateData.styleCustom = undefined;
+      }
+    } else if (styleCustom !== undefined) {
+      // Si on modifie seulement le styleCustom
+      if (flash.style === "autre") {
+        if (!styleCustom.trim()) {
+          return res.status(400).json({ 
+            error: "Le style personnalisé ne peut pas être vide" 
+          });
+        }
+        if (styleCustom.length > 50) {
+          return res.status(400).json({ 
+            error: "Le style personnalisé ne peut pas dépasser 50 caractères" 
+          });
+        }
+        updateData.styleCustom = styleCustom.trim();
+      }
+    }
+    
     if (taille !== undefined) updateData.taille = taille;
     if (disponible !== undefined) updateData.disponible = disponible;
 
@@ -581,21 +546,12 @@ const updateFlash = async (req, res) => {
         "nom photoProfil localisation styles userType bio"
       )
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .lean();
 
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      ratingsCount: updatedFlash.ratings ? updatedFlash.ratings.length : 0,
-      averageRating:
-        updatedFlash.ratings && updatedFlash.ratings.length > 0
-          ? Math.round(
-              (updatedFlash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                updatedFlash.ratings.length) *
-                10
-            ) / 10
-          : 0,
+      commentsCount: updatedFlash.commentaires ? updatedFlash.commentaires.length : 0,
     };
 
     res.status(200).json(flashWithCounts);
@@ -653,7 +609,6 @@ const getFlashsByTatoueur = async (req, res) => {
         "nom photoProfil localisation styles userType bio"
       )
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .sort({ date: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit)
@@ -662,15 +617,7 @@ const getFlashsByTatoueur = async (req, res) => {
     const flashsWithCounts = flashs.map((flash) => ({
       ...flash,
       likesCount: flash.likes ? flash.likes.length : 0,
-      ratingsCount: flash.ratings ? flash.ratings.length : 0,
-      averageRating:
-        flash.ratings && flash.ratings.length > 0
-          ? Math.round(
-              (flash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                flash.ratings.length) *
-                10
-            ) / 10
-          : 0,
+      commentsCount: flash.commentaires ? flash.commentaires.length : 0,
     }));
 
     const total = await Flash.countDocuments(filter);
@@ -722,21 +669,12 @@ const toggleReserve = async (req, res) => {
         "nom photoProfil localisation styles userType bio"
       )
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .lean();
 
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      ratingsCount: updatedFlash.ratings ? updatedFlash.ratings.length : 0,
-      averageRating:
-        updatedFlash.ratings && updatedFlash.ratings.length > 0
-          ? Math.round(
-              (updatedFlash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                updatedFlash.ratings.length) *
-                10
-            ) / 10
-          : 0,
+      commentsCount: updatedFlash.commentaires ? updatedFlash.commentaires.length : 0,
     };
 
     res.status(200).json(flashWithCounts);
@@ -783,9 +721,13 @@ const saveFlash = async (req, res) => {
 // ✅ NOUVELLE FONCTION: Récupérer les Flash sauvegardés
 const getSavedFlashs = async (req, res) => {
   try {
-    const { page = 1, limit = 12 } = req.query;
     const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
 
+    console.log("📚 getSavedFlashs - User:", userId, "Page:", page);
+
+    // Récupérer l'utilisateur avec ses flashs sauvegardés
     const user = await User.findById(userId).populate({
       path: "savedFlashs",
       populate: [
@@ -806,42 +748,52 @@ const getSavedFlashs = async (req, res) => {
           select: "nom photoProfil userType",
         },
         {
-          path: "ratings.userId",
+          path: "commentaires.likes.userId",
+          select: "nom photoProfil userType",
+        },
+        {
+          path: "commentaires.replies.likes.userId",
           select: "nom photoProfil userType",
         },
       ],
+      options: {
+        sort: { date: -1 },
+        limit: limit * 1,
+        skip: (page - 1) * limit,
+      },
     });
 
     if (!user) {
-      return res.status(404).json({ message: "Utilisateur non trouvé" });
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
 
     const savedFlashs = user.savedFlashs || [];
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const paginatedFlashs = savedFlashs.slice(startIndex, endIndex);
 
-    const flashsWithCounts = paginatedFlashs.map((flash) => ({
+    // ✅ AJOUT: Enrichir avec des compteurs
+    const savedFlashsWithCounts = savedFlashs.map((flash) => ({
       ...flash.toObject(),
       likesCount: flash.likes ? flash.likes.length : 0,
-      ratingsCount: flash.ratings ? flash.ratings.length : 0,
       commentsCount: flash.commentaires ? flash.commentaires.length : 0,
-      averageRating:
-        flash.ratings && flash.ratings.length > 0
-          ? Math.round(
-              (flash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                flash.ratings.length) *
-                10
-            ) / 10
-          : 0,
     }));
 
+    const totalSaved = await User.aggregate([
+      { $match: { _id: userId } },
+      { $project: { count: { $size: "$savedFlashs" } } },
+    ]);
+
+    const total = totalSaved[0]?.count || 0;
+
+    console.log(`✅ ${savedFlashsWithCounts.length} flashs sauvegardés trouvés`);
+
     res.status(200).json({
-      flashs: flashsWithCounts,
-      totalPages: Math.ceil(savedFlashs.length / limit),
-      currentPage: parseInt(page),
-      total: savedFlashs.length,
-      limit: parseInt(limit),
+      flashs: savedFlashsWithCounts,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit),
+        hasPrevPage: page > 1,
+        total,
+      },
     });
   } catch (error) {
     console.error("❌ Erreur getSavedFlashs:", error);
@@ -898,24 +850,14 @@ const addComment = async (req, res) => {
       .populate("commentaires.replies.likes.userId", "nom photoProfil userType")
       .populate("idTatoueur", "nom photoProfil userType")
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .lean();
 
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      ratingsCount: updatedFlash.ratings ? updatedFlash.ratings.length : 0,
       commentsCount: updatedFlash.commentaires
         ? updatedFlash.commentaires.length
         : 0,
-      averageRating:
-        updatedFlash.ratings && updatedFlash.ratings.length > 0
-          ? Math.round(
-              (updatedFlash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                updatedFlash.ratings.length) *
-                10
-            ) / 10
-          : 0,
     };
 
     res.status(201).json(flashWithCounts);
@@ -1020,24 +962,14 @@ const likeComment = async (req, res) => {
       .populate("commentaires.replies.likes.userId", "nom photoProfil userType")
       .populate("idTatoueur", "nom photoProfil userType")
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .lean();
 
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      ratingsCount: updatedFlash.ratings ? updatedFlash.ratings.length : 0,
       commentsCount: updatedFlash.commentaires
         ? updatedFlash.commentaires.length
         : 0,
-      averageRating:
-        updatedFlash.ratings && updatedFlash.ratings.length > 0
-          ? Math.round(
-              (updatedFlash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                updatedFlash.ratings.length) *
-                10
-            ) / 10
-          : 0,
     };
 
     console.log("🎉 likeComment Flash - Succès");
@@ -1104,24 +1036,14 @@ const addReplyToComment = async (req, res) => {
       .populate("commentaires.replies.likes.userId", "nom photoProfil userType")
       .populate("idTatoueur", "nom photoProfil userType")
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .lean();
 
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      ratingsCount: updatedFlash.ratings ? updatedFlash.ratings.length : 0,
       commentsCount: updatedFlash.commentaires
         ? updatedFlash.commentaires.length
         : 0,
-      averageRating:
-        updatedFlash.ratings && updatedFlash.ratings.length > 0
-          ? Math.round(
-              (updatedFlash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                updatedFlash.ratings.length) *
-                10
-            ) / 10
-          : 0,
     };
 
     res.status(201).json(flashWithCounts);
@@ -1188,24 +1110,14 @@ const likeReply = async (req, res) => {
       .populate("commentaires.replies.likes.userId", "nom photoProfil userType")
       .populate("idTatoueur", "nom photoProfil userType")
       .populate("likes.userId", "nom photoProfil userType")
-      .populate("ratings.userId", "nom photoProfil userType")
       .lean();
 
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      ratingsCount: updatedFlash.ratings ? updatedFlash.ratings.length : 0,
       commentsCount: updatedFlash.commentaires
         ? updatedFlash.commentaires.length
         : 0,
-      averageRating:
-        updatedFlash.ratings && updatedFlash.ratings.length > 0
-          ? Math.round(
-              (updatedFlash.ratings.reduce((acc, r) => acc + r.rating, 0) /
-                updatedFlash.ratings.length) *
-                10
-            ) / 10
-          : 0,
     };
 
     res.status(200).json(flashWithCounts);
@@ -1270,7 +1182,6 @@ module.exports = {
   toggleReserve,
   // ✅ NOUVELLES FONCTIONS
   likeFlash,
-  rateFlash,
   reserveFlash,
   // ✅ FONCTIONS SAVE ET COMMENTAIRES
   saveFlash,
