@@ -37,6 +37,9 @@ import FlashEdit from "./pages/flash/FlashEdit";
 import FlashManagementPage from "./pages/Profil/components/FlashManagement";
 import ModifierProfil from "./pages/Parametres/components/ModifierProfil";
 
+// ✅ AJOUT: Import du composant PostDetail
+import PostDetail from "./pages/Feed/PostDetail";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -237,9 +240,9 @@ export const router = createBrowserRouter([
           </UserConnected>
         ),
       },
-      // ✅ ROUTE CORRIGÉE: FlashDetail avec paramètre ID
+      // ✅ ROUTE EXISTANTE: FlashDetail avec paramètre ID (déjà corrigée)
       {
-        path: "/flashdetail/:id", // ✅ Ajout du paramètre :id
+        path: "/flashdetail/:id",
         element: (
           <UserConnected>
             <FlashDetail />
@@ -299,6 +302,15 @@ export const router = createBrowserRouter([
         element: (
           <UserConnected>
             <ModifierProfil />
+          </UserConnected>
+        ),
+      },
+      // ✅ AJOUT: Nouvelle route pour le détail de post
+      {
+        path: "/post/:id",
+        element: (
+          <UserConnected>
+            <PostDetail />
           </UserConnected>
         ),
       },

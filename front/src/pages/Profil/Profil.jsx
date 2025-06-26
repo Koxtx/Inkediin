@@ -1,11 +1,13 @@
+// Mise à jour du composant Profil principal avec les nouvelles intégrations API
+
 import React, { useState, useEffect, useContext } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
 import { getTattooerById } from "../../api/auth.api";
 import { Edit } from "lucide-react";
 import toast from "react-hot-toast";
 
-// Import des composants
+// Import des composants mis à jour
 import ProfileHeader from "./components/ProfileHeader";
 import ProfileAvatar from "./components/ProfileAvatar";
 import ProfileBio from "./components/ProfileBio";
@@ -15,19 +17,17 @@ import ProfileSpecialties from "./components/ProfileSpecialties";
 import ProfileTabs from "./components/ProfileTabs";
 import TattooGallery from "./components/TattooGallery";
 import FlashGallery from "./components/FlashGallery";
-
-import ClientPreferences from "./components/ClientPreferences";
-import ClientWishlist from "./components/ClientWishlist";
+import ClientSavedContent from "./components/ClientSavedContent"; // ✅ CHANGEMENT: ClientSavedContent au lieu de ClientWishlist
 import FollowedArtists from "./components/FollowedArtists";
 import ArtistRecommendations from "./components/ArtistRecommendations";
 
 export default function Profil() {
   const { id: userId } = useParams();
   const { user: currentUser } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   // États principaux
-  const [activeTab, setActiveTab] = useState("gallery");
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [activeTab, setActiveTab] = useState("publications");
   const [loading, setLoading] = useState(false);
   const [isEditingBio, setIsEditingBio] = useState(false);
   const [tempBio, setTempBio] = useState("");
@@ -42,31 +42,6 @@ export default function Profil() {
     console.log("👤 Profil - currentUser._id:", currentUser?._id);
     console.log("🏠 Profil - isOwnProfile:", isOwnProfile);
   }, [userId, currentUser, isOwnProfile]);
-
-  // Données factices pour les clients
-  const [clientPreferences] = useState({
-    favoriteStyles: ["Old School", "Géométrique", "Minimaliste", "Japonais"],
-    preferredLocations: ["Avant-bras", "Épaule", "Dos"],
-    criteria: {
-      "Hygiène du studio": 5,
-      "Réputation de l'artiste": 4,
-      Prix: 3,
-      Proximité: 2,
-    },
-  });
-
-  const [wishlist] = useState([
-    { id: 1, artistName: "TattooArtist1", style: "Old School" },
-    { id: 2, artistName: "TattooArtist2", style: "Géométrique" },
-    { id: 3, artistName: "TattooArtist3", style: "Japonais" },
-    { id: 4, artistName: "TattooArtist4", style: "Minimaliste" },
-  ]);
-
-  const [followedArtists] = useState([
-    { id: 1, name: "TattooArtist1", specialty: "Old School" },
-    { id: 2, name: "TattooArtist2", specialty: "Géométrique" },
-    { id: 3, name: "TattooArtist3", specialty: "Japonais" },
-  ]);
 
   // Chargement des données utilisateur
   useEffect(() => {
@@ -108,18 +83,18 @@ export default function Profil() {
     fetchUserData();
   }, [userId, isOwnProfile, currentUser]);
 
-  // Initialisation de l'onglet selon le type d'utilisateur
+  // ✅ CHANGEMENT: Initialisation de l'onglet selon le type d'utilisateur
   useEffect(() => {
     if (displayUser) {
       if (displayUser.userType === "client" && isOwnProfile) {
-        setActiveTab("preferences");
+        setActiveTab("saved"); // ✅ CHANGEMENT: "saved" au lieu de "wishlist"
       } else {
-        setActiveTab("gallery");
+        setActiveTab("publications");
       }
     }
   }, [displayUser, isOwnProfile]);
 
-  // Fonctions utilitaires pour générer les données
+  // Fonctions utilitaires pour générer les données (inchangées)
   const generateGallery = (userData) => {
     return [
       {
@@ -215,18 +190,8 @@ export default function Profil() {
     };
   };
 
-  // Handlers pour les actions
-  const handleFollow = () => {
-    setIsFollowing(!isFollowing);
-    toast.success(
-      isFollowing
-        ? "Vous ne suivez plus cet utilisateur"
-        : "Vous suivez maintenant cet utilisateur"
-    );
-  };
-
+  // Handlers pour les actions (la plupart inchangés)
   const handleSaveBio = () => {
-    // Ici, vous pourriez appeler une API pour sauvegarder la bio
     toast.success("Biographie mise à jour !");
     setIsEditingBio(false);
   };
@@ -240,7 +205,8 @@ export default function Profil() {
   };
 
   const handleMessageClick = () => {
-    toast.info("Redirection vers la messagerie à implémenter");
+    // Cette fonction sera gérée par le composant ProfileActions
+    // qui utilise maintenant le hook useMessagerie
   };
 
   const handleShareClick = () => {
@@ -255,7 +221,7 @@ export default function Profil() {
     toast.info("Ajout de spécialité à implémenter");
   };
 
-  // Handlers pour la galerie
+  // Handlers pour la galerie (publications)
   const handleAddToGallery = () => {
     toast.info("Ajout d'image à la galerie à implémenter");
   };
@@ -272,17 +238,25 @@ export default function Profil() {
     toast.info(`Like de l'élément ${itemId} à implémenter`);
   };
 
-  // Handlers pour la wishlist et les artistes suivis
-  const handleWishlistItemClick = (item) => {
-    toast.info(`Clic sur ${item.artistName} - ${item.style}`);
+  // ✅ CHANGEMENT: Handler pour contenu sauvegardé au lieu de wishlist
+  const handleSavedContentClick = (item) => {
+    // Navigation vers le contenu complet (post ou flash)
+    if (item.contentType === 'flash') {
+      navigate(`/flash/${item._id || item.id}`);
+    } else {
+      navigate(`/post/${item._id || item.id}`);
+    }
   };
 
+  // Handlers pour les artistes suivis (maintenant gérés par le composant FollowedArtists)
   const handleUnfollowArtist = (artistId) => {
-    toast.info(`Désabonnement de l'artiste ${artistId} à implémenter`);
+    // Le composant FollowedArtists gère maintenant cette logique
+    console.log('Artist unfollowed:', artistId);
   };
 
   const handleArtistClick = (artist) => {
-    toast.info(`Redirection vers le profil de ${artist.name}`);
+    // Navigation vers le profil de l'artiste
+    navigate(`/profil/${artist._id || artist.id}`);
   };
 
   // Handlers pour les flashs
@@ -306,84 +280,84 @@ export default function Profil() {
     toast.info(`Redirection vers tous les flashs de ${displayUser?.nom}`);
   };
 
-  // Handlers pour les recommandations d'artistes
+  // Handlers pour les recommendations (maintenant gérés par le composant ArtistRecommendations)
   const handleFollowRecommendedArtist = (artistId) => {
-    toast.info(`Suivi de l'artiste recommandé ${artistId} à implémenter`);
+    // Le composant ArtistRecommendations gère maintenant cette logique
+    console.log('Recommended artist followed:', artistId);
   };
 
-  const handleViewRecommendedArtist = (artist) => {
-    toast.info(`Redirection vers le profil de ${artist.name}`);
+  const handleViewRecommendedArtist = (artistId) => {
+    // Navigation vers le profil de l'artiste recommandé
+    navigate(`/profil/${artistId}`);
   };
 
-  // Handlers pour les avis
-  const handleReplyToReview = (reviewId) => {
-    toast.info(`Réponse à l'avis ${reviewId} à implémenter`);
-  };
-
-  const handleLikeReview = (reviewId) => {
-    toast.info(`Like de l'avis ${reviewId} à implémenter`);
-  };
-
-  // Configuration des onglets selon le type d'utilisateur
+  // ✅ CHANGEMENT: Configuration des onglets selon le type d'utilisateur
   const getAvailableTabs = () => {
     if (displayUser?.userType === "tatoueur") {
-      const tabs = [{ id: "gallery", label: "Galerie" }];
-
-      if (!isOwnProfile) {
-        tabs.push({ id: "about" }, { id: "reviews" });
-      }
-
+      const tabs = [
+        { id: "publications", label: "Publications" },
+        { id: "flash", label: "Flash" }
+      ];
       return tabs;
     } else {
       // Client
       if (isOwnProfile) {
         return [
-          { id: "preferences", label: "Préférences" },
-          { id: "gallery", label: "Wishlist" },
+          { id: "saved", label: "Contenus sauvegardés" }, // ✅ CHANGEMENT: "saved" au lieu de "wishlist"
           { id: "followed", label: "Tatoueurs suivis" },
         ];
       } else {
-        return [{ id: "gallery", label: "Wishlist" }];
+        return [{ id: "saved", label: "Contenus sauvegardés" }]; // ✅ CHANGEMENT
       }
     }
   };
 
-  // Rendu du contenu des onglets
+  // ✅ CHANGEMENT: Rendu du contenu des onglets
   const renderTabContent = () => {
     switch (activeTab) {
-      case "gallery":
-        if (displayUser?.userType === "tatoueur") {
-          return (
-            <TattooGallery
-              displayUser={displayUser}
-              isOwnProfile={isOwnProfile}
-              onAddClick={handleAddToGallery}
-              onEditItem={handleEditGalleryItem}
-              onDeleteItem={handleDeleteGalleryItem}
-              onLikeItem={handleLikeGalleryItem}
-            />
-          );
-        } else {
-          return (
-            <ClientWishlist
-              wishlist={wishlist}
-              isOwnProfile={isOwnProfile}
-              onItemClick={handleWishlistItemClick}
-            />
-          );
-        }
+      case "publications":
+        return (
+          <TattooGallery
+            displayUser={displayUser}
+            isOwnProfile={isOwnProfile}
+            onAddClick={handleAddToGallery}
+            onEditItem={handleEditGalleryItem}
+            onDeleteItem={handleDeleteGalleryItem}
+            onLikeItem={handleLikeGalleryItem}
+          />
+        );
 
-      case "preferences":
-        return <ClientPreferences preferences={clientPreferences} />;
+      case "flash":
+        return (
+          <FlashGallery
+            displayUser={displayUser}
+            isOwnProfile={isOwnProfile}
+            onAddFlash={handleAddFlash}
+            onEditFlash={handleEditFlash}
+            onDeleteFlash={handleDeleteFlash}
+            onLikeFlash={handleLikeFlash}
+            onViewAll={handleViewAllFlashs}
+          />
+        );
+
+      case "saved": // ✅ CHANGEMENT: "saved" au lieu de "wishlist"
+        return (
+          <ClientSavedContent // ✅ CHANGEMENT: ClientSavedContent au lieu de ClientWishlist
+            isOwnProfile={isOwnProfile}
+            onItemClick={handleSavedContentClick} // ✅ CHANGEMENT: handler renommé
+          />
+        );
 
       case "followed":
         return (
           <FollowedArtists
-            followedArtists={followedArtists}
-            onUnfollowArtist={handleUnfollowArtist}
             onArtistClick={handleArtistClick}
+            onMessageClick={handleMessageClick}
           />
         );
+
+      default:
+        return null;
     }
   };
 
@@ -476,8 +450,6 @@ export default function Profil() {
 
         <ProfileActions
           isOwnProfile={isOwnProfile}
-          isFollowing={isFollowing}
-          onFollowClick={handleFollow}
           onMessageClick={handleMessageClick}
           onShareClick={handleShareClick}
           displayUser={displayUser}
@@ -503,21 +475,6 @@ export default function Profil() {
 
       {/* Contenu des onglets */}
       {renderTabContent()}
-
-      {/* Flashs disponibles pour les tatoueurs */}
-      {displayUser?.userType === "tatoueur" && activeTab === "gallery" && (
-        <FlashGallery
-          displayUser={displayUser}
-          isOwnProfile={isOwnProfile}
-          onAddFlash={handleAddFlash}
-          onEditFlash={handleEditFlash}
-          onDeleteFlash={handleDeleteFlash}
-          onLikeFlash={handleLikeFlash}
-          onViewAll={handleViewAllFlashs}
-        />
-      )}
-
-   
 
       {/* Recommandations d'artistes pour les clients */}
       {isOwnProfile &&

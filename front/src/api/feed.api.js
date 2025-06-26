@@ -114,15 +114,34 @@ export const publicationApi = {
   },
 
   // Récupérer une publication par ID
+ // Récupérer une publication par ID
   getPublicationById: async (publicationId) => {
     try {
+      console.log("🔍 API - getPublicationById:", publicationId);
+      
       const response = await fetch(
         `${BASE_URL}/feeds/${publicationId}`,
         getFetchConfig("GET")
       );
 
-      return await handleApiError(response);
+      console.log("📡 API Response status:", response.status);
+      
+      if (!response.ok) {
+        // ✅ AMÉLIORATION: Gestion spécifique des erreurs 404
+        if (response.status === 404) {
+          throw new Error("Publication non trouvée");
+        }
+        
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Erreur ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ API - Publication récupérée:", result);
+      
+      return result;
     } catch (error) {
+      console.error("❌ API - Erreur getPublicationById:", error);
       throw error;
     }
   },
