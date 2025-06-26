@@ -1,3 +1,4 @@
+// Dans user.controllers.js - Ajoutez ces imports en haut
 const {
   signup,
   signin,
@@ -14,40 +15,79 @@ const {
   fetchTatoueurById,
   getUserById,
   deleteUser,
+  followUser,
+  unfollowUser,
+  checkIfFollowing,
+  getFollowing,
+  getFollowers,
+  getSuggestedTattooers,
+  // ✅ REMPLACEMENT: Fonctions pour contenus sauvegardés au lieu de wishlist
+  getSavedPosts,
+  getSavedFlashs,
+  toggleSavePost,
+  toggleSaveFlash,
+  checkPostSaved,
+  checkFlashSaved,
+  getAllSavedContent,
+  getUserPreferences,
+  updateUserPreferences,
+  markRecommendationInteraction,
 } = require("../controllers/user.controllers");
 
 const auth = require("../middlewares/auth");
-// ✅ AJOUT: Import du middleware Cloudinary pour User
 const { uploadAvatar, uploadAvatarToCloudinary } = require("../middlewares/userUpload");
 
 const router = require("express").Router();
 
-// POST
+// ===== ROUTES D'AUTHENTIFICATION =====
 router.post("/", signup);
 router.post("/login", signin);
 router.post("/forgotPassword", forgotMyPassword);
 router.post("/resetPassword", resetPassword);
 router.post("/changePassword", auth, changePassword);
-
-// ✅ AJOUT: Route completeProfile avec upload d'avatar
 router.post("/completeProfile", auth, uploadAvatar, uploadAvatarToCloudinary, completeProfile);
 
-// UPDATE
-// ✅ MODIFICATION: Route updateUser avec possibilité d'upload d'avatar
+// ===== ROUTES DE PROFIL =====
 router.put("/", auth, uploadAvatar, uploadAvatarToCloudinary, updateUser);
-
-// ✅ MODIFICATION: Route spécifique pour l'avatar
 router.put("/avatar", auth, uploadAvatar, uploadAvatarToCloudinary, updateAvatar);
-
-// GET
 router.get("/currentUser", auth, currentUser);
 router.get("/verifyMail/:token", verifyMail);
-router.get("/tattooers", fetchTatoueur);
-router.get("/user/:id", getUserById); // ✅ CORRECTION: Préfixe pour éviter conflit
-router.get("/:id", fetchTatoueurById); // Spécifique aux tatoueurs
-
-// DELETE
 router.delete("/deleteToken", auth, logoutUser);
-router.delete("/account", auth, deleteUser); // ✅ AJOUT: Suppression de compte
+router.delete("/account", auth, deleteUser);
+
+// ===== ROUTES CONTENUS SAUVEGARDÉS (remplace wishlist) =====
+router.get("/saved-content", auth, getAllSavedContent);
+router.get("/saved-posts", auth, getSavedPosts);
+router.get("/saved-flashs", auth, getSavedFlashs);
+
+router.post("/posts/:postId/save", auth, toggleSavePost);
+router.post("/flashs/:flashId/save", auth, toggleSaveFlash);
+
+router.get("/posts/:postId/saved", auth, checkPostSaved);
+router.get("/flashs/:flashId/saved", auth, checkFlashSaved);
+
+// ===== ROUTES PREFERENCES =====
+router.get("/preferences", auth, getUserPreferences);
+router.put("/preferences", auth, updateUserPreferences);
+
+// ===== ROUTES RECOMMENDATIONS =====
+router.post("/recommendations/interaction", auth, markRecommendationInteraction);
+
+// ===== ROUTES DE SUIVI =====
+router.post("/:id/follow", auth, followUser);
+router.delete("/:id/unfollow", auth, unfollowUser);
+router.get("/:id/is-following", auth, checkIfFollowing);
+router.get("/following", auth, getFollowing);
+router.get("/followers", auth, getFollowers);
+router.get("/:id/followers", getFollowers);
+
+// ===== ROUTES DE DÉCOUVERTE =====
+router.get("/tattooers", fetchTatoueur);
+router.get("/suggestions/tattooers", auth, getSuggestedTattooers);
+
+// ===== ROUTES SPÉCIFIQUES PAR ID (à placer à la fin) =====
+router.get("/user/:id", getUserById);
+router.get("/:id/saved-content", getAllSavedContent); // Voir contenu sauvegardé d'un autre user (si public)
+router.get("/:id", fetchTatoueurById);
 
 module.exports = router;

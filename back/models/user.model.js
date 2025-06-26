@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    
     // Données du profil
     nom: {
       type: String,
@@ -30,10 +31,9 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     photoProfil: {
-      type: String, // ✅ URL Cloudinary
+      type: String, // URL Cloudinary
       default: null,
     },
-    // ✅ AJOUT: ID Cloudinary pour pouvoir supprimer l'image
     cloudinaryAvatarId: {
       type: String,
       default: null,
@@ -42,11 +42,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
-    // ✅ AJOUT: Ville séparée de la localisation
     ville: {
       type: String,
       default: null,
     },
+    
     // Champs spécifiques aux tatoueurs
     bio: {
       type: String,
@@ -61,10 +61,8 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "0",
     },
-  
-  
     
-    // Champs pour les relations et publications sauvées
+    // ✅ FOCUS: Relations et contenus sauvegardés
     tatoueursSuivis: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
@@ -73,16 +71,118 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     }],
-    savedPosts: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Feed'
+   savedPosts: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Feed', // ✅ Référence vers le modèle Feed
+    default: []
+  }],
+  
+  savedFlashs: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Flash', // ✅ Référence vers le modèle Flash
+    default: []
+  }],
+
+    // Préférences utilisateur
+    preferences: {
+      preferredStyles: [{ 
+        type: String,
+        trim: true
+      }],
+      maxDistance: { 
+        type: Number, 
+        default: 50,
+        min: 1,
+        max: 500
+      },
+      minRating: { 
+        type: Number, 
+        default: 4.0,
+        min: 1.0,
+        max: 5.0
+      },
+      priceRange: {
+        min: { 
+          type: Number, 
+          default: 0,
+          min: 0
+        },
+        max: { 
+          type: Number, 
+          default: 1000,
+          min: 0
+        }
+      },
+      experienceLevel: { 
+        type: String, 
+        enum: ['any', 'junior', 'intermediate', 'expert'], 
+        default: 'any' 
+      },
+      verifiedOnly: { 
+        type: Boolean, 
+        default: false 
+      },
+      notifications: {
+        newArtists: { 
+          type: Boolean, 
+          default: true 
+        },
+        priceDrops: { 
+          type: Boolean, 
+          default: true 
+        },
+        recommendations: { 
+          type: Boolean, 
+          default: true 
+        },
+        followersUpdates: {
+          type: Boolean,
+          default: true
+        }
+      }
+    },
+
+    // Tracking des interactions pour les recommandations
+    recommendationInteractions: [{
+      _id: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        default: () => new mongoose.Types.ObjectId() 
+      },
+      artistId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User',
+        required: true
+      },
+      interactionType: { 
+        type: String, 
+        enum: ['view', 'like', 'follow', 'contact', 'dismiss', 'profile_visit'], 
+        required: true
+      },
+      timestamp: { 
+        type: Date, 
+        default: Date.now 
+      },
+      metadata: {
+        source: {
+          type: String,
+          enum: ['recommendations', 'search', 'profile', 'feed'],
+          default: 'recommendations'
+        },
+        context: {
+          type: String,
+          default: null
+        }
+      }
     }],
-    
-    // ✅ AJOUT PRINCIPAL: Flashs sauvegardés
-    savedFlashs: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Flash'
-    }],
+
+    preferencesUpdatedAt: { 
+      type: Date, 
+      default: Date.now 
+    },
+    lastRecommendationUpdate: {
+      type: Date,
+      default: Date.now
+    },
     
     resetToken: { 
       type: String 
@@ -97,16 +197,19 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ email: 1 });
 userSchema.index({ userType: 1 });
 userSchema.index({ localisation: 1 });
-userSchema.index({ ville: 1 }); // ✅ AJOUT: Index pour la ville
-userSchema.index({ savedFlashs: 1 }); // ✅ AJOUT: Index pour les flashs sauvegardés
+userSchema.index({ ville: 1 });
+userSchema.index({ savedFlashs: 1 });
+userSchema.index({ savedPosts: 1 });
+userSchema.index({ following: 1 });
+userSchema.index({ tatoueursSuivis: 1 });
 
 // ✅ MÉTHODES VIRTUELLES pour les compteurs
-userSchema.virtual('savedFlashsCount').get(function() {
-  return this.savedFlashs ? this.savedFlashs.length : 0;
-});
-
 userSchema.virtual('savedPostsCount').get(function() {
   return this.savedPosts ? this.savedPosts.length : 0;
+});
+
+userSchema.virtual('savedFlashsCount').get(function() {
+  return this.savedFlashs ? this.savedFlashs.length : 0;
 });
 
 userSchema.virtual('followingCount').get(function() {
@@ -117,10 +220,13 @@ userSchema.virtual('followersCount').get(function() {
   return this.tatoueursSuivis ? this.tatoueursSuivis.length : 0;
 });
 
+userSchema.virtual('totalSavedContent').get(function() {
+  return this.savedPostsCount + this.savedFlashsCount;
+});
+
 // ✅ MÉTHODES D'INSTANCE pour la gestion des flashs sauvegardés
 userSchema.methods.isFlashSaved = function(flashId) {
-  if (!this.savedFlashs || !Array.isArray(this.savedFlashs)) return false;
-  return this.savedFlashs.some(savedId => savedId.toString() === flashId.toString());
+  return this.savedFlashs.some(id => id.toString() === flashId.toString());
 };
 
 userSchema.methods.saveFlash = function(flashId) {
@@ -139,32 +245,39 @@ userSchema.methods.unsaveFlash = function(flashId) {
   const initialLength = this.savedFlashs.length;
   this.savedFlashs = this.savedFlashs.filter(savedId => savedId.toString() !== flashId.toString());
   
-  return this.savedFlashs.length < initialLength; // Retourne true si un élément a été supprimé
+  return this.savedFlashs.length < initialLength;
 };
 
 userSchema.methods.toggleSaveFlash = function(flashId) {
-  if (this.isFlashSaved(flashId)) {
-    this.unsaveFlash(flashId);
+  const flashIdString = flashId.toString();
+  const isCurrentlySaved = this.savedFlashs.some(id => id.toString() === flashIdString);
+  
+  if (isCurrentlySaved) {
+    // Retirer le flash des sauvegardés
+    this.savedFlashs = this.savedFlashs.filter(id => id.toString() !== flashIdString);
     return { saved: false, action: 'removed' };
   } else {
-    this.saveFlash(flashId);
+    // Ajouter le flash aux sauvegardés
+    this.savedFlashs.push(flashId);
     return { saved: true, action: 'added' };
   }
 };
 
 // ✅ MÉTHODES D'INSTANCE pour la gestion des publications sauvegardées
 userSchema.methods.isPostSaved = function(postId) {
-  if (!this.savedPosts || !Array.isArray(this.savedPosts)) return false;
-  return this.savedPosts.some(savedId => savedId.toString() === postId.toString());
+  return this.savedPosts.some(id => id.toString() === postId.toString());
 };
 
 userSchema.methods.toggleSavePost = function(postId) {
-  if (!this.savedPosts) this.savedPosts = [];
+  const postIdString = postId.toString();
+  const isCurrentlySaved = this.savedPosts.some(id => id.toString() === postIdString);
   
-  if (this.isPostSaved(postId)) {
-    this.savedPosts = this.savedPosts.filter(savedId => savedId.toString() !== postId.toString());
+  if (isCurrentlySaved) {
+    // Retirer le post des sauvegardés
+    this.savedPosts = this.savedPosts.filter(id => id.toString() !== postIdString);
     return { saved: false, action: 'removed' };
   } else {
+    // Ajouter le post aux sauvegardés
     this.savedPosts.push(postId);
     return { saved: true, action: 'added' };
   }
@@ -188,6 +301,46 @@ userSchema.methods.toggleFollow = function(tatoueurId) {
   }
 };
 
+// ✅ MÉTHODES pour les interactions de recommandation
+userSchema.methods.addRecommendationInteraction = function(artistId, interactionType, metadata = {}) {
+  if (!this.recommendationInteractions) this.recommendationInteractions = [];
+  
+  const interaction = {
+    _id: new mongoose.Types.ObjectId(),
+    artistId,
+    interactionType,
+    timestamp: new Date(),
+    metadata
+  };
+  
+  this.recommendationInteractions.push(interaction);
+  
+  // Garder seulement les 100 dernières interactions
+  if (this.recommendationInteractions.length > 100) {
+    this.recommendationInteractions = this.recommendationInteractions.slice(-100);
+  }
+  
+  return interaction;
+};
+
+// ✅ MÉTHODES pour les préférences
+userSchema.methods.updatePreferences = function(newPreferences) {
+  if (!this.preferences) this.preferences = {};
+  
+  Object.keys(newPreferences).forEach(key => {
+    if (newPreferences[key] !== undefined) {
+      this.preferences[key] = newPreferences[key];
+    }
+  });
+  
+  this.preferencesUpdatedAt = new Date();
+  return this.preferences;
+};
+
+userSchema.methods.hasPreferences = function() {
+  return this.preferences && Object.keys(this.preferences).length > 0;
+};
+
 // ✅ MIDDLEWARE pour nettoyer les données
 userSchema.pre('save', function(next) {
   // Nettoyer les tableaux de doublons
@@ -203,6 +356,10 @@ userSchema.pre('save', function(next) {
     this.following = [...new Set(this.following.map(id => id.toString()))];
   }
   
+  if (this.tatoueursSuivis && Array.isArray(this.tatoueursSuivis)) {
+    this.tatoueursSuivis = [...new Set(this.tatoueursSuivis.map(id => id.toString()))];
+  }
+  
   // Nettoyer les champs string
   if (this.nom) this.nom = this.nom.trim();
   if (this.bio) this.bio = this.bio.trim();
@@ -213,25 +370,26 @@ userSchema.pre('save', function(next) {
   next();
 });
 
-// ✅ MIDDLEWARE: Supprimer l'avatar Cloudinary à la suppression du user
-userSchema.pre('findOneAndDelete', async function() {
-  const user = await this.model.findOne(this.getQuery());
-  if (user && user.cloudinaryAvatarId) {
-    try {
-      const { deleteAvatarFromCloudinary } = require("../middlewares/userUpload");
-      await deleteAvatarFromCloudinary(user.cloudinaryAvatarId);
-      console.log(`✅ Avatar Cloudinary supprimé pour l'utilisateur ${user._id}`);
-    } catch (error) {
-      console.error(`❌ Erreur suppression avatar Cloudinary:`, error);
-    }
+// ✅ MIDDLEWARE: Initialiser les préférences par défaut pour les nouveaux utilisateurs
+userSchema.pre('save', function(next) {
+  if (this.isNew && !this.preferences) {
+    this.preferences = {
+      preferredStyles: [],
+      maxDistance: 50,
+      minRating: 4.0,
+      priceRange: { min: 0, max: 1000 },
+      experienceLevel: 'any',
+      verifiedOnly: false,
+      notifications: {
+        newArtists: true,
+        priceDrops: true,
+        recommendations: true,
+        followersUpdates: true
+      }
+    };
+    this.preferencesUpdatedAt = new Date();
   }
-});
-
-// ✅ MIDDLEWARE: Log des opérations importantes
-userSchema.post('save', function(doc) {
-  if (this.isNew) {
-    console.log(`✅ Nouvel utilisateur créé: ${doc._id} (${doc.email})`);
-  }
+  next();
 });
 
 // S'assurer que les virtuels sont inclus dans JSON
@@ -246,6 +404,7 @@ userSchema.set('toJSON', {
   }
 });
 
+userSchema.set('toJSON', { virtuals: true });
 userSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model("User", userSchema);
