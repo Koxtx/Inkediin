@@ -30,7 +30,7 @@ export default function Post({
   currentUserAvatar,
   onLike,
   onSave,
-  // ✅ AJOUT: Nouveaux callbacks pour les commentaires
+
   onLikeComment,
   onLikeReply,
   onAddComment,
@@ -43,10 +43,10 @@ export default function Post({
     addReplyToComment,
     toggleLikeComment,
     toggleLikeReply,
-    currentUserId, // ✅ AJOUT: Récupérer l'ID utilisateur du contexte
+    currentUserId,
   } = useContext(PublicationContext);
 
-  // ✅ CORRECTION: États locaux initialisés correctement
+
   const [showMenu, setShowMenu] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
@@ -59,7 +59,7 @@ export default function Post({
   const [imageError, setImageError] = useState(false);
   const menuRef = useRef(null);
 
-  // ✅ CORRECTION: Fonction pour vérifier si l'utilisateur a liké
+
   const checkIfUserLiked = (likesArray) => {
     if (!likesArray || !Array.isArray(likesArray) || !currentUserId) return false;
     
@@ -69,37 +69,31 @@ export default function Post({
     });
   };
 
-  // ✅ CORRECTION: Fonction pour compter les likes
+
   const getLikesCount = (likesArray) => {
     return likesArray && Array.isArray(likesArray) ? likesArray.length : 0;
   };
 
-  // ✅ CORRECTION: Mettre à jour les états locaux quand les props changent
-  useEffect(() => {
-    console.log('🔄 Post - Mise à jour des props:', {
-      id,
-      likes: likes, // ✅ IMPORTANT: likes vient des props
-      commentsData: commentsData?.length || 0,
-      currentUserId,
-      isLiked: isLiked // ✅ IMPORTANT: isLiked vient des props
-    });
 
-    // ✅ CORRECTION: Toujours mettre à jour avec les props
+  useEffect(() => {
+ 
+
+ 
     setLocalLikes(likes || 0);
     setLocalIsLiked(isLiked || false);
 
-    // Mettre à jour les commentaires
+   
     if (commentsData !== undefined) {
       setLocalComments(commentsData);
     }
 
-    // Mettre à jour l'état sauvegardé
+    
     if (isSaved !== undefined) {
       setLocalIsSaved(isSaved);
     }
-  }, [likes, isLiked, commentsData, isSaved, currentUserId]); // ✅ AJOUT: likes et isLiked dans les dépendances
+  }, [likes, isLiked, commentsData, isSaved, currentUserId]); 
 
-  // ✅ CORRECTION: handleCommentLike utilisant les callbacks du Feed
+
   const handleCommentLike = async (
     commentId,
     isReply = false,
@@ -107,31 +101,25 @@ export default function Post({
     replyId = null
   ) => {
     try {
-      console.log('👍 Post - handleCommentLike:', { 
-        commentId, 
-        isReply, 
-        parentCommentId, 
-        replyId,
-        currentUserId
-      });
+  
       
       if (isReply && parentCommentId && replyId) {
         // Like d'une réponse - utiliser le callback du Feed
         if (onLikeReply) {
           await onLikeReply(parentCommentId, replyId);
-          console.log('✅ Post - Like réponse via callback');
+         
         } else if (toggleLikeReply) {
           await toggleLikeReply(id, parentCommentId, replyId);
-          console.log('✅ Post - Like réponse via contexte');
+          
         }
       } else {
         // Like d'un commentaire principal - utiliser le callback du Feed
         if (onLikeComment) {
           await onLikeComment(commentId);
-          console.log('✅ Post - Like commentaire via callback');
+         
         } else if (toggleLikeComment) {
           await toggleLikeComment(id, commentId);
-          console.log('✅ Post - Like commentaire via contexte');
+        
         } else {
           console.warn('⚠️ Aucune fonction de like commentaire disponible');
         }
@@ -142,11 +130,11 @@ export default function Post({
     }
   };
 
-  // ✅ CORRECTION: handleAddReply utilisant les callbacks du Feed
+ 
   const handleAddReply = async (commentId) => {
     if (replyText.trim()) {
       try {
-        console.log('💬 Post - handleAddReply:', { commentId, replyText });
+        
         
         const replyData = {
           contenu: replyText.trim(),
@@ -157,10 +145,10 @@ export default function Post({
         // Utiliser le callback du Feed en priorité
         if (onAddReply) {
           await onAddReply(commentId, replyData);
-          console.log('✅ Post - Réponse ajoutée via callback');
+         
         } else if (addReplyToComment) {
           await addReplyToComment(id, commentId, replyData);
-          console.log('✅ Post - Réponse ajoutée via contexte');
+         
         } else {
           console.warn('⚠️ Aucune fonction d\'ajout de réponse disponible');
         }
@@ -174,38 +162,38 @@ export default function Post({
     }
   };
 
-  // ✅ FONCTION AMÉLIORÉE: Gestion des URLs Cloudinary et base64
+  
   const getProfileImageUrl = (imagePath) => {
     if (!imagePath) {
-      console.log("⚠️ getProfileImageUrl - Pas d'image fournie");
+  
       return null;
     }
 
-    console.log("🔍 getProfileImageUrl - Input:", imagePath);
+ 
 
-    // Si c'est déjà une URL Cloudinary complète
+ 
     if (imagePath.startsWith("https://res.cloudinary.com")) {
-      console.log("✅ URL Cloudinary détectée:", imagePath);
+     
       return imagePath;
     }
 
-    // Si c'est du base64, retourner tel quel
+   
     if (imagePath.startsWith("data:image")) {
-      console.log("✅ Image base64 détectée");
+    
       return imagePath;
     }
 
-    // Si l'image commence par http/https, c'est déjà une URL complète
+  
     if (imagePath.startsWith("http")) {
-      console.log("✅ URL HTTP détectée:", imagePath);
+   
       return imagePath;
     }
 
-    // ✅ NOUVEAU: Gérer les IDs Cloudinary sans préfixe
+    
     if (imagePath && !imagePath.includes("/") && !imagePath.includes("\\")) {
-      // C'est probablement un ID Cloudinary - remplacez YOUR_CLOUD_NAME par votre nom Cloudinary
+     
       const cloudinaryUrl = `https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/f_auto,q_auto,w_150,h_150,c_fill,g_face/${imagePath}`;
-      console.log("🔄 ID Cloudinary transformé:", cloudinaryUrl);
+    
       return cloudinaryUrl;
     }
 
@@ -215,35 +203,34 @@ export default function Post({
     const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
     const fallbackUrl = `${baseUrl}${finalPath}`;
 
-    console.log("⚠️ Fallback URL:", fallbackUrl);
+   
     return fallbackUrl;
   };
 
-  // ✅ FONCTION AMÉLIORÉE: Gestion des images de publication Cloudinary
+  
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
 
-    console.log("🖼️ getImageUrl - Input:", imagePath);
 
-    // Si c'est déjà une URL Cloudinary complète
+
     if (imagePath.startsWith("https://res.cloudinary.com")) {
-      console.log("✅ URL Cloudinary publication détectée");
+  
       return imagePath;
     }
 
-    // Si l'image commence par http, c'est déjà une URL complète
+    
     if (imagePath.startsWith("http")) {
       return imagePath;
     }
 
-    // ✅ NOUVEAU: Gérer les IDs Cloudinary pour les publications
+ 
     if (imagePath && !imagePath.includes("/") && !imagePath.includes("\\")) {
       const cloudinaryUrl = `https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/f_auto,q_auto/${imagePath}`;
-      console.log("🔄 ID Cloudinary publication transformé:", cloudinaryUrl);
+     
       return cloudinaryUrl;
     }
 
-    // Fallback pour les anciennes images locales
+  
     const baseUrl = "http://localhost:3000";
     const cleanPath = imagePath.replace(/\\/g, "/");
     const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
@@ -251,13 +238,13 @@ export default function Post({
     return `${baseUrl}${finalPath}`;
   };
 
-  // ✅ COMPOSANT AMÉLIORÉ: ProfileImage avec meilleur debug et gestion d'erreur
+
   const ProfileImage = ({ avatar, username, size = "w-10 h-10" }) => {
     const [imgError, setImgError] = useState(false);
     const [imgLoading, setImgLoading] = useState(!!avatar);
 
     const handleImageLoad = () => {
-      console.log("✅ Image chargée avec succès:", avatar);
+
       setImgLoading(false);
       setImgError(false);
     };
@@ -273,7 +260,7 @@ export default function Post({
     };
 
     const imageUrl = getProfileImageUrl(avatar);
-    console.log("🔗 URL finale pour ProfileImage:", imageUrl);
+    
 
     return (
       <div
@@ -304,28 +291,24 @@ export default function Post({
     );
   };
 
-  // ✅ CORRECTION: handleLike simplifié - déléguer au Feed
+
   const handleLike = async () => {
     try {
-      console.log('👍 Post - handleLike:', {
-        postId: id,
-        currentUserId,
-        hasCallback: !!onLike
-      });
+     
 
-      // ✅ PRIORITÉ: Utiliser le callback du Feed si disponible
+      
       if (onLike) {
-        console.log('📡 Post - Utilisation callback Feed...');
+  
         await onLike();
-        console.log('✅ Post - Callback Feed terminé');
+       
         return;
       }
 
-      // ✅ FALLBACK: Utiliser le contexte directement
+      
       if (toggleLikePost) {
-        console.log('📡 Post - Utilisation contexte...');
+        
         await toggleLikePost(id);
-        console.log('✅ Post - Contexte terminé');
+    
         return;
       }
 
@@ -339,7 +322,7 @@ export default function Post({
   const handleSave = () => {
     setLocalIsSaved(!localIsSaved);
 
-    // Utiliser le callback du Feed si disponible
+ 
     if (onSave) {
       onSave();
     }
@@ -348,7 +331,7 @@ export default function Post({
   const handleAddComment = async () => {
     if (newComment.trim()) {
       try {
-        console.log('💬 Post - handleAddComment:', { newComment, currentUserId });
+        
         
         const commentData = {
           userId: currentUserId || "current_user",
@@ -357,16 +340,16 @@ export default function Post({
           contenu: newComment.trim(),
         };
 
-        // ✅ CORRECTION: Utiliser le callback du Feed en priorité
+       
         if (onAddComment) {
           await onAddComment(commentData);
-          console.log('✅ Post - Commentaire ajouté via callback');
+          
         } else if (addComment) {
           await addComment(id, commentData);
-          console.log('✅ Post - Commentaire ajouté via contexte');
+          
         } else {
           console.warn('⚠️ Aucune fonction d\'ajout de commentaire disponible');
-          // Fallback: mise à jour locale
+          
           const comment = {
             id: Date.now(),
             username: currentUser,
@@ -423,7 +406,7 @@ export default function Post({
   };
 
   const handleEditPost = () => {
-    // Fonction pour éditer le post (à implémenter)
+  
     alert("Fonctionnalité d'édition à venir");
     setShowMenu(false);
   };
@@ -433,7 +416,7 @@ export default function Post({
     setShowMenu(false);
   };
 
-  // Fermer le menu si on clique ailleurs
+  
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -450,7 +433,7 @@ export default function Post({
     };
   }, [showMenu]);
 
-  // ✅ CORRECTION: Calculer le nombre total de commentaires + réponses
+  
   const totalCommentsCount = localComments.reduce(
     (total, comment) => total + 1 + (comment.replies?.length || 0),
     0
@@ -522,9 +505,7 @@ export default function Post({
               console.warn(`❌ Erreur chargement image publication: ${image}`);
               setImageError(true);
             }}
-            onLoad={() => {
-              console.log(`✅ Image publication chargée: ${image}`);
-            }}
+            
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-500">

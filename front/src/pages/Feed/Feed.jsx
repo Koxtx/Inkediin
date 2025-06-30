@@ -5,7 +5,7 @@ import Post from "./components/Post";
 import FlashCard from "./components/FlashCard";
 import { FlashContext } from "../../context/FlashContext";
 import { PublicationContext } from "../../context/PublicationContext";
-import { AuthContext } from "../../context/AuthContext"; // ✅ AJOUT: Import du contexte Auth
+import { AuthContext } from "../../context/AuthContext"; 
 
 export default function Feed() {
   const [activeTab, setActiveTab] = useState("publication");
@@ -14,18 +14,18 @@ export default function Feed() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Utilisation du contexte Auth pour vérifier le type d'utilisateur
+  
   const authContext = useContext(AuthContext);
   const { user } = authContext || {};
 
-  // ✅ Vérifier si l'utilisateur est un tatoueur
+  
   const isTatoueur = user?.userType === 'tatoueur';
 
-  // ✅ Utilisation des contextes avec vérification d'existence
+  
   const flashContext = useContext(FlashContext);
   const publicationContext = useContext(PublicationContext);
 
-  // ✅ Extraction des données Flash avec fallbacks
+
   const {
     followedFlashes = [],
     recommendedFlashes = [],
@@ -40,7 +40,7 @@ export default function Feed() {
     clearError: clearFlashError,
   } = flashContext || {};
 
-  // ✅ Extraction des données Publication avec fallbacks
+  
   const {
     followedPosts = [],
     recommendedPosts = [],
@@ -59,45 +59,12 @@ export default function Feed() {
     currentUserId: postCurrentUserId = null,
   } = publicationContext || {};
 
-  // ✅ Utiliser l'ID utilisateur disponible
+  e
   const currentUserId = flashCurrentUserId || postCurrentUserId || user?._id || user?.id;
 
-  // ✅ Debug des contextes
-  useEffect(() => {
-    console.log("🔍 Feed - Debug contextes:", {
-      flashContext: !!flashContext,
-      publicationContext: !!publicationContext,
-      authContext: !!authContext,
-      userType: user?.userType,
-      isTatoueur,
-      followedFlashes: followedFlashes?.length || 0,
-      recommendedFlashes: recommendedFlashes?.length || 0,
-      followedPosts: followedPosts?.length || 0,
-      recommendedPosts: recommendedPosts?.length || 0,
-      currentUserId,
-      flashLoading,
-      postLoading,
-      flashError,
-      postError
-    });
-  }, [
-    flashContext, 
-    publicationContext, 
-    authContext,
-    user,
-    isTatoueur,
-    followedFlashes, 
-    recommendedFlashes, 
-    followedPosts, 
-    recommendedPosts, 
-    currentUserId,
-    flashLoading,
-    postLoading,
-    flashError,
-    postError
-  ]);
+ 
 
-  // ✅ Afficher un message de succès si on vient de créer du contenu
+ 
   useEffect(() => {
     if (location.state?.message) {
       showNotification(location.state.message, "success");
@@ -105,7 +72,7 @@ export default function Feed() {
     }
   }, [location.state]);
 
-  // ✅ Fonction pour afficher les notifications
+ 
   const showNotification = (message, type = "info") => {
     const notification = document.createElement("div");
     const bgColor =
@@ -129,7 +96,7 @@ export default function Feed() {
     }, 3000);
   };
 
-  // ✅ Fonction pour formater la date
+  
   const formatDate = (dateString) => {
     if (!dateString) return "Date inconnue";
 
@@ -162,7 +129,7 @@ export default function Feed() {
     }
   };
 
-  // ✅ Fonction pour vérifier si l'utilisateur a liké (pour les posts)
+  
   const hasUserLiked = (likes, userId) => {
     if (!likes || !Array.isArray(likes) || !userId) {
       return false;
@@ -182,7 +149,7 @@ export default function Feed() {
     });
   };
 
-  // ✅ Fonction pour vérifier si l'utilisateur est propriétaire
+  
   const isUserOwner = (post, userId) => {
     if (!userId || !post?.idTatoueur) return false;
 
@@ -193,7 +160,7 @@ export default function Feed() {
     return isOwner;
   };
 
-  // ✅ Fonction pour adapter les commentaires
+ 
   const adaptComments = (commentaires) => {
     if (!commentaires || !Array.isArray(commentaires)) return [];
 
@@ -221,7 +188,7 @@ export default function Feed() {
     });
   };
 
-  // ✅ Fonction pour vérifier si le post est sauvegardé
+  
   const isPostSaved = (postId) => {
     if (!savedPosts || !Array.isArray(savedPosts)) return false;
     return savedPosts.some(savedPost => 
@@ -229,7 +196,7 @@ export default function Feed() {
     );
   };
 
-  // ✅ Fonction pour adapter les données de publication
+ 
   const adaptPostData = (post) => {
     const likesCount = post.likesCount || post.likes?.length || 0;
     const isLiked = hasUserLiked(post.likes, currentUserId);
@@ -254,7 +221,7 @@ export default function Feed() {
     };
   };
 
-  // ✅ Fonction pour gérer le rafraîchissement
+ 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -283,7 +250,7 @@ export default function Feed() {
     }
   };
 
-  // ✅ Fonction pour créer du contenu (uniquement pour les tatoueurs)
+  
   const handleCreateContent = () => {
     if (!isTatoueur) {
       showNotification("Cette fonctionnalité est réservée aux tatoueurs", "error");
@@ -297,7 +264,7 @@ export default function Feed() {
     }
   };
 
-  // ✅ Fonction pour charger plus de contenu
+
   const handleLoadMore = async (type) => {
     try {
       if (activeTab === "publication") {
@@ -318,7 +285,7 @@ export default function Feed() {
     }
   };
 
-  // ✅ Fonction pour gérer le like FLASH
+  
   const handleLikeFlash = async (flashId) => {
     if (!toggleLikeFlash) {
       showNotification("Fonctionnalité non disponible", "error");
@@ -326,16 +293,16 @@ export default function Feed() {
     }
 
     try {
-      console.log('👍 Feed - handleLikeFlash:', { flashId, currentUserId });
+      
       await toggleLikeFlash(flashId);
-      console.log('✅ Feed - Like flash terminé');
+     
     } catch (error) {
       console.error('❌ Feed - Erreur like flash:', error);
       showNotification("Erreur lors du like", "error");
     }
   };
 
-  // ✅ Fonction pour gérer la sauvegarde FLASH
+ 
   const handleSaveFlash = async (flash) => {
     if (!toggleSaveFlash) {
       showNotification("Fonctionnalité non disponible", "error");
@@ -343,16 +310,16 @@ export default function Feed() {
     }
 
     try {
-      console.log('💾 Feed - handleSaveFlash:', flash._id || flash.id);
+      
       await toggleSaveFlash(flash);
-      console.log('✅ Feed - Save flash terminé');
+    
     } catch (error) {
       console.error('❌ Feed - Erreur save flash:', error);
       showNotification("Erreur lors de la sauvegarde", "error");
     }
   };
 
-  // ✅ Fonction pour gérer le like POST
+
   const handleLikePost = async (postId) => {
     if (!toggleLikePost) {
       showNotification("Fonctionnalité non disponible", "error");
@@ -360,16 +327,16 @@ export default function Feed() {
     }
 
     try {
-      console.log('👍 Feed - handleLikePost:', { postId, currentUserId });
+     
       await toggleLikePost(postId);
-      console.log('✅ Feed - Like post terminé');
+     
     } catch (error) {
       console.error('❌ Feed - Erreur like post:', error);
       showNotification("Erreur lors du like", "error");
     }
   };
 
-  // ✅ Fonction pour gérer la sauvegarde POST
+
   const handleSavePost = async (post) => {
     if (!toggleSavePost) {
       showNotification("Fonctionnalité non disponible", "error");
@@ -377,16 +344,16 @@ export default function Feed() {
     }
 
     try {
-      console.log('💾 Feed - handleSavePost:', post._id || post.id);
+      
       await toggleSavePost(post);
-      console.log('✅ Feed - Save post terminé');
+      showNotification("Publication sauvegardée", "success");
     } catch (error) {
       console.error('❌ Feed - Erreur save post:', error);
       showNotification("Erreur lors de la sauvegarde", "error");
     }
   };
 
-  // ✅ Fonction pour gérer le like de commentaire
+  
   const handleLikeComment = async (postId, commentId) => {
     if (!toggleLikeComment) {
       console.error('❌ toggleLikeComment non disponible dans le contexte');
@@ -395,16 +362,16 @@ export default function Feed() {
     }
 
     try {
-      console.log('👍 Feed - handleLikeComment:', { postId, commentId, currentUserId });
+     
       await toggleLikeComment(postId, commentId);
-      console.log('✅ Feed - Like commentaire terminé');
+      
     } catch (error) {
       console.error('❌ Feed - Erreur like commentaire:', error);
       showNotification("Erreur lors du like du commentaire", "error");
     }
   };
 
-  // ✅ Fonction pour gérer le like de réponse
+ 
   const handleLikeReply = async (postId, commentId, replyId) => {
     if (!toggleLikeReply) {
       console.error('❌ toggleLikeReply non disponible dans le contexte');
@@ -413,16 +380,16 @@ export default function Feed() {
     }
 
     try {
-      console.log('👍 Feed - handleLikeReply:', { postId, commentId, replyId, currentUserId });
+     
       await toggleLikeReply(postId, commentId, replyId);
-      console.log('✅ Feed - Like réponse terminé');
+      showNotification("Réponse likée", "success");
     } catch (error) {
       console.error('❌ Feed - Erreur like réponse:', error);
       showNotification("Erreur lors du like de la réponse", "error");
     }
   };
 
-  // ✅ Fonction pour gérer l'ajout de commentaire
+  
   const handleAddComment = async (postId, commentData) => {
     if (!addComment) {
       console.error('❌ addComment non disponible dans le contexte');
@@ -431,16 +398,16 @@ export default function Feed() {
     }
 
     try {
-      console.log('💬 Feed - handleAddComment:', { postId, commentData });
+      
       await addComment(postId, commentData);
-      console.log('✅ Feed - Commentaire ajouté');
+     
     } catch (error) {
       console.error('❌ Feed - Erreur ajout commentaire:', error);
       showNotification("Erreur lors de l'ajout du commentaire", "error");
     }
   };
 
-  // ✅ Fonction pour gérer l'ajout de réponse
+ 
   const handleAddReply = async (postId, commentId, replyData) => {
     if (!addReplyToComment) {
       console.error('❌ addReplyToComment non disponible dans le contexte');
@@ -449,23 +416,23 @@ export default function Feed() {
     }
 
     try {
-      console.log('💬 Feed - handleAddReply:', { postId, commentId, replyData });
+      
       await addReplyToComment(postId, commentId, replyData);
-      console.log('✅ Feed - Réponse ajoutée');
+      showNotification("Réponse ajoutée", "success");
     } catch (error) {
       console.error('❌ Feed - Erreur ajout réponse:', error);
       showNotification("Erreur lors de l'ajout de la réponse", "error");
     }
   };
 
-  // ✅ Obtenir l'état de chargement actuel
+  
   const currentLoading = activeTab === "publication" ? postLoading : flashLoading;
   const currentError = activeTab === "publication" ? postError : flashError;
   const currentContent = activeTab === "publication" 
     ? { followed: followedPosts, recommended: recommendedPosts }
     : { followed: followedFlashes, recommended: recommendedFlashes };
 
-  // ✅ Vérifier si les contextes sont chargés
+  
   if (!flashContext || !publicationContext) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -480,7 +447,7 @@ export default function Feed() {
     );
   }
 
-  // ✅ Composant d'erreur
+ 
   const ErrorMessage = ({ error, onRetry }) => (
     <div className="flex flex-col items-center justify-center py-8 px-4">
       <AlertCircle className="text-red-500 mb-4" size={48} />
@@ -494,14 +461,14 @@ export default function Feed() {
     </div>
   );
 
-  // ✅ Composant de chargement
+  
   const LoadingSpinner = () => (
     <div className="flex justify-center items-center py-8">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
     </div>
   );
 
-  // ✅ Composant pour charger plus
+  
   const LoadMoreButton = ({ type, loading = false }) => (
     <div className="flex justify-center py-4">
       <button
@@ -540,7 +507,7 @@ export default function Feed() {
                   className={isRefreshing ? "animate-spin" : ""}
                 />
               </button>
-              {/* ✅ MODIFICATION: Bouton + visible uniquement pour les tatoueurs */}
+           
               {isTatoueur && (
                 <button
                   onClick={handleCreateContent}
@@ -709,7 +676,7 @@ export default function Feed() {
                   ? "Suivez des tatoueurs pour voir leurs publications ici"
                   : "Suivez des tatoueurs pour voir leurs flashs ici"}
               </p>
-              {/* ✅ MODIFICATION: Bouton création uniquement pour les tatoueurs */}
+             
               {isTatoueur && (
                 <button
                   onClick={handleCreateContent}
@@ -720,7 +687,7 @@ export default function Feed() {
                     : "Créer votre premier flash"}
                 </button>
               )}
-              {/* ✅ AJOUT: Message pour les clients */}
+              
               {!isTatoueur && (
                 <p className="text-gray-600 text-sm italic">
                   Seuls les tatoueurs peuvent créer du contenu

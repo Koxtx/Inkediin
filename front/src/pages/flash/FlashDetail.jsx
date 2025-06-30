@@ -43,7 +43,6 @@ export default function FlashDetail() {
     isFlashSaved,
     hasUserLiked,
     getLikesCount,
-    // ✅ NOUVELLES FONCTIONS DE SYNCHRONISATION
     addCommentToFlash,
     likeCommentInFlash,
     addReplyToComment,
@@ -53,7 +52,7 @@ export default function FlashDetail() {
     getFlashFromCache,
   } = useContext(FlashContext);
 
-  // ✅ États principaux
+
   const [flash, setFlash] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,20 +64,20 @@ export default function FlashDetail() {
   const [showMenu, setShowMenu] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  // ✅ États pour les commentaires
+  
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [replyInputs, setReplyInputs] = useState({});
   const [showReplies, setShowReplies] = useState({});
 
-  // ✅ NOUVEAU: Écouter les événements de mise à jour globaux
+
   useEffect(() => {
     const handleFlashUpdated = (event) => {
       const { flashId: updatedFlashId, updatedFlash } = event.detail;
       
       if (updatedFlashId === id) {
-        console.log("🔄 FlashDetail - Mise à jour reçue:", updatedFlash);
+    
         setFlash(updatedFlash);
         
         // Mettre à jour les états locaux
@@ -97,19 +96,19 @@ export default function FlashDetail() {
     };
   }, [id, currentUserId, hasUserLiked, isFlashSaved, getLikesCount]);
 
-  // ✅ Charger les données du Flash
+  
   useEffect(() => {
     const loadFlash = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        console.log("🔍 FlashDetail - Chargement Flash ID:", id);
+        
 
         // Vérifier d'abord le cache
         const cachedFlash = getFlashFromCache(id);
         if (cachedFlash) {
-          console.log("📋 FlashDetail - Flash trouvé dans le cache:", id);
+         
           setFlash(cachedFlash);
           
           // Calculer les états utilisateur
@@ -126,11 +125,11 @@ export default function FlashDetail() {
 
         // Sinon, charger depuis l'API
         const flashData = await getFlashById(id);
-        console.log("✅ FlashDetail - Flash chargé:", flashData);
+     
 
         setFlash(flashData);
 
-        // ✅ Calculer les états utilisateur
+      
         if (currentUserId) {
           const userLiked = hasUserLiked(flashData);
           const userSaved = isFlashSaved(flashData._id || flashData.id);
@@ -161,7 +160,7 @@ export default function FlashDetail() {
     getFlashFromCache,
   ]);
 
-  // ✅ Gestion du like
+
   const handleLike = async () => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour liker un Flash");
@@ -169,7 +168,7 @@ export default function FlashDetail() {
     }
 
     try {
-      console.log("👍 FlashDetail - Toggle like");
+  
 
       // Mise à jour optimiste
       const wasLiked = isLiked;
@@ -180,7 +179,7 @@ export default function FlashDetail() {
       const updatedFlash = await toggleLikeFlash(id);
 
       // Les états seront mis à jour automatiquement via l'événement
-      console.log("✅ FlashDetail - Like synchronisé");
+    
     } catch (err) {
       console.error("❌ Erreur like Flash:", err);
       // Rollback en cas d'erreur
@@ -190,7 +189,7 @@ export default function FlashDetail() {
     }
   };
 
-  // ✅ Gestion de la sauvegarde
+
   const handleSave = async () => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour sauvegarder un Flash");
@@ -198,7 +197,7 @@ export default function FlashDetail() {
     }
 
     try {
-      console.log("💾 FlashDetail - Toggle save");
+  
 
       // Mise à jour optimiste
       setIsSaved(!isSaved);
@@ -212,7 +211,6 @@ export default function FlashDetail() {
     }
   };
 
-  // ✅ Gestion de la réservation
   const handleReservation = async () => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour réserver un Flash");
@@ -220,12 +218,12 @@ export default function FlashDetail() {
     }
 
     try {
-      console.log("📅 FlashDetail - Réservation Flash");
+     
 
       const response = await reserveFlash(id);
-      console.log("✅ Réservation réussie:", response);
+     
 
-      // Le flash sera mis à jour automatiquement via la synchronisation
+   
       setShowReservationModal(false);
       alert("Flash réservé avec succès !");
     } catch (err) {
@@ -234,17 +232,17 @@ export default function FlashDetail() {
     }
   };
 
-  // ✅ Gestion de la suppression
+ 
   const handleDelete = async () => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce Flash ?")) {
       return;
     }
 
     try {
-      console.log("🗑️ FlashDetail - Suppression Flash");
+    
 
       await deleteFlash(id);
-      console.log("✅ Flash supprimé");
+  
 
       alert("Flash supprimé avec succès");
       navigate("/flash");
@@ -254,7 +252,7 @@ export default function FlashDetail() {
     }
   };
 
-  // ✅ COMMENTAIRES: Ajouter un commentaire avec synchronisation
+ 
   const handleAddComment = async () => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour commenter");
@@ -268,7 +266,7 @@ export default function FlashDetail() {
 
     try {
       setCommentLoading(true);
-      console.log("💬 FlashDetail - Ajout commentaire:", newComment);
+    
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       await addCommentToFlash(id, newComment.trim());
@@ -276,7 +274,7 @@ export default function FlashDetail() {
       // Le flash sera mis à jour automatiquement via l'événement
       setNewComment("");
 
-      console.log("✅ Commentaire ajouté depuis FlashDetail");
+     
     } catch (err) {
       console.error("❌ Erreur ajout commentaire:", err);
       alert("Erreur lors de l'ajout du commentaire");
@@ -285,7 +283,7 @@ export default function FlashDetail() {
     }
   };
 
-  // ✅ COMMENTAIRES: Liker un commentaire avec synchronisation
+
   const handleLikeComment = async (commentId) => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour liker un commentaire");
@@ -293,19 +291,19 @@ export default function FlashDetail() {
     }
 
     try {
-      console.log("👍 FlashDetail - Like commentaire:", commentId);
+     
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       await likeCommentInFlash(id, commentId);
 
-      console.log("✅ Commentaire liké depuis FlashDetail");
+  
     } catch (err) {
       console.error("❌ Erreur like commentaire:", err);
       alert("Erreur lors du like du commentaire");
     }
   };
 
-  // ✅ COMMENTAIRES: Ajouter une réponse avec synchronisation
+
   const handleAddReply = async (commentId) => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour répondre");
@@ -319,7 +317,7 @@ export default function FlashDetail() {
     }
 
     try {
-      console.log("💬 FlashDetail - Ajout réponse:", replyText);
+     
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       await addReplyToComment(id, commentId, replyText.trim());
@@ -327,14 +325,13 @@ export default function FlashDetail() {
       // Réinitialiser l'input de réponse
       setReplyInputs((prev) => ({ ...prev, [commentId]: "" }));
 
-      console.log("✅ Réponse ajoutée depuis FlashDetail");
     } catch (err) {
       console.error("❌ Erreur ajout réponse:", err);
       alert("Erreur lors de l'ajout de la réponse");
     }
   };
 
-  // ✅ COMMENTAIRES: Liker une réponse avec synchronisation
+  
   const handleLikeReply = async (commentId, replyId) => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour liker une réponse");
@@ -342,57 +339,57 @@ export default function FlashDetail() {
     }
 
     try {
-      console.log("👍 FlashDetail - Like réponse:", replyId);
+
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       await likeReplyInFlash(id, commentId, replyId);
 
-      console.log("✅ Réponse likée depuis FlashDetail");
+
     } catch (err) {
       console.error("❌ Erreur like réponse:", err);
       alert("Erreur lors du like de la réponse");
     }
   };
 
-  // ✅ COMMENTAIRES: Supprimer un commentaire avec synchronisation
+  
   const handleDeleteComment = async (commentId) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")) {
       return;
     }
 
     try {
-      console.log("🗑️ FlashDetail - Suppression commentaire:", commentId);
+
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       await deleteCommentFromFlash(id, commentId);
 
-      console.log("✅ Commentaire supprimé depuis FlashDetail");
+    
     } catch (err) {
       console.error("❌ Erreur suppression commentaire:", err);
       alert("Erreur lors de la suppression du commentaire");
     }
   };
 
-  // ✅ COMMENTAIRES: Supprimer une réponse avec synchronisation
+ 
   const handleDeleteReply = async (commentId, replyId) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette réponse ?")) {
       return;
     }
 
     try {
-      console.log("🗑️ FlashDetail - Suppression réponse:", replyId);
+
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       await deleteReplyFromFlash(id, commentId, replyId);
 
-      console.log("✅ Réponse supprimée depuis FlashDetail");
+
     } catch (err) {
       console.error("❌ Erreur suppression réponse:", err);
       alert("Erreur lors de la suppression de la réponse");
     }
   };
 
-  // ✅ Partage
+
   const handleShare = async () => {
     const url = window.location.href;
     const text = `Découvrez ce Flash de ${flash?.idTatoueur?.nom} à ${flash?.prix}€`;
@@ -410,7 +407,7 @@ export default function FlashDetail() {
     }
   };
 
-  // ✅ Formatage de la date
+
   const formatDate = (dateString) => {
     if (!dateString) return "Date inconnue";
 
@@ -426,7 +423,7 @@ export default function FlashDetail() {
     }
   };
 
-  // ✅ Formatage de la date relative pour les commentaires
+ 
   const formatCommentDate = (dateString) => {
     if (!dateString) return "Date inconnue";
 
@@ -452,7 +449,7 @@ export default function FlashDetail() {
     }
   };
 
-  // ✅ Composant Avatar
+  
   const ProfileImage = ({ avatar, username, size = "w-12 h-12" }) => {
     const [imgError, setImgError] = useState(false);
 
@@ -486,7 +483,7 @@ export default function FlashDetail() {
     );
   };
 
-  // ✅ Fonction pour obtenir le style d'affichage
+  
   const getDisplayStyle = () => {
     if (flash && flash.style === "autre" && flash.styleCustom) {
       return flash.styleCustom;
@@ -494,7 +491,7 @@ export default function FlashDetail() {
     return flash?.style;
   };
 
-  // ✅ Composant Commentaire
+  
   const CommentComponent = ({ comment }) => {
     const isOwner = comment.userId?._id === currentUserId;
     const hasLiked = comment.likes?.some(
@@ -1014,7 +1011,7 @@ export default function FlashDetail() {
           </div>
         </div>
 
-        {/* ✅ SECTION COMMENTAIRES AVEC SYNCHRONISATION */}
+       
         {showComments && (
           <div className="mt-12 bg-gray-800 rounded-lg p-6">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2">

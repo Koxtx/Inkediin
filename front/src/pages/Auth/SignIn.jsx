@@ -54,10 +54,10 @@ export default function SignIn() {
     setIsSubmitting(true);
     
     try {
-      console.log("🔐 Tentative de connexion avec:", { email: values.email });
+    
       
       const result = await login(values);
-      console.log("📨 Résultat de connexion:", result);
+    
       
       if (result.success) {
         // Déclencher l'événement storage pour mettre à jour l'état global
@@ -66,10 +66,10 @@ export default function SignIn() {
         // Attendre un petit délai pour s'assurer que l'état est mis à jour
         setTimeout(() => {
           if (result.isFirstLogin) {
-            console.log("🔄 Redirection vers setup profil");
+           
             navigate("/setupprofil");
           } else {
-            console.log("🔄 Redirection vers accueil");
+          
             navigate("/");
           }
         }, 100);

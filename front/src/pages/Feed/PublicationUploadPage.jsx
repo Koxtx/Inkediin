@@ -36,11 +36,6 @@ export default function PublicationUploadPage() {
       setErrors([]);
       setSelectedImage(file);
       
-      console.log('📷 Upload - Image sélectionnée:', {
-        name: file.name,
-        size: file.size,
-        type: file.type
-      });
       
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -61,7 +56,7 @@ export default function PublicationUploadPage() {
   };
 
   const addTag = () => {
-    const cleanTag = newTag.trim().replace(/^#+/, ''); // Supprimer les # en début
+    const cleanTag = newTag.trim().replace(/^#+/, ''); 
     if (cleanTag !== "" && !tags.includes(cleanTag)) {
       setTags([...tags, cleanTag]);
       setNewTag("");
@@ -77,7 +72,7 @@ export default function PublicationUploadPage() {
   };
 
   const handleSubmit = async () => {
-    // ✅ CORRECTION: Validation plus stricte
+    
     if (!contenu.trim()) {
       setErrors(['Le contenu est requis']);
       return;
@@ -92,25 +87,19 @@ export default function PublicationUploadPage() {
     setErrors([]);
     
     try {
-      console.log('📤 Upload - Début soumission:', {
-        contenu: contenu.trim(),
-        hasImage: !!selectedImage,
-        imageName: selectedImage?.name,
-        imageSize: selectedImage?.size,
-        tags: tags
-      });
+  
 
       const publicationData = {
         contenu: contenu.trim(),
-        image: selectedImage, // File object ou null
-        tags: tags, // Array de strings
+        image: selectedImage, 
+        tags: tags, 
       };
 
-      console.log('📤 Upload - Données à envoyer:', publicationData);
+      
 
       const newPublication = await addPublication(publicationData);
       
-      console.log('✅ Upload - Publication créée:', newPublication);
+      
       
       // Rediriger vers le feed après publication
       navigate("/", { 
@@ -128,7 +117,7 @@ export default function PublicationUploadPage() {
   };
 
   const handleSaveDraft = () => {
-    // Sauvegarder en local storage ou via une API
+    
     const draftData = {
       contenu,
       tags,
@@ -140,7 +129,7 @@ export default function PublicationUploadPage() {
     alert("Brouillon sauvegardé !");
   };
 
-  // Charger un brouillon au montage du composant
+  
   React.useEffect(() => {
     const savedDraft = localStorage.getItem("publication_draft");
     if (savedDraft) {
@@ -173,7 +162,7 @@ export default function PublicationUploadPage() {
         </button>
       </div>
 
-      {/* ✅ AJOUT: Affichage des erreurs */}
+    
       {errors.length > 0 && (
         <div className="bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-100 px-4 py-3 rounded mb-6">
           <ul className="list-disc list-inside">
@@ -255,7 +244,7 @@ export default function PublicationUploadPage() {
                 >
                   <X size={16} />
                 </button>
-                {/* ✅ AJOUT: Infos sur l'image */}
+                
                 {selectedImage && (
                   <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                     {selectedImage.name} ({Math.round(selectedImage.size / 1024)} KB)

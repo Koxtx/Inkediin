@@ -13,7 +13,7 @@ export default function PromotionHistory() {
 
   const handleViewStats = (id) => {
     // Implémentation future de la visualisation des statistiques
-    console.log(`Afficher les statistiques pour la promotion ${id}`);
+ 
   };
 
   return (

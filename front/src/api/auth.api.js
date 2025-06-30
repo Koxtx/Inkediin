@@ -7,9 +7,8 @@ export function normalizeUserData(userData) {
     return null;
   }
 
-  console.group("🔄 normalizeUserData - Processing");
-  console.log("Input data:", userData);
-  console.log("Input keys:", Object.keys(userData));
+
+
 
   // ✅ AMÉLIORATION: Chercher la photo de profil dans tous les champs possibles
   const photoProfil =
@@ -22,16 +21,7 @@ export function normalizeUserData(userData) {
     userData.picture ||
     null;
 
-  console.log("📷 Photos trouvées:", {
-    photoProfil: userData.photoProfil,
-    avatar: userData.avatar,
-    profilePicture: userData.profilePicture,
-    profileImage: userData.profileImage,
-    photo: userData.photo,
-    image: userData.image,
-    picture: userData.picture,
-    final: photoProfil,
-  });
+
 
   const normalized = {
     ...userData,
@@ -39,7 +29,7 @@ export function normalizeUserData(userData) {
     _id: userData._id || userData.id,
     id: userData._id || userData.id,
 
-    // ✅ AMÉLIORATION: Photo de profil avec fallback multiple
+    
     photoProfil: photoProfil,
 
     // Normaliser le nom avec fallback multiple
@@ -68,14 +58,13 @@ export function normalizeUserData(userData) {
     followers: userData.followers || userData.followersCount || 0,
   };
 
-  console.log("✅ Normalized output:", normalized);
-  console.log("📷 Final photo:", normalized.photoProfil);
+  
   console.groupEnd();
 
   return normalized;
 }
 
-// ✅ FONCTION AMÉLIORÉE: Gestion des erreurs d'API avec plus de détails
+
 const handleApiError = (error) => {
   console.error("API Error Details:", {
     message: error.message,
@@ -149,12 +138,12 @@ const getCoordinatesFromLocation = (location) => {
   return { lat: 48.8566, lng: 2.3522 };
 };
 
-// ===== AUTHENTICATION FUNCTIONS =====
 
-// Dans auth.api.js - Fonction signup corrigée
+
+
 export async function signup(values) {
   try {
-    console.log("📤 Signup API call with:", values);
+    
 
     const response = await fetch(`${BASE_URL}/users`, {
       method: "POST",
@@ -165,18 +154,18 @@ export async function signup(values) {
     });
 
     const data = await response.json();
-    console.log("📥 Signup response:", data);
+    
 
     // Vérifier le statut HTTP
     if (response.ok) {
-      // Succès (200-299)
+    
       return {
         success: true,
         message: data.message || "Inscription réussie",
         ...data,
       };
     } else {
-      // Erreur HTTP (400-599)
+    
       return {
         success: false,
         message: data.message || "Erreur lors de l'inscription",
@@ -191,10 +180,10 @@ export async function signup(values) {
   }
 }
 
-// ✅ CORRECTION: Fonction signin avec normalisation des données améliorée
+
 export async function signin(values) {
   try {
-    console.log("📤 Signin API call with:", values);
+   
 
     const response = await fetch(`${BASE_URL}/users/login`, {
       method: "POST",
@@ -206,15 +195,15 @@ export async function signin(values) {
     });
 
     const data = await response.json();
-    console.log("📥 Signin response:", data);
+   
 
     if (response.ok) {
-      // ✅ AMÉLIORATION: Normaliser les données utilisateur avec debug
+     
       const rawUser = data.user || data;
-      console.log("👤 Raw user data:", rawUser);
+     
 
       const normalizedUser = normalizeUserData(rawUser);
-      console.log("✅ Normalized user data:", normalizedUser);
+     
 
       return {
         success: true,
@@ -236,10 +225,10 @@ export async function signin(values) {
   }
 }
 
-// ✅ NOUVEAU: Fonction completeProfile avec support Cloudinary amélioré
+
 export async function completeProfile(profileData) {
   try {
-    console.log("📤 API - Envoi completeProfile:", profileData);
+ 
 
     // Créer FormData pour supporter l'upload de fichier
     const formData = new FormData();
@@ -258,23 +247,19 @@ export async function completeProfile(profileData) {
     // Ajouter le fichier image s'il existe
     if (profileData.photoProfil && profileData.photoProfil instanceof File) {
       formData.append("photoProfil", profileData.photoProfil);
-      console.log(
-        "📷 API - Fichier photo ajouté:",
-        profileData.photoProfil.name
-      );
+    
     }
 
-    console.log("📤 API - FormData créée");
+    
 
     const response = await fetch(`${BASE_URL}/users/completeProfile`, {
       method: "POST",
-      body: formData, // ✅ CHANGEMENT: FormData au lieu de JSON
-      // ✅ SUPPRESSION: Pas de Content-Type header avec FormData
+      body: formData, 
       credentials: "include",
     });
 
     const data = await response.json();
-    console.log("📥 CompleteProfile response:", data);
+   
 
     if (response.ok) {
       const normalizedUser = normalizeUserData(data);
@@ -298,11 +283,10 @@ export async function completeProfile(profileData) {
   }
 }
 
-// ✅ AMÉLIORATION: Fonction update avec support Cloudinary et debug
+
 export async function update(values, photoFile = null) {
   try {
-    console.log("📤 API - Mise à jour profil:", values);
-    console.log("📷 API - Fichier photo:", photoFile);
+  
 
     // Créer FormData pour supporter l'upload de fichier
     const formData = new FormData();
@@ -328,16 +312,12 @@ export async function update(values, photoFile = null) {
     // Ajouter le fichier image s'il existe
     if (photoFile instanceof File) {
       formData.append("photoProfil", photoFile);
-      console.log("📷 API - Fichier photo ajouté pour update:", {
-        name: photoFile.name,
-        size: photoFile.size,
-        type: photoFile.type,
-      });
+     
     }
 
     const response = await fetch(`${BASE_URL}/users`, {
       method: "PUT",
-      body: formData, // ✅ CHANGEMENT: FormData au lieu de JSON
+      body: formData, 
       credentials: "include",
     });
 
@@ -349,11 +329,11 @@ export async function update(values, photoFile = null) {
     }
 
     const updatedUser = await response.json();
-    console.log("📥 Update response:", updatedUser);
+   
 
     const normalizedUser = normalizeUserData(updatedUser);
 
-    console.log("✅ API - Utilisateur mis à jour:", normalizedUser);
+    
     return normalizedUser;
   } catch (error) {
     console.error("Erreur lors de la mise à jour:", error);
@@ -361,15 +341,10 @@ export async function update(values, photoFile = null) {
   }
 }
 
-// ✅ AMÉLIORATION: Fonction updateAvatar avec support Cloudinary et debug
+
 export async function updateAvatar(photoFile) {
   try {
-    console.log("📷 API - Mise à jour avatar:", {
-      file: photoFile,
-      name: photoFile?.name,
-      size: photoFile?.size,
-      type: photoFile?.type,
-    });
+  
 
     if (!photoFile || !(photoFile instanceof File)) {
       throw new Error("Fichier image requis");
@@ -379,7 +354,7 @@ export async function updateAvatar(photoFile) {
     const formData = new FormData();
     formData.append("photoProfil", photoFile);
 
-    console.log("📤 API - Upload avatar vers Cloudinary...");
+   
 
     const response = await fetch(`${BASE_URL}/users/avatar`, {
       method: "PUT",
@@ -395,11 +370,11 @@ export async function updateAvatar(photoFile) {
     }
 
     const updatedUser = await response.json();
-    console.log("📥 UpdateAvatar response:", updatedUser);
+
 
     const normalizedUser = normalizeUserData(updatedUser);
 
-    console.log("✅ API - Avatar mis à jour:", normalizedUser.photoProfil);
+  
     return normalizedUser;
   } catch (error) {
     console.error("Erreur lors de la mise à jour de l'avatar:", error);
@@ -407,7 +382,7 @@ export async function updateAvatar(photoFile) {
   }
 }
 
-// ✅ CORRECTION: getCurrentUser avec normalisation des données améliorée
+
 export async function getCurrentUser() {
   try {
     // Vérifier si on est sur une page publique
@@ -423,38 +398,35 @@ export async function getCurrentUser() {
 
     // Si on est sur une page publique, ne pas faire la requête
     if (isPublicPath) {
-      console.log("🚫 getCurrentUser - Page publique, pas de requête");
+      
       return null;
     }
 
-    console.log("📤 getCurrentUser - Récupération utilisateur actuel...");
+   
 
     const response = await fetch(`${BASE_URL}/users/currentUser`, {
       method: "GET",
       credentials: "include",
     });
 
-    console.log("📡 getCurrentUser - Response status:", response.status);
+  
 
     if (response.status === 401) {
-      // Session expirée ou pas connecté
-      console.log("🚫 getCurrentUser - Non authentifié (401)");
+    
       return null;
     }
 
     if (response.ok) {
       const userData = await response.json();
-      console.log("📥 getCurrentUser - Raw data:", userData);
+   
 
-      // ✅ AMÉLIORATION: Normaliser les données utilisateur récupérées
+  
       const normalizedUser = normalizeUserData(userData);
-      console.log("✅ getCurrentUser - Normalized data:", normalizedUser);
+    
 
       return normalizedUser;
     } else {
-      console.log(
-        `❌ getCurrentUser - Erreur ${response.status}: ${response.statusText}`
-      );
+     
       return null;
     }
   } catch (error) {
@@ -465,14 +437,14 @@ export async function getCurrentUser() {
 
 export async function signOut() {
   try {
-    console.log("📤 SignOut - Déconnexion...");
+   
 
     await fetch(`${BASE_URL}/users/deleteToken`, {
       method: "DELETE",
       credentials: "include",
     });
 
-    console.log("✅ SignOut - Déconnexion réussie");
+   
   } catch (error) {
     console.error("Erreur lors de la déconnexion:", error);
   }
@@ -480,7 +452,7 @@ export async function signOut() {
 
 export async function forgotPassword(values) {
   try {
-    console.log("📧 Envoi requête forgot password:", values);
+  
 
     const response = await fetch(`${BASE_URL}/users/forgotPassword`, {
       method: "POST",
@@ -490,7 +462,7 @@ export async function forgotPassword(values) {
       body: JSON.stringify(values),
     });
 
-    console.log("📡 Status de la réponse:", response.status);
+   
 
     // Vérifier si la réponse est en JSON
     const contentType = response.headers.get("content-type");
@@ -503,10 +475,9 @@ export async function forgotPassword(values) {
     }
 
     const data = await response.json();
-    console.log("📨 Données reçues:", data);
+  
 
-    // Le serveur renvoie toujours un message de succès (même si l'email n'existe pas)
-    // pour des raisons de sécurité
+    
     return {
       success: true,
       message:
@@ -523,13 +494,13 @@ export async function forgotPassword(values) {
 
 export async function resetPassword(values) {
   try {
-    console.log("🔐 Envoi requête reset password:", values);
 
-    // Adapter les données pour correspondre à ce que le serveur attend
+
+   
     const requestData = {
       token: values.token,
       password: values.password,
-      // Ne pas envoyer confirmPassword au serveur car il ne l'utilise pas
+      
     };
 
     const response = await fetch(`${BASE_URL}/users/resetPassword`, {
@@ -540,8 +511,7 @@ export async function resetPassword(values) {
       body: JSON.stringify(requestData),
     });
 
-    console.log("📡 Status de la réponse:", response.status);
-    console.log("📡 Response OK:", response.ok);
+
 
     // Vérifier si la réponse est en JSON
     const contentType = response.headers.get("content-type");
@@ -554,7 +524,7 @@ export async function resetPassword(values) {
     }
 
     const data = await response.json();
-    console.log("📨 Données reçues:", data);
+   
 
     if (response.ok) {
       return {
@@ -583,7 +553,7 @@ export async function resetPassword(values) {
 
 export async function changePassword(values) {
   try {
-    console.log("📤 ChangePassword API call");
+   
 
     const response = await fetch(`${BASE_URL}/users/changePassword`, {
       method: "POST",
@@ -604,7 +574,7 @@ export async function changePassword(values) {
     }
 
     const data = await response.json();
-    console.log("📥 ChangePassword response:", data);
+   
 
     return {
       success: true,
@@ -620,11 +590,11 @@ export async function changePassword(values) {
   }
 }
 
-// ===== USER DATA FUNCTIONS =====
+
 
 export async function getTattooers() {
   try {
-    console.log("📤 getTattooers - Récupération des tatoueurs...");
+   
 
     const response = await fetch(`${BASE_URL}/users/tattooers`, {
       method: "GET",
@@ -639,15 +609,10 @@ export async function getTattooers() {
     }
 
     const data = await response.json();
-    console.log("📥 getTattooers - Données reçues du backend:", data);
+   
 
     const transformedArtists = data.map((user) => {
-      console.log("🔄 Transformation tatoueur:", {
-        id: user._id,
-        nom: user.nom,
-        photoProfil: user.photoProfil,
-        avatar: user.avatar,
-      });
+    
 
       const coordinates = getCoordinatesFromLocation(user.localisation);
 
@@ -666,7 +631,7 @@ export async function getTattooers() {
           user.photoProfil ||
           user.avatar ||
           user.profilePicture ||
-          "/api/placeholder/150/150", // ✅ AMÉLIORATION: Fallback multiple
+          "/api/placeholder/150/150", 
         portfolio: user.portfolio?.[0] || "/api/placeholder/400/300",
         bio: user.bio || "",
         styles: user.styles || "",
@@ -679,7 +644,7 @@ export async function getTattooers() {
       };
     });
 
-    console.log("✅ getTattooers - Artistes transformés:", transformedArtists);
+    
 
     return {
       success: true,
@@ -703,7 +668,7 @@ export async function getTattooers() {
 
 export async function getTattooerById(id) {
   try {
-    console.log("🔍 API - Récupération utilisateur ID:", id);
+   
 
     const response = await fetch(`${BASE_URL}/users/${id}`, {
       method: "GET",
@@ -713,14 +678,14 @@ export async function getTattooerById(id) {
       credentials: "include",
     });
 
-    console.log("📡 API Response status:", response.status);
+   
 
     if (!response.ok) {
       throw new Error(`Erreur ${response.status}: ${response.statusText}`);
     }
 
     const user = await response.json();
-    console.log("📥 API - Données brutes reçues:", user);
+   
 
     const transformedUser = normalizeUserData({
       ...user,
@@ -742,7 +707,7 @@ export async function getTattooerById(id) {
       studio: user.studio || "",
     });
 
-    console.log("✅ API - Données transformées:", transformedUser);
+   
 
     return {
       success: true,
@@ -764,7 +729,7 @@ export async function getTattooerById(id) {
 
 export async function getUserById(id) {
   try {
-    console.log("🔍 API - Récupération utilisateur (générique) ID:", id);
+   
 
     const response = await fetch(`${BASE_URL}/users/user/${id}`, {
       method: "GET",
@@ -779,8 +744,7 @@ export async function getUserById(id) {
     }
 
     const user = await response.json();
-    console.log("📥 API - Données utilisateur reçues:", user);
-
+    
     return {
       success: true,
       data: normalizeUserData(user),
@@ -801,7 +765,7 @@ export async function getUserById(id) {
 
 export async function searchTattooers(filters = {}) {
   try {
-    console.log("📤 searchTattooers - Recherche avec filtres:", filters);
+  
 
     const queryParams = new URLSearchParams();
 
@@ -812,7 +776,7 @@ export async function searchTattooers(filters = {}) {
     if (filters.maxPrice) queryParams.append("maxPrice", filters.maxPrice);
 
     const url = `${BASE_URL}/users/tattooers/search?${queryParams.toString()}`;
-    console.log("🔗 searchTattooers - URL:", url);
+    
 
     const response = await fetch(url, {
       method: "GET",
@@ -827,7 +791,7 @@ export async function searchTattooers(filters = {}) {
     }
 
     const data = await response.json();
-    console.log("📥 searchTattooers - Résultats:", data);
+    
 
     const transformedArtists = data.map((user) => {
       const coordinates = getCoordinatesFromLocation(user.localisation);
@@ -847,7 +811,7 @@ export async function searchTattooers(filters = {}) {
           user.photoProfil ||
           user.avatar ||
           user.profilePicture ||
-          "/api/placeholder/150/150", // ✅ AMÉLIORATION
+          "/api/placeholder/150/150", 
         portfolio: user.portfolio?.[0] || "/api/placeholder/400/300",
         bio: user.bio || "",
         styles: user.styles || "",
@@ -890,12 +854,10 @@ export function calculateDistance(lat1, lon1, lat2, lon2) {
   return distance;
 }
 
-// ===== FOLLOW SYSTEM FUNCTIONS =====
 
-// ✅ FONCTION UNIQUE: Suivre un utilisateur
 export async function followUser(userId) {
   try {
-    console.log("📤 API - Suivi utilisateur:", userId);
+   
 
     const response = await fetch(`${BASE_URL}/users/${userId}/follow`, {
       method: "POST",
@@ -906,7 +868,7 @@ export async function followUser(userId) {
     });
 
     const data = await response.json();
-    console.log("📥 Follow response:", data);
+    
 
     if (response.ok) {
       return {
@@ -933,7 +895,7 @@ export async function followUser(userId) {
 // Ne plus suivre un utilisateur
 export async function unfollowUser(userId) {
   try {
-    console.log("📤 API - Arrêt du suivi utilisateur:", userId);
+   
 
     const response = await fetch(`${BASE_URL}/users/${userId}/unfollow`, {
       method: "DELETE",
@@ -944,7 +906,7 @@ export async function unfollowUser(userId) {
     });
 
     const data = await response.json();
-    console.log("📥 Unfollow response:", data);
+    
 
     if (response.ok) {
       return {
@@ -971,7 +933,7 @@ export async function unfollowUser(userId) {
 // Vérifier si on suit un utilisateur
 export async function checkIfFollowing(userId) {
   try {
-    console.log("📤 API - Vérification suivi utilisateur:", userId);
+ 
 
     const response = await fetch(`${BASE_URL}/users/${userId}/is-following`, {
       method: "GET",
@@ -982,7 +944,7 @@ export async function checkIfFollowing(userId) {
     });
 
     const data = await response.json();
-    console.log("📥 Check following response:", data);
+  
 
     if (response.ok) {
       return {
@@ -1008,7 +970,7 @@ export async function checkIfFollowing(userId) {
 // Obtenir la liste des utilisateurs suivis
 export async function getFollowedUsers() {
   try {
-    console.log("📤 API - Récupération des utilisateurs suivis");
+
 
     const response = await fetch(`${BASE_URL}/users/following`, {
       method: "GET",
@@ -1019,10 +981,10 @@ export async function getFollowedUsers() {
     });
 
     const data = await response.json();
-    console.log("📥 Following list response:", data);
+ 
 
     if (response.ok) {
-      // Normaliser les données des utilisateurs suivis
+      
       const normalizedFollowing = data.following?.map(user => normalizeUserData(user)) || [];
       
       return {
@@ -1054,7 +1016,7 @@ export async function getFollowers(userId = null) {
       ? `${BASE_URL}/users/${userId}/followers`
       : `${BASE_URL}/users/followers`;
     
-    console.log("📤 API - Récupération des followers:", url);
+   
 
     const response = await fetch(url, {
       method: "GET",
@@ -1065,10 +1027,10 @@ export async function getFollowers(userId = null) {
     });
 
     const data = await response.json();
-    console.log("📥 Followers list response:", data);
+   
 
     if (response.ok) {
-      // Normaliser les données des followers
+      
       const normalizedFollowers = data.followers?.map(user => normalizeUserData(user)) || [];
       
       return {
@@ -1093,10 +1055,10 @@ export async function getFollowers(userId = null) {
   }
 }
 
-// Obtenir des suggestions de tatoueurs (utilise votre endpoint existant)
+
 export async function getSuggestedTattooers(filters = {}) {
   try {
-    console.log("📤 API - Récupération suggestions tatoueurs:", filters);
+   
 
     const queryParams = new URLSearchParams();
     
@@ -1105,7 +1067,7 @@ export async function getSuggestedTattooers(filters = {}) {
     if (filters.limit) queryParams.append("limit", filters.limit);
 
     const url = `${BASE_URL}/users/suggestions/tattooers?${queryParams.toString()}`;
-    console.log("🔗 Suggestions URL:", url);
+  
 
     const response = await fetch(url, {
       method: "GET",
@@ -1116,10 +1078,10 @@ export async function getSuggestedTattooers(filters = {}) {
     });
 
     const data = await response.json();
-    console.log("📥 Suggestions response:", data);
+  
 
     if (response.ok) {
-      // Transformer les données pour correspondre au format attendu
+      
       const transformedSuggestions = data.suggestions?.map((artist) => {
         return {
           id: artist._id,
@@ -1127,7 +1089,7 @@ export async function getSuggestedTattooers(filters = {}) {
           name: artist.nom || "Nom non renseigné",
           specialty: artist.styles ? artist.styles.split(",")[0].trim() : "Non spécifié",
           location: artist.localisation || "Non renseigné",
-          rating: artist.rating || (4.0 + Math.random() * 1.0), // Rating simulé si pas présent
+          rating: artist.rating || (4.0 + Math.random() * 1.0), 
           followersCount: artist.followersCount || 0,
           distance: artist.distance || "Non calculé",
           profileImage: artist.photoProfil || artist.avatar,
@@ -1164,12 +1126,12 @@ export async function getSuggestedTattooers(filters = {}) {
   }
 }
 
-// ===== WISHLIST SYSTEM FUNCTIONS =====
+
 export async function getSavedContent(filters = {}) {
   try {
     const { type = 'all', page = 1, limit = 10 } = filters;
     
-    console.log('📤 API - Récupération contenu sauvegardé:', { type, page, limit });
+   
 
     const queryParams = new URLSearchParams();
     queryParams.append('type', type);
@@ -1185,7 +1147,7 @@ export async function getSavedContent(filters = {}) {
     });
 
     const data = await response.json();
-    console.log('📥 Contenu sauvegardé response:', data);
+   
 
     if (response.ok) {
       return {
@@ -1220,7 +1182,7 @@ export async function getSavedContent(filters = {}) {
 // Récupérer uniquement les posts sauvegardés
 export async function getSavedPosts(page = 1, limit = 10) {
   try {
-    console.log('📤 API - Récupération posts sauvegardés:', { page, limit });
+    
 
     const queryParams = new URLSearchParams();
     queryParams.append('page', page.toString());
@@ -1235,7 +1197,7 @@ export async function getSavedPosts(page = 1, limit = 10) {
     });
 
     const data = await response.json();
-    console.log('📥 Posts sauvegardés response:', data);
+    
 
     if (response.ok) {
       return {
@@ -1269,7 +1231,6 @@ export async function getSavedPosts(page = 1, limit = 10) {
 // Récupérer uniquement les flashs sauvegardés
 export async function getSavedFlashs(page = 1, limit = 12) {
   try {
-    console.log('📤 API - Récupération flashs sauvegardés:', { page, limit });
 
     const queryParams = new URLSearchParams();
     queryParams.append('page', page.toString());
@@ -1284,7 +1245,7 @@ export async function getSavedFlashs(page = 1, limit = 12) {
     });
 
     const data = await response.json();
-    console.log('📥 Flashs sauvegardés response:', data);
+   
 
     if (response.ok) {
       return {
@@ -1318,7 +1279,7 @@ export async function getSavedFlashs(page = 1, limit = 12) {
 // Sauvegarder/désauvegarder un post
 export async function toggleSavePost(postId) {
   try {
-    console.log('📤 API - Toggle save post:', postId);
+    
 
     const response = await fetch(`${BASE_URL}/users/posts/${postId}/save`, {
       method: 'POST',
@@ -1329,7 +1290,7 @@ export async function toggleSavePost(postId) {
     });
 
     const data = await response.json();
-    console.log('📥 Toggle save post response:', data);
+   
 
     if (response.ok) {
       return {
@@ -1357,7 +1318,7 @@ export async function toggleSavePost(postId) {
 // Sauvegarder/désauvegarder un flash
 export async function toggleSaveFlash(flashId) {
   try {
-    console.log('📤 API - Toggle save flash:', flashId);
+    
 
     const response = await fetch(`${BASE_URL}/users/flashs/${flashId}/save`, {
       method: 'POST',
@@ -1368,7 +1329,7 @@ export async function toggleSaveFlash(flashId) {
     });
 
     const data = await response.json();
-    console.log('📥 Toggle save flash response:', data);
+   
 
     if (response.ok) {
       return {
@@ -1396,7 +1357,7 @@ export async function toggleSaveFlash(flashId) {
 // Vérifier si un post est sauvegardé
 export async function checkPostSaved(postId) {
   try {
-    console.log('📤 API - Vérification post sauvegardé:', postId);
+   
 
     const response = await fetch(`${BASE_URL}/users/posts/${postId}/saved`, {
       method: 'GET',
@@ -1407,7 +1368,7 @@ export async function checkPostSaved(postId) {
     });
 
     const data = await response.json();
-    console.log('📥 Check post saved response:', data);
+  
 
     if (response.ok) {
       return {
@@ -1433,7 +1394,7 @@ export async function checkPostSaved(postId) {
 // Vérifier si un flash est sauvegardé
 export async function checkFlashSaved(flashId) {
   try {
-    console.log('📤 API - Vérification flash sauvegardé:', flashId);
+   
 
     const response = await fetch(`${BASE_URL}/users/flashs/${flashId}/saved`, {
       method: 'GET',
@@ -1444,7 +1405,7 @@ export async function checkFlashSaved(flashId) {
     });
 
     const data = await response.json();
-    console.log('📥 Check flash saved response:', data);
+   
 
     if (response.ok) {
       return {
@@ -1472,7 +1433,7 @@ export async function getUserSavedContent(userId, filters = {}) {
   try {
     const { type = 'all', page = 1, limit = 10 } = filters;
     
-    console.log('📤 API - Récupération contenu sauvegardé utilisateur:', userId);
+    
 
     const queryParams = new URLSearchParams();
     queryParams.append('type', type);
@@ -1488,7 +1449,7 @@ export async function getUserSavedContent(userId, filters = {}) {
     });
 
     const data = await response.json();
-    console.log('📥 User saved content response:', data);
+   
 
     if (response.ok) {
       return {
@@ -1521,12 +1482,10 @@ export async function getUserSavedContent(userId, filters = {}) {
   }
 }
 
-// ===== PREFERENCES SYSTEM FUNCTIONS =====
 
-// Obtenir les préférences de l'utilisateur
 export async function getUserPreferences() {
   try {
-    console.log("📤 API - Récupération des préférences utilisateur");
+    
 
     const response = await fetch(`${BASE_URL}/users/preferences`, {
       method: "GET",
@@ -1537,7 +1496,7 @@ export async function getUserPreferences() {
     });
 
     const data = await response.json();
-    console.log("📥 GetPreferences response:", data);
+    
 
     if (response.ok) {
       return {
@@ -1564,7 +1523,7 @@ export async function getUserPreferences() {
 // Enregistrer les préférences de l'utilisateur
 export async function updateUserPreferences(preferences) {
   try {
-    console.log("📤 API - Mise à jour des préférences:", preferences);
+   
 
     const response = await fetch(`${BASE_URL}/users/preferences`, {
       method: "PUT",
@@ -1576,7 +1535,7 @@ export async function updateUserPreferences(preferences) {
     });
 
     const data = await response.json();
-    console.log("📥 UpdatePreferences response:", data);
+    
 
     if (response.ok) {
       return {
@@ -1599,21 +1558,21 @@ export async function updateUserPreferences(preferences) {
   }
 }
 
-// ===== RECOMMENDATION SYSTEM FUNCTIONS =====
 
-// Obtenir des recommandations d'artistes pour un client
+
+
 export async function getArtistRecommendations(filters = {}) {
-  // Utilise la même fonction que getSuggestedTattooers mais avec des filtres plus spécifiques
+  
   return await getSuggestedTattooers({
     ...filters,
     limit: filters.limit || 8
   });
 }
 
-// Marquer une interaction avec une recommandation
+
 export async function markRecommendationInteraction(artistId, interactionType) {
   try {
-    console.log("📤 API - Interaction recommandation:", artistId, interactionType);
+  
 
     const response = await fetch(`${BASE_URL}/users/recommendations/interaction`, {
       method: "POST",
@@ -1622,13 +1581,13 @@ export async function markRecommendationInteraction(artistId, interactionType) {
       },
       body: JSON.stringify({
         artistId,
-        interactionType, // 'view', 'like', 'follow', 'contact'
+        interactionType, 
       }),
       credentials: "include",
     });
 
     const data = await response.json();
-    console.log("📥 RecommendationInteraction response:", data);
+    
 
     if (response.ok) {
       return {
@@ -1650,12 +1609,10 @@ export async function markRecommendationInteraction(artistId, interactionType) {
   }
 }
 
-// ===== SEARCH & DISCOVERY FUNCTIONS =====
 
-// Recherche avancée d'artistes avec filtres
 export async function searchArtistsAdvanced(searchParams) {
   try {
-    console.log("📤 API - Recherche avancée d'artistes:", searchParams);
+    
 
     const queryParams = new URLSearchParams();
     
@@ -1666,7 +1623,7 @@ export async function searchArtistsAdvanced(searchParams) {
     });
 
     const url = `${BASE_URL}/users/artists/search-advanced?${queryParams.toString()}`;
-    console.log("🔗 Advanced search URL:", url);
+   
 
     const response = await fetch(url, {
       method: "GET",
@@ -1677,7 +1634,7 @@ export async function searchArtistsAdvanced(searchParams) {
     });
 
     const data = await response.json();
-    console.log("📥 Advanced search response:", data);
+   
 
     if (response.ok) {
       const transformedArtists = data.map((user) => {
@@ -1731,7 +1688,7 @@ export async function searchArtistsAdvanced(searchParams) {
 // Obtenir les artistes populaires/tendances
 export async function getTrendingArtists(limit = 10) {
   try {
-    console.log("📤 API - Récupération artistes tendances");
+ 
 
     const response = await fetch(`${BASE_URL}/users/artists/trending?limit=${limit}`, {
       method: "GET",
@@ -1742,7 +1699,7 @@ export async function getTrendingArtists(limit = 10) {
     });
 
     const data = await response.json();
-    console.log("📥 Trending artists response:", data);
+    
 
     if (response.ok) {
       const transformedArtists = data.map((user) => {

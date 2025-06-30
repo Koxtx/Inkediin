@@ -145,7 +145,7 @@ export default function CustomProjet() {
   const handleSendMessage = () => {
     // Gérer l'envoi du message ici
     if (messageInput.trim()) {
-      console.log("Message envoyé:", messageInput);
+     
       setMessageInput("");
     }
   };

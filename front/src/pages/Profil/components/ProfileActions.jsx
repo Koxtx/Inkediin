@@ -37,8 +37,7 @@ export default function ProfileActions({
     
     const result = await toggleFollow();
     
-    // Log pour debug
-    console.log('Follow action result:', result);
+    
   };
 
   const handleShareClick = () => {

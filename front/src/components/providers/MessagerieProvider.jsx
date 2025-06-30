@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { MessagerieContext } from "../../context/MessagerieContext";
 import { messagerieApi } from "../../api/messagerie.api";
 import { AuthContext } from "../../context/AuthContext";
-import { SocketContext } from "../../context/SocketContext"; // Importer le contexte Socket
+import { SocketContext } from "../../context/SocketContext"; 
 
 export default function MessagerieProvider({ children }) {
   const { user } = useContext(AuthContext);
@@ -41,11 +41,11 @@ export default function MessagerieProvider({ children }) {
   // Gestion des événements WebSocket
   useEffect(() => {
     if (socket && user) {
-      console.log("🔌 Configuration des listeners WebSocket");
+     
 
       // Écouter les nouveaux messages
       const handleNewMessage = (data) => {
-        console.log("📨 Nouveau message reçu via WebSocket:", data);
+       
         const { message, conversationId } = data;
 
         // Ajouter le message à la conversation correspondante
@@ -104,19 +104,19 @@ export default function MessagerieProvider({ children }) {
 
       // Écouter les nouvelles réservations
       const handleNewReservation = (data) => {
-        console.log("⚡ Nouvelle réservation reçue via WebSocket:", data);
+      
         // Recharger les conversations pour inclure la nouvelle réservation
         setTimeout(() => loadConversations(), 500);
       };
 
       // Écouter les notifications de frappe
       const handleUserTyping = (data) => {
-        console.log("✏️ Utilisateur en train de taper:", data);
+       
         // Vous pouvez implémenter l'affichage "en train de taper..." ici
       };
 
       const handleUserStoppedTyping = (data) => {
-        console.log("✏️ Utilisateur a arrêté de taper:", data);
+     
         // Masquer l'indicateur "en train de taper..."
       };
 
@@ -128,7 +128,7 @@ export default function MessagerieProvider({ children }) {
 
       // Nettoyer les listeners lors du démontage
       return () => {
-        console.log("🧹 Nettoyage des listeners WebSocket");
+       
         socket.off("nouveauMessage", handleNewMessage);
         socket.off("nouvelleReservation", handleNewReservation);
         socket.off("userTyping", handleUserTyping);
@@ -206,7 +206,7 @@ export default function MessagerieProvider({ children }) {
       setError(null);
 
       const data = await messagerieApi.getConversations();
-      console.log("📥 Données conversations reçues:", data);
+      
 
       // Transformer les données API en format attendu par l'interface
       const formattedMessages =
@@ -221,7 +221,6 @@ export default function MessagerieProvider({ children }) {
           otherParticipant: getOtherParticipant(conv),
         })) || [];
 
-      console.log("📋 Messages formatés:", formattedMessages);
       setMessages(formattedMessages);
 
       // Créer un objet conversations pour la gestion détaillée
@@ -235,16 +234,16 @@ export default function MessagerieProvider({ children }) {
             id: otherParticipant?._id,
             initials: getInitials(getOtherParticipantName(conv)),
             name: getOtherParticipantName(conv),
-            status: "Hors ligne", // À implémenter avec un système de présence
+            status: "Hors ligne",
             userType: otherParticipant?.userType,
             avatar: otherParticipant?.photoProfil,
           },
-          messages: [], // Les messages seront chargés individuellement
+          messages: [], 
           conversationData: conv,
         };
       });
 
-      console.log("🗂️ Conversations organisées:", conversationsObj);
+      
       setConversations(conversationsObj);
     } catch (err) {
       console.error("❌ Erreur lors du chargement des conversations:", err);
@@ -259,16 +258,13 @@ export default function MessagerieProvider({ children }) {
     try {
       // Vérifier si l'ID est valide avant de faire la requête
       if (!isValidObjectId(conversationId)) {
-        console.log(
-          "⚠️ ID de conversation invalide pour MongoDB:",
-          conversationId
-        );
+        
         return;
       }
 
-      console.log("🔄 Chargement de la conversation:", conversationId);
+    
       const data = await messagerieApi.getConversation(conversationId);
-      console.log("📥 Données conversation reçues:", data);
+      
 
       const otherParticipant = getOtherParticipant(data.conversation);
 
@@ -297,10 +293,7 @@ export default function MessagerieProvider({ children }) {
         },
       }));
 
-      console.log(
-        "💬 Messages de la conversation chargés:",
-        data.messages?.length || 0
-      );
+      
     } catch (err) {
       console.error("❌ Erreur lors du chargement de la conversation:", err);
       setError("Impossible de charger la conversation");
@@ -332,15 +325,11 @@ export default function MessagerieProvider({ children }) {
 
   // Fonction pour créer une nouvelle conversation
   const createNewConversation = async (conversationId, contactInfo) => {
-    console.log(
-      "🆕 Création nouvelle conversation:",
-      conversationId,
-      contactInfo
-    );
+  
 
     // Vérifier si la conversation existe déjà
     if (conversations[conversationId]) {
-      console.log("⚠️ Conversation déjà existante");
+      
       return;
     }
 
@@ -355,7 +344,7 @@ export default function MessagerieProvider({ children }) {
         avatar: contactInfo.avatar,
       },
       messages: [],
-      isNew: true, // Marquer comme nouvelle conversation
+      isNew: true, 
     };
 
     setConversations((prev) => ({
@@ -392,7 +381,7 @@ export default function MessagerieProvider({ children }) {
     if (!content.trim()) return;
 
     try {
-      console.log("📤 Envoi message vers conversation:", conversationId);
+      
       const conversation = conversations[conversationId];
 
       let response;
@@ -400,18 +389,18 @@ export default function MessagerieProvider({ children }) {
 
       // Si c'est une nouvelle conversation, créer la conversation sur le backend
       if (conversation?.isNew) {
-        console.log("🆕 Création nouvelle conversation backend");
+       
         const messageData = {
           destinataireId: conversation.contactInfo.id,
           contenu: content,
         };
 
         response = await messagerieApi.sendMessage(messageData);
-        console.log("✅ Réponse création conversation:", response);
+    
 
         // Récupérer le vrai ID de conversation depuis la réponse
         realConversationId = response.conversationId;
-        console.log("🔄 Vraie conversation ID:", realConversationId);
+        
 
         // Supprimer l'ancienne conversation temporaire
         setConversations((prev) => {
@@ -429,7 +418,7 @@ export default function MessagerieProvider({ children }) {
         // Charger la conversation spécifique pour avoir les messages
         await loadConversation(realConversationId);
       } else {
-        console.log("📨 Envoi message conversation existante");
+       
         // Conversation existante
         const messageData = {
           conversationId: conversationId,
@@ -438,7 +427,7 @@ export default function MessagerieProvider({ children }) {
         };
 
         response = await messagerieApi.sendMessage(messageData);
-        console.log("✅ Réponse envoi message:", response);
+       
 
         // Ajouter le message localement IMMÉDIATEMENT pour une réponse rapide
         const newMsg = {
@@ -448,7 +437,7 @@ export default function MessagerieProvider({ children }) {
           sent: true,
         };
 
-        console.log("➕ Ajout message local:", newMsg);
+        
 
         setConversations((prev) => ({
           ...prev,
@@ -473,14 +462,14 @@ export default function MessagerieProvider({ children }) {
 
   // Fonction utilitaire pour mettre à jour la liste des messages
   const updateMessagesList = (conversationId, content) => {
-    console.log("🔄 Mise à jour liste messages pour:", conversationId);
+   
 
     setMessages((prev) => {
       const index = prev.findIndex(
         (msg) => msg.conversationId === conversationId
       );
       if (index === -1) {
-        console.log("⚠️ Conversation non trouvée dans la liste");
+     
         return prev;
       }
 
@@ -495,7 +484,7 @@ export default function MessagerieProvider({ children }) {
       const updatedMessage = updatedMessages.splice(index, 1)[0];
       const newList = [updatedMessage, ...updatedMessages];
 
-      console.log("✅ Liste messages mise à jour");
+     
       return newList;
     });
   };
@@ -505,10 +494,7 @@ export default function MessagerieProvider({ children }) {
     try {
       // Vérifier si l'ID est valide avant de faire la requête
       if (!isValidObjectId(conversationId)) {
-        console.log(
-          "⚠️ ID de conversation invalide pour markAsRead:",
-          conversationId
-        );
+        
         return;
       }
 
@@ -548,8 +534,7 @@ export default function MessagerieProvider({ children }) {
   // Fonction pour supprimer un message
   const deleteMessage = async (conversationId, messageId) => {
     try {
-      // Note: Implémenter l'API de suppression de message si nécessaire
-      // await messagerieApi.deleteMessage(messageId);
+     
 
       setConversations((prev) => {
         if (!prev[conversationId]) return prev;
@@ -573,8 +558,7 @@ export default function MessagerieProvider({ children }) {
   // Fonction pour modifier un message
   const editMessage = async (conversationId, messageId, newContent) => {
     try {
-      // Note: Implémenter l'API de modification de message si nécessaire
-      // await messagerieApi.editMessage(messageId, { contenu: newContent });
+    
 
       setConversations((prev) => {
         if (!prev[conversationId]) return prev;
@@ -645,8 +629,6 @@ export default function MessagerieProvider({ children }) {
         setActiveConversation,
         loading,
         error,
-
-        // Fonctions
         getFilteredMessages,
         sendMessage,
         markAsRead,

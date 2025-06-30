@@ -6,19 +6,12 @@ const FilterPanel = ({
   setSelectedCategory,
   selectedLocation,
   setSelectedLocation,
-  selectedExperience,
-  setSelectedExperience,
-  minPrice,
-  setMinPrice,
-  maxPrice,
-  setMaxPrice,
   isNearbyMode,
   locationRadius,
   setLocationRadius,
   onResetFilters,
   categories,
   locations,
-  experienceLevels,
 }) => {
   const formatPrice = (price) => `${price} €`;
 
@@ -68,49 +61,6 @@ const FilterPanel = ({
               Désactivé en mode "Autour de moi"
             </p>
           )}
-        </div>
-
-        {/* Filtre par expérience */}
-        <div className="mb-4">
-          <label className="block font-medium mb-2">Expérience</label>
-          <select
-            className="w-full border border-gray-300 px-3 py-2 rounded-md"
-            value={selectedExperience}
-            onChange={(e) => setSelectedExperience(e.target.value)}
-          >
-            {experienceLevels.map((level) => (
-              <option key={level} value={level}>
-                {level}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Filtre par prix */}
-        <div className="mb-4">
-          <label className="block font-medium mb-2">
-            Prix: {formatPrice(minPrice)} - {formatPrice(maxPrice)}
-          </label>
-          <div className="flex gap-4 items-center">
-            <input
-              type="range"
-              min="0"
-              max="500"
-              step="10"
-              value={minPrice}
-              onChange={(e) => setMinPrice(Number(e.target.value))}
-              className="w-full"
-            />
-            <input
-              type="range"
-              min="0"
-              max="500"
-              step="10"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="w-full"
-            />
-          </div>
         </div>
 
         {/* Filtre par rayon (disponible uniquement en mode "Autour de moi") */}

@@ -15,10 +15,8 @@ export default function PublicationProvider({ children }) {
   // État pour l'utilisateur actuel
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  // ✅ FONCTION AMÉLIORÉE: Enrichir les données avec avatars et debug
   const enrichPublicationData = (publications) => {
     console.group("🔄 enrichPublicationData - Processing");
-   
 
     if (!publications || !Array.isArray(publications)) {
       console.warn("⚠️ Publications invalides:", publications);
@@ -27,16 +25,12 @@ export default function PublicationProvider({ children }) {
     }
 
     const enriched = publications.map((publication, index) => {
-    
-
-      // ✅ AMÉLIORATION: Enrichir l'auteur avec debug
       const originalAuthor = publication.idTatoueur;
-
 
       const enrichedAuthor = originalAuthor
         ? {
             ...originalAuthor,
-            // ✅ AMÉLIORATION: Chercher la photo dans tous les champs possibles
+
             photoProfil:
               originalAuthor.photoProfil ||
               originalAuthor.avatar ||
@@ -48,20 +42,15 @@ export default function PublicationProvider({ children }) {
           }
         : null;
 
-      
-
-      // ✅ AMÉLIORATION: Enrichir les commentaires avec debug
       const originalComments = publication.commentaires || [];
-      
 
       const enrichedComments = originalComments.map((comment, commentIndex) => {
         const originalCommentUser = comment.userId;
-      
 
         const enrichedCommentUser = originalCommentUser
           ? {
               ...originalCommentUser,
-              // ✅ AMÉLIORATION: Chercher la photo dans tous les champs possibles
+
               photoProfil:
                 originalCommentUser.photoProfil ||
                 originalCommentUser.avatar ||
@@ -73,15 +62,11 @@ export default function PublicationProvider({ children }) {
             }
           : null;
 
-       
-
         return {
           ...comment,
           userId: enrichedCommentUser,
         };
       });
-
-     
 
       const enrichedPublication = {
         ...publication,
@@ -89,21 +74,16 @@ export default function PublicationProvider({ children }) {
         commentaires: enrichedComments,
       };
 
-
       return enrichedPublication;
     });
 
-  
     console.groupEnd();
     return enriched;
   };
 
-  // Récupérer l'utilisateur actuel
   useEffect(() => {
     const getCurrentUser = () => {
       try {
-       
-
         const cookies = document.cookie.split("; ");
         const tokenCookie = cookies.find((row) => row.startsWith("token="));
 
@@ -115,14 +95,13 @@ export default function PublicationProvider({ children }) {
 
           if (userId) {
             setCurrentUserId(userId);
-            
+
             return;
           }
         }
 
         // Fallback temporaire
         setCurrentUserId("68492f8aff76a60093ccb90b");
-       
       } catch (error) {
         console.error("❌ PublicationProvider - Erreur init user:", error);
         setCurrentUserId("68492f8aff76a60093ccb90b");
@@ -135,19 +114,16 @@ export default function PublicationProvider({ children }) {
   // Charger les données initiales
   useEffect(() => {
     if (currentUserId) {
-      
       loadInitialData();
     }
   }, [currentUserId]);
 
-  // ✅ FONCTION AMÉLIORÉE: loadInitialData avec enrichissement et debug
   const loadInitialData = async () => {
     setLoading(true);
     setError(null);
 
     try {
       console.group("🌐 PublicationProvider - Chargement données");
-      
 
       // Charger les publications en parallèle
       const [followedData, recommendedData, savedData] =
@@ -157,16 +133,11 @@ export default function PublicationProvider({ children }) {
           publicationApi.getSavedPublications({ limit: 50 }),
         ]);
 
-      // ✅ TRAITEMENT: Publications suivies
       if (followedData.status === "fulfilled") {
         const rawFollowed = followedData.value.publications || [];
-      
-
-     
 
         const enrichedFollowed = enrichPublicationData(rawFollowed);
         setFollowedPosts(enrichedFollowed);
-      
       } else {
         console.error(
           "❌ Erreur chargement publications suivies:",
@@ -174,15 +145,11 @@ export default function PublicationProvider({ children }) {
         );
       }
 
-      // ✅ TRAITEMENT: Publications recommandées
       if (recommendedData.status === "fulfilled") {
         const rawRecommended = recommendedData.value.publications || [];
-       
 
-    
         const enrichedRecommended = enrichPublicationData(rawRecommended);
         setRecommendedPosts(enrichedRecommended);
-       
       } else {
         console.error(
           "❌ Erreur chargement publications recommandées:",
@@ -190,10 +157,8 @@ export default function PublicationProvider({ children }) {
         );
       }
 
-      // ✅ TRAITEMENT: Publications sauvegardées
       if (savedData.status === "fulfilled") {
         const rawSaved = savedData.value.publications || [];
-        
 
         // Pour les sauvegardées, adaptation avec avatars
         const adaptedSaved = rawSaved.map((post) => {
@@ -212,13 +177,10 @@ export default function PublicationProvider({ children }) {
             datePublication: new Date(post.datePublication || post.createdAt),
           };
 
-        
-
           return adapted;
         });
 
         setSavedPosts(adaptedSaved);
-       
       } else {
         console.error(
           "❌ Erreur chargement publications sauvegardées:",
@@ -241,8 +203,6 @@ export default function PublicationProvider({ children }) {
       setLoading(true);
       setError(null);
 
-  
-
       // Valider les données
       const validationErrors =
         publicationUtils.validatePublicationData(publicationData);
@@ -255,9 +215,6 @@ export default function PublicationProvider({ children }) {
         publicationData
       );
 
-     
-
-      // ✅ AMÉLIORATION: Enrichir la nouvelle publication avec les infos utilisateur
       const userInfo = getCurrentUserInfo();
       const enrichedNewPublication = {
         ...newPublication,
@@ -270,7 +227,6 @@ export default function PublicationProvider({ children }) {
 
       // Ajouter la publication enrichie en première position
       setFollowedPosts((prev) => [enrichedNewPublication, ...prev]);
-      
 
       return newPublication;
     } catch (error) {
@@ -282,53 +238,52 @@ export default function PublicationProvider({ children }) {
     }
   };
 
-const toggleLikePost = async (postId) => {
-  try {
-    console.group("👍 PublicationProvider - Toggle like POST");
-    
-    
+  const toggleLikePost = async (postId) => {
+    try {
+      console.group("👍 PublicationProvider - Toggle like POST");
 
-    // Appel API direct
-  
-    const result = await publicationApi.toggleLikePublication(postId);
-   
+      // Appel API direct
 
-    // ✅ CORRECTION: Forcer le rechargement des données depuis l'API
-    if (result) {
-     
-      
-      // Recharger les données suivies
-      try {
-        const followedData = await publicationApi.getFollowedPublications({ limit: 20 });
-        if (followedData.publications) {
-          const enrichedFollowed = enrichPublicationData(followedData.publications);
-          setFollowedPosts(enrichedFollowed);
-          
+      const result = await publicationApi.toggleLikePublication(postId);
+
+      if (result) {
+        // Recharger les données suivies
+        try {
+          const followedData = await publicationApi.getFollowedPublications({
+            limit: 20,
+          });
+          if (followedData.publications) {
+            const enrichedFollowed = enrichPublicationData(
+              followedData.publications
+            );
+            setFollowedPosts(enrichedFollowed);
+          }
+        } catch (error) {
+          console.warn("⚠️ Erreur rechargement followedPosts:", error);
         }
-      } catch (error) {
-        console.warn("⚠️ Erreur rechargement followedPosts:", error);
+
+        // Recharger les données recommandées
+        try {
+          const recommendedData =
+            await publicationApi.getRecommendedPublications({ limit: 20 });
+          if (recommendedData.publications) {
+            const enrichedRecommended = enrichPublicationData(
+              recommendedData.publications
+            );
+            setRecommendedPosts(enrichedRecommended);
+          }
+        } catch (error) {
+          console.warn("⚠️ Erreur rechargement recommendedPosts:", error);
+        }
       }
 
-      // Recharger les données recommandées
-      try {
-        const recommendedData = await publicationApi.getRecommendedPublications({ limit: 20 });
-        if (recommendedData.publications) {
-          const enrichedRecommended = enrichPublicationData(recommendedData.publications);
-          setRecommendedPosts(enrichedRecommended);
-          
-        }
-      } catch (error) {
-        console.warn("⚠️ Erreur rechargement recommendedPosts:", error);
-      }
+      console.groupEnd();
+    } catch (error) {
+      console.error("❌ PublicationProvider - Erreur like:", error);
+      setError("Erreur lors du like");
+      throw error;
     }
-
-    console.groupEnd();
-  } catch (error) {
-    console.error("❌ PublicationProvider - Erreur like:", error);
-    setError("Erreur lors du like");
-    throw error;
-  }
-};
+  };
 
   // Fonction pour sauvegarder/désauvegarder une publication
   const toggleSavePost = async (post) => {
@@ -338,14 +293,11 @@ const toggleLikePost = async (postId) => {
         (savedPost) => savedPost.id === postId
       );
 
-     
-
       // Mise à jour optimiste
       if (isAlreadySaved) {
         setSavedPosts((prev) =>
           prev.filter((savedPost) => savedPost.id !== postId)
         );
-      
       } else {
         const postToSave = {
           id: postId,
@@ -362,15 +314,13 @@ const toggleLikePost = async (postId) => {
           datePublication: new Date(post.datePublication || post.createdAt),
         };
         setSavedPosts((prev) => [postToSave, ...prev]);
-       
       }
 
       // Appel API
       await publicationApi.toggleSavePublication(postId);
-      
     } catch (error) {
       console.error("❌ PublicationProvider - Erreur sauvegarde:", error);
-      await loadInitialData(); // Recharger en cas d'erreur
+      await loadInitialData();
       setError("Erreur lors de la sauvegarde");
     }
   };
@@ -391,7 +341,6 @@ const toggleLikePost = async (postId) => {
         return;
       }
 
-   
       setLoading(true);
       await publicationApi.deletePublication(postId);
 
@@ -402,8 +351,6 @@ const toggleLikePost = async (postId) => {
       setFollowedPosts(removeFromArray);
       setRecommendedPosts(removeFromArray);
       setSavedPosts(removeFromArray);
-
-   
     } catch (error) {
       console.error("❌ PublicationProvider - Erreur suppression:", error);
       setError("Erreur lors de la suppression de la publication");
@@ -416,7 +363,6 @@ const toggleLikePost = async (postId) => {
   // Fonction pour obtenir les publications par tag
   const getPostsByTag = async (tag) => {
     try {
-    
       const response = await publicationApi.getPublicationsByTag(tag);
       const enrichedPosts = enrichPublicationData(response.publications || []);
       return enrichedPosts;
@@ -430,7 +376,6 @@ const toggleLikePost = async (postId) => {
   // Fonction pour obtenir les publications par artiste
   const getPostsByArtist = async (artistId) => {
     try {
-      console.log("👨‍🎨 Recherche par artiste:", artistId);
       const response = await publicationApi.getPublicationsByTattooArtist(
         artistId
       );
@@ -448,14 +393,12 @@ const toggleLikePost = async (postId) => {
 
   // Fonction pour recharger les données
   const refreshData = async () => {
-    console.log("🔄 Rafraîchissement des données...");
     await loadInitialData();
   };
 
   // Fonction pour charger plus de publications (pagination)
   const loadMorePosts = async (type = "followed", page = 2) => {
     try {
-      console.log("📄 Chargement page supplémentaire:", { type, page });
       let response;
 
       if (type === "followed") {
@@ -484,7 +427,6 @@ const toggleLikePost = async (postId) => {
 
   // Fonction pour vider le cache et recharger
   const clearAndReload = async () => {
-    console.log("🧹 Nettoyage et rechargement...");
     setFollowedPosts([]);
     setRecommendedPosts([]);
     setSavedPosts([]);
@@ -620,11 +562,6 @@ const toggleLikePost = async (postId) => {
 
   const toggleLikeComment = async (postId, commentId) => {
     try {
-      console.group("👍 PublicationProvider - toggleLikeComment");
-      console.log("Post ID:", postId);
-      console.log("Comment ID:", commentId);
-      console.log("User ID:", currentUserId);
-
       // Fonction pour mettre à jour un commentaire dans un post
       const updateCommentLike = (postArray, setPostArray) => {
         const postIndex = postArray.findIndex(
@@ -644,26 +581,14 @@ const toggleLikePost = async (postId) => {
             const currentLikes = comment.likes || [];
             const userInfo = getCurrentUserInfo();
 
-            console.log("📝 Commentaire trouvé:", {
-              commentIndex,
-              currentLikes: currentLikes.length,
-              userInfo,
-            });
-
             const userHasLiked = currentLikes.some((like) => {
               const likeUserId =
                 like.userId?._id || like.userId?.id || like.userId;
               const hasLiked =
                 likeUserId?.toString() === currentUserId?.toString();
-              console.log("🔍 Vérification like commentaire:", {
-                likeUserId,
-                currentUserId,
-                hasLiked,
-              });
+
               return hasLiked;
             });
-
-            console.log("💡 User has liked comment:", userHasLiked);
 
             // Mise à jour optimiste
             if (userHasLiked) {
@@ -673,7 +598,6 @@ const toggleLikePost = async (postId) => {
                   like.userId?._id || like.userId?.id || like.userId;
                 return likeUserId?.toString() !== currentUserId?.toString();
               });
-              console.log("➖ Like commentaire retiré");
             } else {
               // Ajouter le like
               comment.likes = [
@@ -687,10 +611,8 @@ const toggleLikePost = async (postId) => {
                   dateLike: new Date(),
                 },
               ];
-              console.log("➕ Like commentaire ajouté");
             }
 
-            console.log("💾 Nouveaux likes commentaire:", comment.likes.length);
             setPostArray(updatedPosts);
             return true;
           } else {
@@ -710,12 +632,10 @@ const toggleLikePost = async (postId) => {
 
       // Appel API seulement si la mise à jour locale a réussi
       if (updated) {
-        console.log("📡 Appel API toggleLikeComment...");
         const result = await publicationApi.toggleLikeComment(
           postId,
           commentId
         );
-        console.log("✅ API toggleLikeComment success:", result);
 
         // ✅ OPTIONNEL: Mettre à jour avec les données de l'API pour être sûr
         if (result && result.commentaires) {
@@ -815,28 +735,7 @@ const toggleLikePost = async (postId) => {
     }
   };
 
-  // ✅ DEBUG: Log des états pour debugging
-  useEffect(() => {
-    console.log("📊 PublicationProvider State Update:", {
-      followedPosts: followedPosts?.length || 0,
-      recommendedPosts: recommendedPosts?.length || 0,
-      savedPosts: savedPosts?.length || 0,
-      loading,
-      error,
-      currentUserId,
-    });
-  }, [
-    followedPosts,
-    recommendedPosts,
-    savedPosts,
-    loading,
-    error,
-    currentUserId,
-  ]);
-
-  // Valeur partagée via le contexte
   const value = {
-    // États
     followedPosts,
     recommendedPosts,
     savedPosts,
@@ -844,29 +743,23 @@ const toggleLikePost = async (postId) => {
     error,
     currentUserId,
 
-    // Fonctions CRUD
     addPublication,
     deletePost,
     addComment,
 
-    // Fonctions d'interaction
     toggleLikePost,
     toggleSavePost,
     isPostSaved,
 
-    // Fonctions de recherche/filtrage
     getPostsByTag,
     getPostsByArtist,
 
-    // Fonctions de gestion des données
     refreshData,
     loadMorePosts,
     clearAndReload,
 
-    // Fonctions pour gérer les erreurs
     clearError: () => setError(null),
 
-    // Setters
     setFollowedPosts,
     setRecommendedPosts,
     setSavedPosts,
@@ -876,7 +769,6 @@ const toggleLikePost = async (postId) => {
     toggleLikeComment,
     toggleLikeReply,
 
-    // Utilitaires
     utils: publicationUtils,
   };
 

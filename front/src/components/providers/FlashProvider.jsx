@@ -3,26 +3,25 @@ import { flashApi } from "../../api/flash.api";
 import { FlashContext } from "../../context/FlashContext";
 
 export default function FlashProvider({ children }) {
-  // ✅ États pour les flashs
+
   const [followedFlashes, setFollowedFlashes] = useState([]);
   const [recommendedFlashes, setRecommendedFlashes] = useState([]);
   const [savedFlashes, setSavedFlashes] = useState([]);
   const [allFlashes, setAllFlashes] = useState([]);
 
-  // ✅ NOUVEAU: Cache des flashs individuels pour synchronisation
+
   const [flashsCache, setFlashsCache] = useState(new Map());
 
-  // ✅ États de contrôle
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
 
-  // ✅ États de pagination
+ 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // ✅ NOUVELLE FONCTION: Mettre à jour un flash dans toutes les listes
   const updateFlashInAllLists = useCallback((flashId, updatedFlash) => {
     const updateFlashInList = (flashList, setFlashList) => {
       setFlashList((prev) =>
@@ -38,7 +37,6 @@ export default function FlashProvider({ children }) {
     updateFlashInList(savedFlashes, setSavedFlashes);
   }, [allFlashes, followedFlashes, recommendedFlashes, savedFlashes]);
 
-  // ✅ NOUVELLE FONCTION: Mettre à jour un flash dans le cache et toutes les listes
   const updateFlashInCache = useCallback((flashId, updatedFlash) => {
     // Mettre à jour le cache
     setFlashsCache(prev => {
@@ -56,11 +54,11 @@ export default function FlashProvider({ children }) {
     }));
   }, [updateFlashInAllLists]);
 
-  // ✅ NOUVEAU: Système d'événements pour synchronisation
+ 
   useEffect(() => {
     const handleFlashUpdated = (event) => {
       const { flashId, updatedFlash } = event.detail;
-      console.log("🔄 FlashContext - Flash mis à jour via événement:", flashId);
+     
       
       // Mettre à jour dans toutes les listes
       updateFlashInAllLists(flashId, updatedFlash);
@@ -73,12 +71,12 @@ export default function FlashProvider({ children }) {
     };
   }, [updateFlashInAllLists]);
 
-  // ✅ NOUVELLE FONCTION: Récupérer un flash depuis le cache ou l'API
+  
   const getFlashFromCache = useCallback((flashId) => {
     return flashsCache.get(flashId);
   }, [flashsCache]);
 
-  // ✅ Fonction pour récupérer l'utilisateur actuel
+
   const getCurrentUser = useCallback(() => {
     try {
       // Méthode 1: localStorage 'user'
@@ -118,23 +116,23 @@ export default function FlashProvider({ children }) {
     }
   }, []);
 
-  // ✅ FONCTION: Charger les flashs sauvegardés
+ 
   const loadSavedFlashes = useCallback(async () => {
     if (!currentUserId) return;
 
     try {
-      console.log("💾 FlashContext - Chargement flashs sauvegardés");
+     
 
       const response = await flashApi.getSavedFlashs({
         page: 1,
         limit: 50,
       });
 
-      console.log("✅ FlashContext - Flashs sauvegardés:", response);
+     
       const savedFlashs = response.flashs || [];
       setSavedFlashes(savedFlashs);
 
-      // ✅ NOUVEAU: Mettre à jour le cache avec les flashs sauvegardés
+    
       setFlashsCache(prev => {
         const newCache = new Map(prev);
         savedFlashs.forEach(flash => {
@@ -148,13 +146,13 @@ export default function FlashProvider({ children }) {
     }
   }, [currentUserId]);
 
-  // ✅ FONCTION: Charger les flashs initiaux
+ 
   const loadInitialFlashes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log("📥 FlashContext - Chargement flashs initiaux");
+    
 
       // Charger tous les flashs (pour recommendations)
       const response = await flashApi.getFlashs({
@@ -164,12 +162,12 @@ export default function FlashProvider({ children }) {
         order: "desc",
       });
 
-      console.log("✅ FlashContext - Flashs chargés:", response);
+      
 
       const flashs = response.flashs || [];
       setAllFlashes(flashs);
 
-      // ✅ NOUVEAU: Mettre à jour le cache avec les flashs chargés
+      
       setFlashsCache(prev => {
         const newCache = new Map(prev);
         flashs.forEach(flash => {
@@ -179,10 +177,9 @@ export default function FlashProvider({ children }) {
         return newCache;
       });
 
-      // Pour l'instant, on met tout dans recommended
-      // Plus tard, on pourra filtrer selon les tatoueurs suivis
+   
       setRecommendedFlashes(flashs);
-      setFollowedFlashes([]); // À implémenter avec le système de follow
+      setFollowedFlashes([]); 
 
       setCurrentPage(response.currentPage || 1);
       setTotalPages(response.totalPages || 1);
@@ -195,31 +192,31 @@ export default function FlashProvider({ children }) {
     }
   }, []);
 
-  // ✅ Initialiser l'utilisateur au montage
+  
   useEffect(() => {
     const userId = getCurrentUser();
     setCurrentUserId(userId);
-    console.log("👤 FlashContext - User ID:", userId);
+    
   }, [getCurrentUser]);
 
-  // ✅ Charger les flashs au montage
+
   useEffect(() => {
     if (currentUserId) {
       loadInitialFlashes();
       loadSavedFlashes();
     } else {
-      // Charger les flashs publics même sans utilisateur
+     
       loadInitialFlashes();
     }
   }, [currentUserId, loadInitialFlashes, loadSavedFlashes]);
 
-  // ✅ FIX: Stabiliser getFlashesByTatoueur avec useCallback
+
   const getFlashesByTatoueur = useCallback(async (tatoueurId, params = {}) => {
     try {
-      console.log("👨‍🎨 FlashContext - getFlashesByTatoueur:", tatoueurId);
+     
 
       const response = await flashApi.getFlashsByTatoueur(tatoueurId, params);
-      console.log("✅ FlashContext - Flashs tatoueur:", response);
+    
 
       const flashs = response.flashs || [];
 
@@ -240,21 +237,21 @@ export default function FlashProvider({ children }) {
     }
   }, []); // Pas de dépendances car la fonction est stable
 
-  // ✅ FONCTION MODIFIÉE: Récupérer un flash par ID avec cache
+  
   const getFlashById = useCallback(async (flashId) => {
     try {
-      console.log("🔍 FlashContext - getFlashById:", flashId);
+    
 
       // Vérifier d'abord le cache
       const cachedFlash = getFlashFromCache(flashId);
       if (cachedFlash) {
-        console.log("📋 FlashContext - Flash trouvé dans le cache:", flashId);
+       
         return cachedFlash;
       }
 
       // Sinon, charger depuis l'API
       const flash = await flashApi.getFlashById(flashId);
-      console.log("✅ FlashContext - Flash chargé depuis l'API:", flash);
+     
 
       // Mettre à jour le cache
       updateFlashInCache(flashId, flash);
@@ -266,10 +263,10 @@ export default function FlashProvider({ children }) {
     }
   }, [getFlashFromCache, updateFlashInCache]);
 
-  // ✅ NOUVELLES FONCTIONS: Gestion des commentaires avec synchronisation
+ 
   const addCommentToFlash = useCallback(async (flashId, contenu) => {
     try {
-      console.log("💬 FlashContext - Ajout commentaire:", flashId, contenu);
+     
       
       const updatedFlash = await flashApi.addComment(flashId, contenu);
       
@@ -285,7 +282,7 @@ export default function FlashProvider({ children }) {
 
   const likeCommentInFlash = useCallback(async (flashId, commentId) => {
     try {
-      console.log("👍 FlashContext - Like commentaire:", flashId, commentId);
+      
       
       const updatedFlash = await flashApi.likeComment(flashId, commentId);
       
@@ -301,7 +298,7 @@ export default function FlashProvider({ children }) {
 
   const addReplyToComment = useCallback(async (flashId, commentId, contenu) => {
     try {
-      console.log("💬 FlashContext - Ajout réponse:", flashId, commentId, contenu);
+     
       
       const updatedFlash = await flashApi.addReplyToComment(flashId, commentId, contenu);
       
@@ -317,7 +314,7 @@ export default function FlashProvider({ children }) {
 
   const likeReplyInFlash = useCallback(async (flashId, commentId, replyId) => {
     try {
-      console.log("👍 FlashContext - Like réponse:", flashId, commentId, replyId);
+      
       
       const updatedFlash = await flashApi.likeReply(flashId, commentId, replyId);
       
@@ -333,7 +330,7 @@ export default function FlashProvider({ children }) {
 
   const deleteCommentFromFlash = useCallback(async (flashId, commentId) => {
     try {
-      console.log("🗑️ FlashContext - Suppression commentaire:", flashId, commentId);
+      
       
       await flashApi.deleteComment(flashId, commentId);
       
@@ -352,7 +349,7 @@ export default function FlashProvider({ children }) {
 
   const deleteReplyFromFlash = useCallback(async (flashId, commentId, replyId) => {
     try {
-      console.log("🗑️ FlashContext - Suppression réponse:", flashId, commentId, replyId);
+  
       
       await flashApi.deleteReply(flashId, commentId, replyId);
       
@@ -369,14 +366,14 @@ export default function FlashProvider({ children }) {
     }
   }, [updateFlashInCache]);
 
-  // ✅ FONCTION: Créer un nouveau flash
+  
   const addFlash = useCallback(async (flashData) => {
     try {
-      console.log("📤 FlashContext - Création flash:", flashData);
+      
       setLoading(true);
 
       const newFlash = await flashApi.createFlash(flashData);
-      console.log("✅ FlashContext - Flash créé:", newFlash);
+      
 
       // Ajouter le nouveau flash en haut de la liste et dans le cache
       const flashId = newFlash._id || newFlash.id;
@@ -398,13 +395,13 @@ export default function FlashProvider({ children }) {
     }
   }, []);
 
-  // ✅ FONCTION MODIFIÉE: Liker/Unliker un flash avec synchronisation
+ 
   const toggleLikeFlash = useCallback(async (flashId) => {
     try {
-      console.log("👍 FlashContext - toggleLikeFlash:", flashId);
+    
 
       const updatedFlash = await flashApi.likeFlash(flashId);
-      console.log("✅ FlashContext - Flash liké:", updatedFlash);
+     
 
       // Mettre à jour le cache et toutes les listes
       updateFlashInCache(flashId, updatedFlash);
@@ -416,14 +413,14 @@ export default function FlashProvider({ children }) {
     }
   }, [updateFlashInCache]);
 
-  // ✅ FONCTION: Sauvegarder/Désauvegarder un flash
+  
   const toggleSaveFlash = useCallback(async (flash) => {
     if (!currentUserId) {
       throw new Error("Vous devez être connecté pour sauvegarder un flash");
     }
 
     try {
-      console.log("💾 FlashContext - toggleSaveFlash:", flash._id || flash.id);
+  
 
       const flashId = flash._id || flash.id;
       const isAlreadySaved = savedFlashes.some(
@@ -436,13 +433,13 @@ export default function FlashProvider({ children }) {
         setSavedFlashes((prev) =>
           prev.filter((saved) => (saved._id || saved.id) !== flashId)
         );
-        console.log("✅ Flash retiré des favoris");
+       
       } else {
         // Sauvegarder
         await flashApi.saveFlash(flashId);
         // Recharger la liste complète pour avoir les données à jour
         await loadSavedFlashes();
-        console.log("✅ Flash ajouté aux favoris");
+       
       }
     } catch (err) {
       console.error("❌ FlashContext - Erreur save flash:", err);
@@ -450,13 +447,13 @@ export default function FlashProvider({ children }) {
     }
   }, [currentUserId, savedFlashes, loadSavedFlashes]);
 
-  // ✅ FONCTION: Réserver un flash
+
   const reserveFlash = useCallback(async (flashId) => {
     try {
-      console.log("📅 FlashContext - reserveFlash:", flashId);
+    
 
       const response = await flashApi.reserveFlash(flashId);
-      console.log("✅ FlashContext - Flash réservé:", response);
+    
 
       // Mettre à jour le flash dans toutes les listes et le cache
       const updatedFlash = {
@@ -475,13 +472,13 @@ export default function FlashProvider({ children }) {
     }
   }, [getFlashFromCache, updateFlashInCache, currentUserId]);
 
-  // ✅ FONCTION: Supprimer un flash
+ 
   const deleteFlash = useCallback(async (flashId) => {
     try {
-      console.log("🗑️ FlashContext - deleteFlash:", flashId);
+      
 
       await flashApi.deleteFlash(flashId);
-      console.log("✅ FlashContext - Flash supprimé");
+     
 
       // Retirer le flash du cache
       setFlashsCache(prev => {
@@ -507,7 +504,7 @@ export default function FlashProvider({ children }) {
     }
   }, [allFlashes, followedFlashes, recommendedFlashes, savedFlashes]);
 
-  // ✅ FONCTION: Charger plus de flashs
+ 
   const loadMoreFlashes = useCallback(async () => {
     if (!hasMore || loading) return;
 
@@ -515,7 +512,7 @@ export default function FlashProvider({ children }) {
       setLoading(true);
 
       const nextPage = currentPage + 1;
-      console.log("📥 FlashContext - Chargement page:", nextPage);
+     
 
       const response = await flashApi.getFlashs({
         page: nextPage,
@@ -551,13 +548,13 @@ export default function FlashProvider({ children }) {
     }
   }, [hasMore, loading, currentPage]);
 
-  // ✅ FONCTION: Rechercher des flashs
+ 
   const searchFlashes = useCallback(async (searchParams) => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log("🔍 FlashContext - Recherche flashs:", searchParams);
+   
 
       const response = await flashApi.getFlashs({
         ...searchParams,
@@ -592,12 +589,12 @@ export default function FlashProvider({ children }) {
     }
   }, []);
 
-  // ✅ FONCTION: Vérifier si un flash est sauvegardé
+ 
   const isFlashSaved = useCallback((flashId) => {
     return savedFlashes.some((flash) => (flash._id || flash.id) === flashId);
   }, [savedFlashes]);
 
-  // ✅ FONCTION: Vérifier si l'utilisateur a liké un flash
+  
   const hasUserLiked = useCallback((flash) => {
     if (!flash.likes || !currentUserId) return false;
     return flash.likes.some(
@@ -605,12 +602,12 @@ export default function FlashProvider({ children }) {
     );
   }, [currentUserId]);
 
-  // ✅ FONCTION: Obtenir le nombre de likes d'un flash
+  
   const getLikesCount = useCallback((flash) => {
     return flash.likesCount || flash.likes?.length || 0;
   }, []);
 
-  // ✅ FONCTION: Rafraîchir les données
+  
   const refreshData = useCallback(async () => {
     try {
       setError(null);
@@ -624,12 +621,11 @@ export default function FlashProvider({ children }) {
     }
   }, [loadInitialFlashes, loadSavedFlashes, currentUserId]);
 
-  // ✅ FONCTION: Nettoyer les erreurs
+  
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  // ✅ FONCTIONS UTILITAIRES (compatibilité avec l'ancien contexte)
   const getFlashesByTag = useCallback((tag) => {
     return allFlashes.filter((flash) =>
       flash.tags?.some((flashTag) =>
@@ -644,9 +640,9 @@ export default function FlashProvider({ children }) {
     );
   }, [allFlashes]);
 
-  // ✅ Valeur du contexte
+  
   const value = {
-    // États
+    
     followedFlashes,
     recommendedFlashes,
     savedFlashes,
@@ -656,22 +652,22 @@ export default function FlashProvider({ children }) {
     currentUserId,
     flashsCache,
 
-    // Pagination
+    
     currentPage,
     totalPages,
     hasMore,
 
-    // Fonctions principales
+    
     getFlashById,
     addFlash,
     deleteFlash,
 
-    // Interactions
+    
     toggleLikeFlash,
     toggleSaveFlash,
     reserveFlash,
 
-    // ✅ NOUVELLES FONCTIONS: Gestion des commentaires
+   
     addCommentToFlash,
     likeCommentInFlash,
     addReplyToComment,
@@ -679,25 +675,25 @@ export default function FlashProvider({ children }) {
     deleteCommentFromFlash,
     deleteReplyFromFlash,
 
-    // Cache et synchronisation
+   
     updateFlashInCache,
     getFlashFromCache,
 
-    // Recherche et filtrage
+    
     searchFlashes,
     getFlashesByTatoueur,
     getFlashesByTag,
     getFlashesByArtist,
     loadMoreFlashes,
 
-    // Utilitaires
+   
     isFlashSaved,
     hasUserLiked,
     getLikesCount,
     refreshData,
     clearError,
 
-    // Setters pour compatibilité
+    
     setFollowedFlashes,
     setRecommendedFlashes,
     setSavedFlashes,

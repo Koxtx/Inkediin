@@ -26,11 +26,11 @@ export default function ModifierProfil({ onBack }) {
     photoProfil: "",
   });
 
-  // ✅ NOUVEAU: État pour gérer l'upload d'image
+
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
 
-  // Initialiser le formulaire avec les données utilisateur
+ 
   useEffect(() => {
     if (user) {
       setFormData({
@@ -54,7 +54,7 @@ export default function ModifierProfil({ onBack }) {
     }));
   }, []);
 
-  // ✅ NOUVEAU: Validation d'image
+  
   const validateImageFile = (file) => {
     const maxSize = 5 * 1024 * 1024; // 5MB
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
@@ -80,7 +80,7 @@ export default function ModifierProfil({ onBack }) {
     return { valid: true };
   };
 
-  // ✅ MODIFICATION: Nouvelle gestion de l'upload d'avatar avec Cloudinary
+ 
   const handleAvatarChange = useCallback(
     async (e) => {
       const file = e.target.files[0];
@@ -118,7 +118,6 @@ export default function ModifierProfil({ onBack }) {
     []
   );
 
-  // ✅ NOUVEAU: Fonction pour supprimer l'image
   const removeImage = useCallback(() => {
     setSelectedImageFile(null);
     setImagePreview(user.photoProfil || null); // Revenir à l'image originale
@@ -132,7 +131,7 @@ export default function ModifierProfil({ onBack }) {
     toast.info("Image supprimée. Cliquez sur 'Enregistrer' pour confirmer.");
   }, [user.photoProfil]);
 
-  // ✅ MODIFICATION: Mise à jour du profil avec support Cloudinary
+
   const handleSubmit = useCallback(
     async (e) => {
       e.preventDefault();
@@ -140,10 +139,9 @@ export default function ModifierProfil({ onBack }) {
       try {
         setLoading(true);
 
-        // Si une nouvelle image a été sélectionnée, la mettre à jour d'abord
         let updatedUser = user;
         if (selectedImageFile) {
-          console.log("📷 Upload de la nouvelle image...");
+         
           try {
             updatedUser = await updateAvatar(selectedImageFile);
             toast.success("Photo de profil mise à jour !");
@@ -165,7 +163,6 @@ export default function ModifierProfil({ onBack }) {
           styles: formData.styles,
         };
 
-        console.log("📝 Mise à jour des données profil...");
         const finalUpdatedUser = await update(updateData);
 
         if (finalUpdatedUser && finalUpdatedUser._id) {

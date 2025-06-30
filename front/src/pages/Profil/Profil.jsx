@@ -17,7 +17,7 @@ import ProfileSpecialties from "./components/ProfileSpecialties";
 import ProfileTabs from "./components/ProfileTabs";
 import TattooGallery from "./components/TattooGallery";
 import FlashGallery from "./components/FlashGallery";
-import ClientSavedContent from "./components/ClientSavedContent"; // ✅ CHANGEMENT: ClientSavedContent au lieu de ClientWishlist
+import ClientSavedContent from "./components/ClientSavedContent"; 
 import FollowedArtists from "./components/FollowedArtists";
 import ArtistRecommendations from "./components/ArtistRecommendations";
 
@@ -37,11 +37,7 @@ export default function Profil() {
   const isOwnProfile = !userId || userId === currentUser?._id;
   const displayUser = isOwnProfile ? currentUser : otherUserData;
 
-  useEffect(() => {
-    console.log("📍 Profil - userId depuis URL:", userId);
-    console.log("👤 Profil - currentUser._id:", currentUser?._id);
-    console.log("🏠 Profil - isOwnProfile:", isOwnProfile);
-  }, [userId, currentUser, isOwnProfile]);
+
 
   // Chargement des données utilisateur
   useEffect(() => {
@@ -49,12 +45,12 @@ export default function Profil() {
       if (!isOwnProfile && userId) {
         setLoading(true);
         try {
-          console.log("📡 Chargement des données pour userId:", userId);
+          
 
           const result = await getTattooerById(userId);
 
           if (result.success) {
-            console.log("✅ Données utilisateur chargées:", result.data);
+           
             setOtherUserData({
               ...result.data,
               stats: {
@@ -83,18 +79,18 @@ export default function Profil() {
     fetchUserData();
   }, [userId, isOwnProfile, currentUser]);
 
-  // ✅ CHANGEMENT: Initialisation de l'onglet selon le type d'utilisateur
+  
   useEffect(() => {
     if (displayUser) {
       if (displayUser.userType === "client" && isOwnProfile) {
-        setActiveTab("saved"); // ✅ CHANGEMENT: "saved" au lieu de "wishlist"
+        setActiveTab("saved"); 
       } else {
         setActiveTab("publications");
       }
     }
   }, [displayUser, isOwnProfile]);
 
-  // Fonctions utilitaires pour générer les données (inchangées)
+
   const generateGallery = (userData) => {
     return [
       {
@@ -238,7 +234,7 @@ export default function Profil() {
     toast.info(`Like de l'élément ${itemId} à implémenter`);
   };
 
-  // ✅ CHANGEMENT: Handler pour contenu sauvegardé au lieu de wishlist
+ 
   const handleSavedContentClick = (item) => {
     // Navigation vers le contenu complet (post ou flash)
     if (item.contentType === 'flash') {
@@ -251,7 +247,7 @@ export default function Profil() {
   // Handlers pour les artistes suivis (maintenant gérés par le composant FollowedArtists)
   const handleUnfollowArtist = (artistId) => {
     // Le composant FollowedArtists gère maintenant cette logique
-    console.log('Artist unfollowed:', artistId);
+    
   };
 
   const handleArtistClick = (artist) => {
@@ -283,7 +279,7 @@ export default function Profil() {
   // Handlers pour les recommendations (maintenant gérés par le composant ArtistRecommendations)
   const handleFollowRecommendedArtist = (artistId) => {
     // Le composant ArtistRecommendations gère maintenant cette logique
-    console.log('Recommended artist followed:', artistId);
+   
   };
 
   const handleViewRecommendedArtist = (artistId) => {
@@ -291,7 +287,7 @@ export default function Profil() {
     navigate(`/profil/${artistId}`);
   };
 
-  // ✅ CHANGEMENT: Configuration des onglets selon le type d'utilisateur
+ 
   const getAvailableTabs = () => {
     if (displayUser?.userType === "tatoueur") {
       const tabs = [
@@ -303,16 +299,16 @@ export default function Profil() {
       // Client
       if (isOwnProfile) {
         return [
-          { id: "saved", label: "Contenus sauvegardés" }, // ✅ CHANGEMENT: "saved" au lieu de "wishlist"
+          { id: "saved", label: "Contenus sauvegardés" }, 
           { id: "followed", label: "Tatoueurs suivis" },
         ];
       } else {
-        return [{ id: "saved", label: "Contenus sauvegardés" }]; // ✅ CHANGEMENT
+        return [{ id: "saved", label: "Contenus sauvegardés" }]; 
       }
     }
   };
 
-  // ✅ CHANGEMENT: Rendu du contenu des onglets
+  
   const renderTabContent = () => {
     switch (activeTab) {
       case "publications":
@@ -340,11 +336,11 @@ export default function Profil() {
           />
         );
 
-      case "saved": // ✅ CHANGEMENT: "saved" au lieu de "wishlist"
+      case "saved": 
         return (
-          <ClientSavedContent // ✅ CHANGEMENT: ClientSavedContent au lieu de ClientWishlist
+          <ClientSavedContent 
             isOwnProfile={isOwnProfile}
-            onItemClick={handleSavedContentClick} // ✅ CHANGEMENT: handler renommé
+            onItemClick={handleSavedContentClick}
           />
         );
 

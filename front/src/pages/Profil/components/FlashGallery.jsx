@@ -26,7 +26,7 @@ export default function FlashGallery({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // ✅ FIX: Utiliser useCallback pour éviter la recréation de la fonction
+
   const loadUserFlashs = useCallback(async () => {
     if (!displayUser?._id && !displayUser?.id) return;
 
@@ -35,7 +35,7 @@ export default function FlashGallery({
       setError(null);
 
       const userId = displayUser._id || displayUser.id;
-      console.log("🎨 FlashGallery - Chargement flashs pour utilisateur:", userId);
+  
 
       const flashs = await getFlashesByTatoueur(userId, {
         page: 1,
@@ -43,7 +43,7 @@ export default function FlashGallery({
         disponible: isOwnProfile ? undefined : true,
       });
 
-      console.log("✅ FlashGallery - Flashs chargés:", flashs.length);
+    
       setUserFlashs(flashs);
     } catch (err) {
       console.error("❌ FlashGallery - Erreur chargement flashs:", err);
@@ -54,15 +54,15 @@ export default function FlashGallery({
     }
   }, [displayUser?._id, displayUser?.id, isOwnProfile, getFlashesByTatoueur]);
 
-  // ✅ FIX: Retirer getFlashesByTatoueur des dépendances
+  
   useEffect(() => {
     loadUserFlashs();
-  }, [loadUserFlashs]); // Seul loadUserFlashs comme dépendance
+  }, [loadUserFlashs]); 
 
-  // ✅ Limiter l'affichage
+
   const displayedFlashs = userFlashs.slice(0, isOwnProfile ? 6 : 8);
 
-  // ✅ Gestion des actions
+  
   const handleAddFlash = () => {
     if (onAddFlash) {
       onAddFlash();
@@ -81,12 +81,12 @@ export default function FlashGallery({
     }
   };
 
-  // ✅ NOUVEAU: Handler pour éditer un flash - redirige vers EditFlash
+ 
   const handleEditFlash = (flashId) => {
     if (onEditFlash) {
       onEditFlash(flashId);
     } else {
-      console.log("🔧 FlashGallery - Redirection vers édition flash:", flashId);
+    
       navigate(`/flashedit/${flashId}`);
     }
   };
@@ -128,7 +128,7 @@ export default function FlashGallery({
     }
   };
 
-  // ✅ Fonction pour obtenir le style d'affichage
+
   const getDisplayStyle = (flash) => {
     if (flash.style === "autre" && flash.styleCustom) {
       return flash.styleCustom;
@@ -136,7 +136,7 @@ export default function FlashGallery({
     return flash.style || "Flash";
   };
 
-  // ✅ Formatage du prix
+ 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
@@ -144,7 +144,7 @@ export default function FlashGallery({
     }).format(price);
   };
 
-  // ✅ Composant FlashCard Mini
+  
   const MiniFlashCard = ({ flash }) => {
     const isAvailable = flash.disponible && !flash.reserve;
     const userLiked = hasUserLiked(flash);
@@ -195,7 +195,7 @@ export default function FlashGallery({
           </div>
         </div>
 
-        {/* ✅ MODIFIÉ: Actions pour le propriétaire avec redirection vers EditFlash */}
+    
         {isOwnProfile && (
           <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <button 

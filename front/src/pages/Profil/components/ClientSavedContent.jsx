@@ -30,7 +30,7 @@ function SavedPostItem({ post, onUnsave }) {
     }
   };
 
-  // ✅ CORRECTION: Navigation vers le détail du post
+  
   const handleClick = () => {
     navigate(`/post/${post._id || post.id}`);
   };
@@ -39,12 +39,12 @@ function SavedPostItem({ post, onUnsave }) {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??';
   };
 
-  // ✅ CORRECTION: Sécuriser l'accès aux données pour les POSTS
+
   const displayUser = post.user || post.idTatoueur || {};
   const displayTitle = post.title || (post.contenu ? post.contenu.substring(0, 100) + '...' : "Publication sauvegardée");
   const displayImage = post.image || post.images?.[0] || null;
 
-  // ✅ CORRECTION: Gérer les likes et commentaires de manière sécurisée
+
   const likesCount = post.likesCount || 
                    (Array.isArray(post.likes) ? post.likes.length : 0) || 
                    0;
@@ -151,7 +151,7 @@ function SavedPostItem({ post, onUnsave }) {
           </div>
         )}
 
-        {/* ✅ CORRECTION: Stats avec gestion sécurisée des nombres */}
+      
         <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-4">
             {likesCount > 0 && (
@@ -199,7 +199,7 @@ function SavedFlashItem({ flash, onUnsave }) {
     }
   };
 
-  // ✅ CORRECTION: Navigation vers flashdetail avec l'ID comme paramètre (selon la route du router)
+ 
   const handleClick = () => {
     navigate(`/flashdetail/${flash._id || flash.id}`);
   };
@@ -208,13 +208,13 @@ function SavedFlashItem({ flash, onUnsave }) {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??';
   };
 
-  // ✅ CORRECTION: Sécuriser l'accès aux données pour les FLASHS
+
   const displayUser = flash.user || flash.idTatoueur || {};
   const displayTitle = flash.title || flash.description || "Flash sauvegardé";
   const displayImage = flash.image || flash.images?.[0] || null;
   const displayPrice = flash.price || flash.prix;
 
-  // ✅ CORRECTION: Gérer les likes de manière sécurisée
+
   const likesCount = flash.likesCount || 
                     (Array.isArray(flash.likes) ? flash.likes.length : 0) || 
                     0;
@@ -360,20 +360,7 @@ export default function ClientSavedContent({ isOwnProfile, onItemClick }) {
   const [sortBy, setSortBy] = useState('recent');
   const [stats, setStats] = useState({});
 
-  // ✅ CORRECTION: Debug des données reçues
-  useEffect(() => {
-    console.log('🔍 ClientSavedContent - État actuel:', {
-      savedContent: savedContent.length,
-      contentType,
-      loading,
-      error,
-      stats
-    });
-    
-    if (savedContent.length > 0) {
-      console.log('📄 Premier élément sauvegardé:', savedContent[0]);
-    }
-  }, [savedContent, contentType, loading, error, stats]);
+
 
   // Charger le contenu sauvegardé
   useEffect(() => {
@@ -381,8 +368,7 @@ export default function ClientSavedContent({ isOwnProfile, onItemClick }) {
       try {
         setLoading(true);
         setError(null);
-        
-        console.log('📤 Chargement contenu sauvegardé, type:', contentType);
+ 
         
         const result = await getSavedContent({
           type: contentType,
@@ -390,16 +376,12 @@ export default function ClientSavedContent({ isOwnProfile, onItemClick }) {
           limit: 50
         });
         
-        console.log('📥 Résultat API getSavedContent:', result);
+
         
         if (result.success) {
           setSavedContent(result.data || []);
           setStats(result.stats || {});
-          
-          console.log('✅ Contenu sauvegardé chargé:', {
-            items: result.data?.length || 0,
-            stats: result.stats
-          });
+        
         } else {
           setError(result.message || 'Erreur lors du chargement');
           console.error('❌ Erreur API:', result.message);
@@ -417,7 +399,9 @@ export default function ClientSavedContent({ isOwnProfile, onItemClick }) {
 
   // Gérer la suppression d'un élément
   const handleRemoveItem = (itemId) => {
-    console.log('🗑️ Suppression item:', itemId);
+    // Vérifier si l'ID est valide
+    if (!itemId) return;
+
     setSavedContent(prev => prev.filter(item => (item._id || item.id) !== itemId));
   };
 
@@ -567,20 +551,13 @@ export default function ClientSavedContent({ isOwnProfile, onItemClick }) {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredAndSortedContent.map((item) => {
-            // ✅ CORRECTION: Meilleure détection du type de contenu
+            
             const isFlash = item.contentType === 'flash' || 
                            item.prix !== undefined || 
                            item.price !== undefined ||
                            item.style !== undefined;
             
-            console.log('🔍 Rendu item:', {
-              id: item._id || item.id,
-              type: item.contentType,
-              isFlash,
-              hasUser: !!(item.user || item.idTatoueur),
-              title: item.title,
-              image: item.image || item.images?.[0]
-            });
+        
 
             if (isFlash) {
               return (
@@ -588,6 +565,7 @@ export default function ClientSavedContent({ isOwnProfile, onItemClick }) {
                   key={item._id || item.id}
                   flash={item}
                   onUnsave={handleRemoveItem}
+                  
                 />
               );
             } else {

@@ -13,7 +13,7 @@ import Conversation from "./pages/Messagerie/components/Conversation";
 import Wishlist from "./pages/Wishlist/Wishlist";
 import Tag from "./pages/Tags/Tag";
 import Support from "./pages/Support/Support";
-import StatTatoueur from "./pages/Statistiques/StatTatoueur";
+
 import MentionLegal from "./pages/MentionLegal/MentionLegal";
 import CustomProjet from "./pages/ProjetsPerso/CustomProjet";
 import PortFolioManagement from "./pages/Portfolio/PortFolioManagement";
@@ -21,7 +21,7 @@ import Promotion from "./pages/Promotion/Promotion";
 import RecommandationPerso from "./pages/Recommandation/RecommandationPerso";
 import Tips from "./pages/Recommandation/Tips";
 import Reservation from "./pages/Réservation/Reservation";
-import historiqueReserve from "./pages/Réservation/historiqueReserve";
+
 import FlashDetail from "./pages/flash/FlashDetail";
 import FlashUploadPage from "./pages/flash/FlashUploadPage";
 import Profil from "./pages/Profil/Profil";
@@ -168,14 +168,7 @@ export const router = createBrowserRouter([
           </UserConnected>
         ),
       },
-      {
-        path: "/stat",
-        element: (
-          <UserConnected>
-            <StatTatoueur />
-          </UserConnected>
-        ),
-      },
+     
       {
         path: "/mentionlegal",
         element: (

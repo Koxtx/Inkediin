@@ -49,11 +49,11 @@ export default function PostDetail() {
     getCurrentUser();
   }, []);
 
-  // ✅ AJOUT: Fonction de test pour diagnostiquer l'API
+ 
   const testDirectApiCall = async () => {
     try {
       console.group("🧪 Test API Direct");
-      console.log("URL complète:", `${window.location.origin}/api/feeds/${id}`);
+     
       
       // Test avec fetch direct
       const directResponse = await fetch(`/api/feeds/${id}`, {
@@ -64,15 +64,14 @@ export default function PostDetail() {
         }
       });
       
-      console.log("Status:", directResponse.status);
-      console.log("OK:", directResponse.ok);
+   
       
       const directData = await directResponse.text();
-      console.log("Raw response:", directData);
+     
       
       try {
         const jsonData = JSON.parse(directData);
-        console.log("Parsed JSON:", jsonData);
+       
       } catch (parseError) {
         console.log("Parse error:", parseError);
       }
@@ -90,32 +89,32 @@ export default function PostDetail() {
         setLoading(true);
         setError(null);
         
-        console.log("🔍 Chargement post ID:", id);
+       
         
-        // ✅ AJOUT: Test API direct en cas d'échec
+       
         if (process.env.NODE_ENV === 'development') {
           await testDirectApiCall();
         }
         
         const response = await publicationApi.getPublicationById(id);
         
-        console.log("📥 Réponse API getPublicationById:", response);
         
-        // ✅ CORRECTION: Gérer différents formats de réponse
+        
+        
         if (response) {
           // Cas 1: Réponse avec success et publication
           if (response.success && response.publication) {
-            console.log("✅ Post trouvé avec success:", response.publication);
+            
             setPost(response.publication);
           }
           // Cas 2: Réponse directe avec les données du post
           else if (response._id || response.id) {
-            console.log("✅ Post trouvé directement:", response);
+           
             setPost(response);
           }
           // Cas 3: Réponse avec data
           else if (response.data) {
-            console.log("✅ Post trouvé dans data:", response.data);
+            
             setPost(response.data);
           }
           // Cas 4: Aucune donnée trouvée
@@ -298,7 +297,7 @@ export default function PostDetail() {
           </h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">{error}</p>
           
-          {/* ✅ AJOUT: Debug info */}
+          
           {process.env.NODE_ENV === 'development' && (
             <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4 text-left">
               <h3 className="font-semibold text-sm mb-2">Debug Info:</h3>

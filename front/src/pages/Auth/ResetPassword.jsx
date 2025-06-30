@@ -26,23 +26,20 @@ export default function ResetPassword() {
 
   // Extraire le token de différentes sources possibles
   useEffect(() => {
-    console.log("🔍 Recherche du token...");
-    console.log("URL actuelle:", location.pathname + location.search);
-    console.log("Search params:", Object.fromEntries(searchParams));
-    console.log("Param token:", paramToken);
+    
 
     let extractedToken = null;
 
     // 1. D'abord essayer depuis les paramètres d'URL (/resetpassword/:token)
     if (paramToken) {
       extractedToken = paramToken;
-      console.log("Token depuis params URL:", extractedToken);
+      
     }
 
     // 2. Ensuite essayer depuis les query parameters (?token=...)
     if (!extractedToken) {
       extractedToken = searchParams.get("token");
-      console.log("Token depuis query params:", extractedToken);
+    
     }
 
     // 3. Essayer depuis l'URL complète (au cas où le token serait dans le path)
@@ -51,7 +48,7 @@ export default function ResetPassword() {
       const resetIndex = pathParts.findIndex(part => part === 'reset-password' || part === 'resetpassword');
       if (resetIndex !== -1 && pathParts[resetIndex + 1]) {
         extractedToken = pathParts[resetIndex + 1];
-        console.log("Token depuis path:", extractedToken);
+        
       }
     }
 
@@ -59,18 +56,18 @@ export default function ResetPassword() {
     if (!extractedToken && location.hash) {
       const hashParams = new URLSearchParams(location.hash.substring(1));
       extractedToken = hashParams.get("token");
-      console.log("Token depuis hash:", extractedToken);
+      
     }
 
-    console.log("Token final extrait:", extractedToken);
+    
 
     if (extractedToken && extractedToken.trim() !== "") {
       setToken(extractedToken);
       setTokenValid(true);
-      console.log("✅ Token trouvé:", extractedToken);
+      
     } else {
       setTokenValid(false);
-      console.log("❌ Aucun token trouvé");
+      
       toast.error("Lien de réinitialisation invalide ou expiré");
     }
   }, [searchParams, paramToken, location]);
@@ -109,7 +106,7 @@ export default function ResetPassword() {
     setIsSubmitting(true);
     
     try {
-      console.log("🔐 Réinitialisation du mot de passe avec token:", token);
+      
       
       const result = await resetPassword({
         token: token,
@@ -117,7 +114,6 @@ export default function ResetPassword() {
         confirmPassword: values.confirmPassword,
       });
       
-      console.log("📨 Résultat resetPassword:", result);
       
       // Vérifier si result existe et a une propriété success
       if (result && (result.success || result.messageOk)) {

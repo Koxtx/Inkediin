@@ -20,7 +20,7 @@ export default function Conversation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { socket } = useContext(SocketContext);
-  const messageEndRef = useRef(null); // Ref pour le scroll automatique
+  const messageEndRef = useRef(null);
 
   const {
     conversations,
@@ -75,21 +75,11 @@ export default function Conversation() {
   const displayContactInfo = getDisplayContactInfo();
   const messages = conversations[activeConversation]?.messages || [];
 
-  console.log(
-    "💬 Messages affichés:",
-    messages.length,
-    "pour conversation active:",
-    activeConversation
-  );
+
 
   // useEffect principal pour la gestion de la conversation
   useEffect(() => {
-    console.log(
-      "🔄 Conversation useEffect - ID:",
-      id,
-      "ActiveConversation:",
-      activeConversation
-    );
+   
 
     if (id && id !== activeConversation) {
       setActiveConversation(id);
@@ -100,7 +90,7 @@ export default function Conversation() {
 
         // Charger la conversation si elle n'existe pas en local
         if (!conversations[id]) {
-          console.log("📥 Chargement conversation depuis serveur");
+       
           loadConversation(id);
         }
       }
@@ -113,10 +103,7 @@ export default function Conversation() {
       !conversations[id]
     ) {
       const newContactInfo = location.state.contactInfo;
-      console.log(
-        "👤 Création nouvelle conversation avec infos contact:",
-        newContactInfo
-      );
+    
       setContactInfo(newContactInfo);
       createNewConversation(id, newContactInfo);
     }
@@ -139,10 +126,7 @@ export default function Conversation() {
       isValidObjectId(activeConversation) &&
       !isValidObjectId(id)
     ) {
-      console.log(
-        "🔀 Redirection vers nouvelle conversation:",
-        activeConversation
-      );
+     
       navigate(`/conversation/${activeConversation}`, { replace: true });
     }
   }, [activeConversation, id, navigate]);
@@ -182,10 +166,7 @@ export default function Conversation() {
       (!conversations[activeConversation].messages ||
         conversations[activeConversation].messages.length === 0)
     ) {
-      console.log(
-        "📥 Chargement messages pour conversation active:",
-        activeConversation
-      );
+     
       loadConversation(activeConversation);
     }
   }, [activeConversation, conversations, loadConversation]);
@@ -217,11 +198,7 @@ export default function Conversation() {
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
-      console.log(
-        "📤 Envoi message depuis composant:",
-        activeConversation,
-        newMessage
-      );
+     
 
       // Arrêter l'indicateur de frappe
       if (socket && isTyping) {
@@ -303,7 +280,7 @@ export default function Conversation() {
   };
 
   const handleAttachmentAction = (type) => {
-    console.log(`Action d'attachement: ${type}`);
+    
     setShowAttachmentMenu(false);
   };
 

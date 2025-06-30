@@ -21,10 +21,7 @@ if (!supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')
   throw new Error("Format d'URL Supabase invalide");
 }
 
-console.log("✅ Configuration Supabase chargée:", {
-  url: supabaseUrl,
-  keyLength: supabaseKey.length
-});
+
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -51,7 +48,7 @@ export const testSupabaseConnection = async () => {
       return false;
     }
     
-    console.log("✅ Connexion Supabase OK");
+
     return true;
   } catch (error) {
     console.error("❌ Erreur test connexion Supabase:", error);

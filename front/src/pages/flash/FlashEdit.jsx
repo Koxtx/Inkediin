@@ -72,14 +72,14 @@ export default function EditFlash() {
         setLoading(true);
         setError("");
         
-        console.log("📥 EditFlash - Chargement flash:", id);
+       
         const flash = await getFlashById(id);
         
         if (!flash) {
           throw new Error("Flash non trouvé");
         }
 
-        console.log("✅ EditFlash - Flash chargé:", flash);
+        
 
         // Remplir le formulaire avec les données existantes
         setFormData({
@@ -258,7 +258,7 @@ export default function EditFlash() {
       setSaving(true);
       setError("");
 
-      console.log("📤 EditFlash - Mise à jour flash:", formData);
+    
 
       // Préparer les données à envoyer
       const updateData = {
@@ -306,7 +306,7 @@ export default function EditFlash() {
       // Mettre à jour le cache
       updateFlashInCache(id, updatedFlash);
 
-      console.log("✅ EditFlash - Flash mis à jour:", updatedFlash);
+     
       toast.success("Flash mis à jour avec succès !");
       
       // Rediriger vers le détail du flash

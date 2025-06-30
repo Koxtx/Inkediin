@@ -15,8 +15,8 @@ const getHeaders = (includeContentType = true) => {
 const getFetchConfig = (method = "GET", body = null, isFormData = false) => {
   const config = {
     method,
-    credentials: "include", // IMPORTANT: Inclut automatiquement les cookies
-    headers: getHeaders(!isFormData), // Pas de Content-Type pour FormData
+    credentials: "include", 
+    headers: getHeaders(!isFormData), 
   };
 
   if (body) {
@@ -31,10 +31,10 @@ const handleApiError = async (response) => {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
 
-    // Si erreur 401, rediriger vers la page de connexion
+   
     if (response.status === 401) {
-      // Optionnel: redirection automatique
-      // window.location.href = '/login';
+      // Rediriger vers la page de connexion
+      window.location.href = '/login';
     }
 
     throw new Error(
@@ -44,7 +44,7 @@ const handleApiError = async (response) => {
   return response.json();
 };
 
-// API des publications (feeds)
+
 export const publicationApi = {
   // Récupérer toutes les publications avec pagination et filtres
   getPublications: async (params = {}) => {
@@ -114,20 +114,20 @@ export const publicationApi = {
   },
 
   // Récupérer une publication par ID
- // Récupérer une publication par ID
+ 
   getPublicationById: async (publicationId) => {
     try {
-      console.log("🔍 API - getPublicationById:", publicationId);
+  
       
       const response = await fetch(
         `${BASE_URL}/feeds/${publicationId}`,
         getFetchConfig("GET")
       );
 
-      console.log("📡 API Response status:", response.status);
+  
       
       if (!response.ok) {
-        // ✅ AMÉLIORATION: Gestion spécifique des erreurs 404
+        
         if (response.status === 404) {
           throw new Error("Publication non trouvée");
         }
@@ -137,7 +137,7 @@ export const publicationApi = {
       }
 
       const result = await response.json();
-      console.log("✅ API - Publication récupérée:", result);
+    
       
       return result;
     } catch (error) {
@@ -151,7 +151,7 @@ export const publicationApi = {
     try {
       const formData = new FormData();
 
-      // ✅ CORRECTION: Validation côté client
+    
       if (!publicationData.contenu || publicationData.contenu.trim().length === 0) {
         throw new Error("Le contenu est requis");
       }
@@ -159,17 +159,13 @@ export const publicationApi = {
       // Ajouter le contenu (toujours requis)
       formData.append("contenu", publicationData.contenu.trim());
 
-      // ✅ CORRECTION: Ajouter l'image si présente avec vérification
+     
       if (publicationData.image && publicationData.image instanceof File) {
-        console.log('📷 API - Ajout image:', {
-          name: publicationData.image.name,
-          size: publicationData.image.size,
-          type: publicationData.image.type
-        });
+      
         formData.append("image", publicationData.image);
       }
 
-      // ✅ CORRECTION: Ajouter les tags avec une meilleure gestion
+      // 
       if (publicationData.tags && Array.isArray(publicationData.tags) && publicationData.tags.length > 0) {
         // Nettoyer et valider les tags
         const cleanTags = publicationData.tags
@@ -177,21 +173,15 @@ export const publicationApi = {
           .filter(tag => tag.length > 0)
           .map(tag => tag.replace(/^#+/, '')); // Supprimer les # en début
         
-        console.log('🏷️ API - Tags à envoyer:', cleanTags);
+      
         
         // Les envoyer comme JSON string pour éviter les problèmes de parsing
         formData.append("tags", JSON.stringify(cleanTags));
       }
 
-      // ✅ AJOUT: Debug du FormData
-      console.log('📤 API - FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`${key}: ${value}`);
-        }
-      }
+      
+      
+    
 
       const response = await fetch(
         `${BASE_URL}/feeds`,
@@ -199,7 +189,7 @@ export const publicationApi = {
       );
 
       const result = await handleApiError(response);
-      console.log('✅ API - Publication créée:', result);
+   
       
       return result;
     } catch (error) {
@@ -324,10 +314,10 @@ export const publicationApi = {
     }
   },
 
-  // ✅ AJOUT: Ajouter une réponse à un commentaire
+  
   addReplyToComment: async (publicationId, commentId, replyData) => {
     try {
-      console.log('💬 API - Ajout réponse:', { publicationId, commentId, replyData });
+     
       
       const response = await fetch(
         `${BASE_URL}/feeds/${publicationId}/comments/${commentId}/replies`,
@@ -335,7 +325,7 @@ export const publicationApi = {
       );
       
       const result = await handleApiError(response);
-      console.log('✅ API - Réponse ajoutée:', result);
+     
       
       return result;
     } catch (error) {
@@ -344,10 +334,10 @@ export const publicationApi = {
     }
   },
 
-  // ✅ AJOUT: Liker une réponse
+  
   toggleLikeReply: async (publicationId, commentId, replyId) => {
     try {
-      console.log('👍 API - Toggle like réponse:', { publicationId, commentId, replyId });
+      
       
       const response = await fetch(
         `${BASE_URL}/feeds/${publicationId}/comments/${commentId}/replies/${replyId}/like`,
@@ -355,7 +345,7 @@ export const publicationApi = {
       );
       
       const result = await handleApiError(response);
-      console.log('✅ API - Like réponse:', result);
+    
       
       return result;
     } catch (error) {
@@ -364,10 +354,10 @@ export const publicationApi = {
     }
   },
 
-  // ✅ AJOUT: Supprimer une réponse
+  
   deleteReply: async (publicationId, commentId, replyId) => {
     try {
-      console.log('🗑️ API - Suppression réponse:', { publicationId, commentId, replyId });
+      
       
       const response = await fetch(
         `${BASE_URL}/feeds/${publicationId}/comments/${commentId}/replies/${replyId}`,
@@ -375,7 +365,7 @@ export const publicationApi = {
       );
       
       const result = await handleApiError(response);
-      console.log('✅ API - Réponse supprimée:', result);
+  
       
       return result;
     } catch (error) {
@@ -438,14 +428,14 @@ export const publicationUtils = {
     );
   },
 
-  // ✅ AJOUT: Vérifier si un utilisateur a liké un commentaire
+  
   hasUserLikedComment: (comment, userId) => {
     return comment.likes?.some(
       (like) => (like.userId?._id || like.userId) === userId
     );
   },
 
-  // ✅ AJOUT: Vérifier si un utilisateur a liké une réponse
+  
   hasUserLikedReply: (reply, userId) => {
     return reply.likes?.some(
       (like) => (like.userId?._id || like.userId) === userId
@@ -457,12 +447,12 @@ export const publicationUtils = {
     return publication.likes?.length || 0;
   },
 
-  // ✅ AJOUT: Compter le nombre de likes d'un commentaire
+  
   getCommentLikesCount: (comment) => {
     return comment.likes?.length || 0;
   },
 
-  // ✅ AJOUT: Compter le nombre de likes d'une réponse
+  
   getReplyLikesCount: (reply) => {
     return reply.likes?.length || 0;
   },
@@ -472,7 +462,7 @@ export const publicationUtils = {
     return publication.commentaires?.length || 0;
   },
 
-  // ✅ AJOUT: Compter le nombre de réponses d'un commentaire
+ 
   getRepliesCount: (comment) => {
     return comment.reponses?.length || 0;
   },
@@ -554,7 +544,7 @@ export const publicationUtils = {
     return errors;
   },
 
-  // ✅ AJOUT: Valider les données d'une réponse
+ 
   validateReplyData: (replyData) => {
     const errors = [];
 
@@ -598,8 +588,8 @@ export const publicationUtils = {
         apiPublication.tags ||
         publicationUtils.extractHashtags(apiPublication.contenu || ""),
       likes: publicationUtils.getLikesCount(apiPublication),
-      isLiked: false, // À déterminer côté client avec l'ID utilisateur
-      isSaved: false, // À déterminer côté client avec l'ID utilisateur
+      isLiked: false, 
+      isSaved: false,
       comments: publicationUtils.getCommentsCount(apiPublication),
       commentsData: apiPublication.commentaires || [],
     };

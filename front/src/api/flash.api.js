@@ -6,8 +6,7 @@ const getHeaders = (includeAuth = true) => {
     'Content-Type': 'application/json',
   };
   
-  // Le token est maintenant géré par les cookies HTTP-only
-  // Pas besoin d'ajouter Authorization header manuellement
+ 
   
   return headers;
 };
@@ -15,8 +14,7 @@ const getHeaders = (includeAuth = true) => {
 // Configuration des headers pour FormData (multipart)
 const getFormDataHeaders = () => {
   const headers = {};
-  // Le token est maintenant géré par les cookies HTTP-only
-  // Pas besoin d'ajouter Authorization header manuellement
+
   return headers;
 };
 
@@ -55,8 +53,8 @@ export const flashApi = {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: getHeaders(false), // Les flashs publics ne nécessitent pas d'auth
-        credentials: 'include', // Important pour inclure les cookies
+        headers: getHeaders(false), 
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -71,8 +69,8 @@ export const flashApi = {
     try {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}`, {
         method: 'GET',
-        headers: getHeaders(false), // Flash public
-        credentials: 'include', // Important pour inclure les cookies
+        headers: getHeaders(false), 
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -98,8 +96,8 @@ export const flashApi = {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: getHeaders(false), // Flash public
-        credentials: 'include', // Important pour inclure les cookies
+        headers: getHeaders(false), 
+        credentials: 'include', s
       });
       
       return await handleApiError(response);
@@ -136,10 +134,10 @@ export const flashApi = {
         formData.append('style', flashData.style);
       }
 
-      // ✅ AJOUT MANQUANT: Le style personnalisé
+      
       if (flashData.styleCustom) {
         formData.append('styleCustom', flashData.styleCustom);
-        console.log("📤 API - StyleCustom ajouté:", flashData.styleCustom);
+        
       } else {
         console.log("📤 API - Pas de styleCustom dans flashData:", flashData.styleCustom);
       }
@@ -169,11 +167,8 @@ export const flashApi = {
         formData.append('image', flashData.image);
       }
 
-      // ✅ DEBUG: Afficher le contenu du FormData
-      console.log("📤 API - Contenu FormData envoyé:");
-      for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, value instanceof File ? `File: ${value.name}` : value);
-      }
+     
+     
       
       const response = await fetch(`${BASE_URL}/flashs`, {
         method: 'POST',
@@ -192,11 +187,11 @@ export const flashApi = {
   // Mettre à jour un flash
   updateFlash: async (flashId, flashData) => {
     try {
-      // Si on a une nouvelle image, utiliser FormData
+      
       if (flashData.image && flashData.image instanceof File) {
         const formData = new FormData();
         
-        // Ajouter tous les champs
+       
         Object.keys(flashData).forEach(key => {
           if (key === 'emplacement' || key === 'tags') {
             const value = Array.isArray(flashData[key]) 
@@ -212,17 +207,17 @@ export const flashApi = {
           method: 'PUT',
           headers: getFormDataHeaders(),
           body: formData,
-          credentials: 'include', // Important pour inclure les cookies
+          credentials: 'include',
         });
         
         return await handleApiError(response);
       } else {
-        // Sinon, utiliser JSON
+       
         const response = await fetch(`${BASE_URL}/flashs/${flashId}`, {
           method: 'PUT',
           headers: getHeaders(),
           body: JSON.stringify(flashData),
-          credentials: 'include', // Important pour inclure les cookies
+          credentials: 'include',
         });
         
         return await handleApiError(response);
@@ -239,7 +234,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}`, {
         method: 'DELETE',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -255,7 +250,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/reserve`, {
         method: 'PATCH',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -265,7 +260,7 @@ export const flashApi = {
     }
   },
 
-  // ✅ NOUVELLES FONCTIONS SELON LE CONTRÔLEUR
+ 
 
   // Liker/Unliker un flash
   likeFlash: async (flashId) => {
@@ -273,7 +268,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/like`, {
         method: 'POST',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -289,7 +284,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/reserve`, {
         method: 'POST',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -305,7 +300,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/save`, {
         method: 'POST',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include',
       });
       
       return await handleApiError(response);
@@ -321,7 +316,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/save`, {
         method: 'DELETE',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -344,7 +339,7 @@ export const flashApi = {
       const response = await fetch(url, {
         method: 'GET',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -354,7 +349,7 @@ export const flashApi = {
     }
   },
 
-  // ✅ FONCTIONS POUR LES COMMENTAIRES
+  
 
   // Ajouter un commentaire
   addComment: async (flashId, contenu) => {
@@ -363,7 +358,7 @@ export const flashApi = {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ contenu }),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -379,7 +374,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}`, {
         method: 'DELETE',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include',
       });
       
       return await handleApiError(response);
@@ -395,7 +390,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}/like`, {
         method: 'POST',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include',
       });
       
       return await handleApiError(response);
@@ -412,7 +407,7 @@ export const flashApi = {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify({ contenu }),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include',
       });
       
       return await handleApiError(response);
@@ -428,7 +423,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}/replies/${replyId}/like`, {
         method: 'POST',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);
@@ -444,7 +439,7 @@ export const flashApi = {
       const response = await fetch(`${BASE_URL}/flashs/${flashId}/comments/${commentId}/replies/${replyId}`, {
         method: 'DELETE',
         headers: getHeaders(),
-        credentials: 'include', // Important pour inclure les cookies
+        credentials: 'include', 
       });
       
       return await handleApiError(response);

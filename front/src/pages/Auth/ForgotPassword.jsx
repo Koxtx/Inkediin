@@ -41,7 +41,7 @@ export default function ForgotPassword() {
     setIsSubmitting(true);
     
     try {
-      console.log("📧 Demande de réinitialisation pour:", values.email);
+      
       
       const result = await forgotPassword(values);
       

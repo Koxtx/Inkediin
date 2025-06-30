@@ -51,12 +51,10 @@ export function useFollow(userId, initialFollowState = false) {
       let result;
       
       if (isFollowing) {
-        // Arrêter de suivre
-        console.log('🔄 Tentative de désabonnement pour userId:', userId);
+        
         result = await unfollowUser(userId);
       } else {
-        // Commencer à suivre
-        console.log('🔄 Tentative d\'abonnement pour userId:', userId);
+       
         result = await followUser(userId);
       }
 
@@ -73,7 +71,7 @@ export function useFollow(userId, initialFollowState = false) {
           toast.success(result.message);
         }
         
-        console.log('✅ Action de suivi réussie:', result);
+      
         return { 
           success: true, 
           isFollowing: result.isFollowing,
@@ -120,7 +118,7 @@ export function useFollow(userId, initialFollowState = false) {
 
   // Fonction pour définir manuellement le statut (utile pour les mises à jour externes)
   const setFollowStatus = useCallback((status, count = null) => {
-    console.log('📝 Mise à jour manuelle du statut de suivi:', { status, count });
+   
     setIsFollowing(status);
     if (count !== null) {
       setFollowersCount(count);
@@ -170,29 +168,29 @@ export function useFollow(userId, initialFollowState = false) {
   }, [isFollowing]);
 
   return {
-    // États
+    
     isFollowing,
     loading,
     followersCount,
     error,
     
-    // Actions principales
+
     toggleFollow,
     follow,
     unfollow,
     
-    // Utilitaires
+    
     setFollowStatus,
     refreshFollowStatus,
     getActionText,
     getActionIcon,
     
-    // Informations dérivées
+    
     canFollow: !loading && !isFollowing,
     canUnfollow: !loading && isFollowing,
     hasError: !!error,
     
-    // Debug (en développement uniquement)
+    
     debug: process.env.NODE_ENV === 'development' ? {
       userId,
       initialFollowState,
@@ -283,7 +281,7 @@ export function useFollowStats(userId) {
       // Charger les stats en parallèle
       const [followersResult, followingResult, statusResult] = await Promise.all([
         import('../api/auth.api').then(api => api.getFollowers(userId)),
-        import('../api/auth.api').then(api => api.getFollowedUsers()), // Pour l'utilisateur actuel
+        import('../api/auth.api').then(api => api.getFollowedUsers()), 
         import('../api/auth.api').then(api => api.checkIfFollowing(userId))
       ]);
 

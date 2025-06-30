@@ -31,7 +31,7 @@ export default function UserConnected({ children }) {
 
     // Si le profil est incomplet, rediriger vers setup
     if (isProfileIncomplete()) {
-      console.log("🚨 Profil incomplet détecté, redirection vers setup");
+      
       navigate("/setupprofil", { replace: true });
       return;
     }

@@ -23,28 +23,28 @@ export default function ProfileAvatar({
   const getProfileImageUrl = (imagePath) => {
     if (!imagePath) return null;
 
-    console.log("🖼️ ProfileAvatar - Image path:", imagePath);
+   
 
     // Si c'est déjà une URL Cloudinary complète
     if (imagePath.startsWith("https://res.cloudinary.com")) {
-      console.log("✅ ProfileAvatar - URL Cloudinary détectée");
+     
       return imagePath;
     }
 
     // Si c'est du base64, retourner tel quel
     if (imagePath.startsWith("data:image")) {
-      console.log("✅ ProfileAvatar - Image base64 détectée");
+    
       return imagePath;
     }
 
     // Si l'image commence par http, c'est déjà une URL complète
     if (imagePath.startsWith("http")) {
-      console.log("✅ ProfileAvatar - URL HTTP détectée");
+    
       return imagePath;
     }
 
     // Fallback pour les anciennes images locales
-    console.log("⚠️ ProfileAvatar - Fallback vers serveur local");
+
     const baseUrl = "http://localhost:3000";
     const cleanPath = imagePath.replace(/\\/g, "/");
     const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
@@ -55,7 +55,7 @@ export default function ProfileAvatar({
   const handleImageLoad = () => {
     setImageLoading(false);
     setImageError(false);
-    console.log("✅ ProfileAvatar - Image chargée avec succès");
+   
   };
 
   const handleImageError = (e) => {
@@ -67,7 +67,7 @@ export default function ProfileAvatar({
   const getProfileImage = () => {
     const photoPath = displayUser?.photoProfil;
 
-    console.log("🔍 ProfileAvatar - Photo profil:", photoPath);
+  
 
     // Si on a une photo et pas d'erreur, l'afficher
     if (photoPath && !imageError) {

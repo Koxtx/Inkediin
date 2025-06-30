@@ -36,7 +36,7 @@ function SavedFlashCard({ flash, onRemove, onNavigate }) {
     if (window.confirm("Retirer ce flash de votre wishlist ?")) {
       setIsRemoving(true);
       try {
-        console.log("🗑️ Suppression flash:", flash._id || flash.id);
+      
 
         const result = await toggleSaveFlash(flash._id || flash.id);
 
@@ -79,19 +79,7 @@ function SavedFlashCard({ flash, onRemove, onNavigate }) {
   const displayPrice = flash.price || flash.prix;
   const displayStyle = flash.style || flash.category || "Non spécifié";
 
-  console.log("🎨 SavedFlashCard - Données reçues:", {
-    flashId: flash._id || flash.id,
-    title: flash.title,
-    titre: flash.titre,
-    description: flash.description,
-    user: displayUser,
-    auteur: flash.auteur,
-    hasImage: !!displayImage,
-    price: displayPrice,
-    prix: flash.prix,
-    style: displayStyle,
-    rawFlash: flash
-  });
+
 
   return (
     <div
@@ -241,7 +229,7 @@ function SavedPostCard({ post, onRemove, onNavigate }) {
     if (window.confirm("Retirer cette publication de vos sauvegardées ?")) {
       setIsRemoving(true);
       try {
-        console.log("🗑️ Suppression post:", post._id || post.id);
+      
 
         const result = await toggleSavePost(post._id || post.id);
 
@@ -282,13 +270,7 @@ function SavedPostCard({ post, onRemove, onNavigate }) {
   const displayTitle = post.title || post.contenu || post.description || "Publication sauvegardée";
   const displayImage = post.image || post.images?.[0] || null;
 
-  console.log("🎨 SavedPostCard - Données reçues:", {
-    postId: post._id || post.id,
-    title: post.title,
-    contenu: post.contenu,
-    user: displayUser,
-    hasImage: !!displayImage
-  });
+
 
   return (
     <div
@@ -434,7 +416,7 @@ export default function Wishlist() {
 
   // Fonction de navigation
   const handleNavigation = (path) => {
-    console.log("Navigation vers:", path);
+   
     navigate(path);
   };
 
@@ -450,7 +432,7 @@ export default function Wishlist() {
       setLoading(true);
       setError(null);
 
-      console.log("📤 Chargement contenu sauvegardé, type:", contentType);
+   
 
       const result = await getSavedContent({
         type: contentType,
@@ -458,18 +440,14 @@ export default function Wishlist() {
         limit: 100,
       });
 
-      console.log("📥 Résultat getSavedContent:", result);
+    
 
       if (result && result.success) {
         const contentData = result.data || [];
         setSavedContent([...contentData]); // Force un nouveau tableau
         setStats(result.stats || {});
         
-        console.log("✅ Contenu chargé:", {
-          type: contentType,
-          items: contentData.length,
-          stats: result.stats
-        });
+        
       } else {
         setError(result?.message || "Erreur lors du chargement");
         console.error("❌ Erreur API:", result?.message);
@@ -487,14 +465,7 @@ export default function Wishlist() {
     loadSavedContent();
   }, [contentType, isAuthenticated]);
 
-  // Debug: afficher les états en temps réel
-  useEffect(() => {
-    console.log("🔄 États mis à jour:", {
-      contentType,
-      savedContent: savedContent.length,
-      displayContent: getDisplayContent().length,
-    });
-  }, [savedContent, contentType]);
+ 
 
   // Rafraîchir les données
   const handleRefresh = async () => {
@@ -506,7 +477,7 @@ export default function Wishlist() {
 
   // Gérer la suppression d'un élément
   const handleRemoveItem = (itemId) => {
-    console.log("🗑️ Suppression item:", itemId);
+
     setSavedContent((prev) =>
       prev.filter((item) => (item._id || item.id) !== itemId)
     );
@@ -516,11 +487,7 @@ export default function Wishlist() {
   const getDisplayContent = () => {
     let content = [...savedContent];
 
-    console.log("🎯 Calcul du contenu à afficher:", {
-      contentType,
-      totalItems: content.length,
-      searchQuery
-    });
+   
 
     // Appliquer la recherche
     if (searchQuery) {
@@ -542,7 +509,7 @@ export default function Wishlist() {
 
         return searchableText.includes(searchQuery.toLowerCase());
       });
-      console.log("🔍 Après recherche:", content.length, "éléments");
+      
     }
 
     // Appliquer le tri
@@ -567,7 +534,6 @@ export default function Wishlist() {
       }
     });
 
-    console.log("📊 Contenu final:", content.length, "éléments");
     return content;
   };
 
@@ -823,16 +789,12 @@ export default function Wishlist() {
           </div>
         ) : (
           <div key={`${contentType}-${displayContent.length}`}>
-            {console.log("🎨 Rendu du contenu:", {
-              contentType,
-              displayContentLength: displayContent.length,
-              firstItem: displayContent[0]
-            })}
+         
             
             {/* Grille de contenu */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayContent.map((item, index) => {
-                console.log(`🎨 Rendu item ${index}:`, item);
+               
                 // Déterminer le type de contenu
                 const isFlash =
                   item.contentType === "flash" ||

@@ -32,14 +32,14 @@ export default function ProtectedSetupRoute({ children }) {
 
     // Si le profil est incomplet et qu'on n'est pas sur la page setup
     if (isProfileIncomplete() && location.pathname !== "/setupprofil") {
-      console.log("🚨 Profil incomplet, redirection forcée vers setup");
+      
       navigate("/setupprofil", { replace: true });
       return;
     }
 
     // Si le profil est complet et qu'on est sur la page setup
     if (!isProfileIncomplete() && location.pathname === "/setupprofil") {
-      console.log("✅ Profil complet, redirection vers accueil");
+     
       navigate("/", { replace: true });
       return;
     }

@@ -40,7 +40,7 @@ export const messagerieApi = {
       const response = await fetch(`${BASE_URL}/messageries`, {
         method: 'GET',
         headers: getHeaders(),
-        credentials: 'include', // ESSENTIEL - inclut automatiquement le cookie token
+        credentials: 'include',
       });
       
       return await handleApiError(response);
@@ -69,16 +69,15 @@ export const messagerieApi = {
   // Envoyer un message
   sendMessage: async (messageData) => {
     try {
-      console.log('📤 Envoi du message:', messageData);
-      
+     
       const response = await fetch(`${BASE_URL}/messageries/send`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(messageData),
-        credentials: 'include', // Inclut le cookie token automatiquement
+        credentials: 'include', 
       });
       
-      console.log('📨 Réponse serveur:', response.status, response.statusText);
+     
       
       return await handleApiError(response);
     } catch (error) {
@@ -130,7 +129,7 @@ export const messagerieApi = {
       });
       
       if (response.ok) {
-        console.log('✅ Connexion authentifiée avec succès');
+        
         return true;
       } else {
         console.error('❌ Problème d\'authentification:', response.status);

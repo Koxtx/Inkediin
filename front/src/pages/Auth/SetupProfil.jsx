@@ -12,7 +12,7 @@ export default function SetupProfil() {
   const { user, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [profileImageFile, setProfileImageFile] = useState(null); // ✅ CHANGEMENT: Stocker le File
+  const [profileImageFile, setProfileImageFile] = useState(null); 
   const [profileImagePreview, setProfileImagePreview] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -85,9 +85,8 @@ export default function SetupProfil() {
   const bioLength = watch("bio")?.length || 0;
   const watchedUserType = watch("userType");
 
-  // ✅ AMÉLIORATION: Validation d'image plus robuste
   const validateImageFile = (file) => {
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024; 
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
     if (!file) {
@@ -111,7 +110,7 @@ export default function SetupProfil() {
     return { valid: true };
   };
 
-  // ✅ NOUVEAU: Gestion de l'upload d'image avec Cloudinary
+
   const handleImageChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -126,7 +125,7 @@ export default function SetupProfil() {
     try {
       setUploadingImage(true);
       
-      // ✅ CHANGEMENT: Stocker le fichier réel pour l'envoi plus tard
+      
       setProfileImageFile(file);
       
       // Créer une prévisualisation locale
@@ -147,7 +146,7 @@ export default function SetupProfil() {
   };
 
   const removeImage = () => {
-    setProfileImageFile(null); // ✅ CHANGEMENT: Reset du fichier
+    setProfileImageFile(null); 
     setProfileImagePreview(null);
     
     // Reset de l'input file
@@ -161,29 +160,27 @@ export default function SetupProfil() {
     setIsSubmitting(true);
 
     try {
-      console.log("🔧 Configuration du profil avec:", values);
-      console.log("📷 Fichier image:", profileImageFile);
-      console.log("👤 Utilisateur actuel:", user);
+  
 
-      // ✅ CHANGEMENT: Préparer les données avec le fichier
+  
       const profileData = {
         userType: values.userType,
         nom: values.nom,
         localisation: values.localisation,
         bio: values.bio || "",
         styles: values.styles || "",
-        // ✅ IMPORTANT: Passer le fichier File pour l'upload Cloudinary
-        photoProfil: profileImageFile, // File object ou null
+        
+        photoProfil: profileImageFile, 
       };
 
-      console.log("📤 Envoi des données vers l'API...");
+    
       const result = await completeProfile(profileData);
-      console.log("📝 Résultat complétion profil:", result);
+     
 
       if (result.success) {
         // Mettre à jour le contexte utilisateur
         if (result.user) {
-          console.log("✅ Mise à jour du contexte avec:", result.user);
+         
           setUser(result.user);
         } else {
           // Fallback: mise à jour locale
@@ -194,7 +191,7 @@ export default function SetupProfil() {
             needsProfileCompletion: false,
             // La photo sera mise à jour par la réponse du serveur
           };
-          console.log("🔄 Mise à jour locale du contexte avec:", updatedUser);
+         
           setUser(updatedUser);
         }
 
@@ -205,7 +202,7 @@ export default function SetupProfil() {
           navigate("/", { replace: true });
         }, 1000);
       } else {
-        console.log("❌ Erreur configuration profil:", result.message);
+  
         toast.error(
           result.message || "Erreur lors de la configuration du profil"
         );

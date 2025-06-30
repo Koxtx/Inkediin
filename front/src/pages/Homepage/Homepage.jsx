@@ -221,10 +221,11 @@ export default function Homepage() {
   const handleContact = (artist) => {
     console.log("Contacter", artist.name);
     // Logique de contact
+
   };
 
  const handleViewProfile = (artistId) => {
-    console.log("🎯 Navigation vers profil avec ID:", artistId);
+  
     navigate(`/profil/${artistId}`); // Utilisation de navigate au lieu de window.location.href
   };
 

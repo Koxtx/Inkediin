@@ -17,14 +17,14 @@ export default function FlashUploadPage() {
   const { addFlash } = useContext(FlashContext);
   const navigate = useNavigate();
 
-  // ✅ États du formulaire selon l'API
+
   const [formData, setFormData] = useState({
     prix: "",
     description: "",
     title: "",
     
     style: "autre",
-    styleCustom: "", // ✅ Nouveau champ pour le style personnalisé
+    styleCustom: "", 
     taille: "moyen",
     emplacement: [],
     tags: [],
@@ -36,10 +36,10 @@ export default function FlashUploadPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState([]);
 
-  // ✅ Options pour les selects - CORRIGÉES pour correspondre au backend
+  
   const styleOptions = [
     { value: "traditionnel", label: "Traditionnel" },
-    { value: "realisme", label: "Réalisme" }, // ✅ Corrigé: realisme au lieu de realiste
+    { value: "realisme", label: "Réalisme" }, 
     { value: "geometrique", label: "Géométrique" },
     { value: "blackwork", label: "Blackwork" },
     { value: "dotwork", label: "Dotwork" },
@@ -53,10 +53,9 @@ export default function FlashUploadPage() {
     { value: "petit", label: "Petit (< 5cm)" },
     { value: "moyen", label: "Moyen (5-15cm)" },
     { value: "grand", label: "Grand (> 15cm)" },
-    { value: "tres-grand", label: "Très grand (> 20cm)" }, // ✅ Ajouté
-  ];
+    { value: "tres-grand", label: "Très grand (> 20cm)" },]
 
-  // ✅ CORRECTION MAJEURE: Emplacements correspondant EXACTEMENT au backend
+
   const emplacementOptions = [
     { value: "bras", label: "Bras" },
     { value: "jambe", label: "Jambe" },
@@ -69,26 +68,26 @@ export default function FlashUploadPage() {
     { value: "autre", label: "Autre" },
   ];
 
-  // ✅ Gestion des champs du formulaire
+
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
-    // Nettoyer les erreurs quand l'utilisateur modifie
+ 
     if (errors.length > 0) {
       setErrors([]);
     }
   };
 
-  // ✅ Gestion du changement de style avec réinitialisation du style personnalisé
+  
   const handleStyleChange = (e) => {
     const newStyle = e.target.value;
     setFormData((prev) => ({
       ...prev,
       style: newStyle,
-      styleCustom: newStyle === "autre" ? prev.styleCustom : "", // Garder le style custom seulement si "autre" est sélectionné
+      styleCustom: newStyle === "autre" ? prev.styleCustom : "", 
     }));
 
     if (errors.length > 0) {
@@ -96,7 +95,7 @@ export default function FlashUploadPage() {
     }
   };
 
-  // ✅ Gestion du prix avec validation
+ 
   const handlePrixChange = (e) => {
     const value = e.target.value;
     if (value === "" || /^\d+([.,]\d{0,2})?$/.test(value)) {
@@ -104,7 +103,7 @@ export default function FlashUploadPage() {
     }
   };
 
-  // ✅ Gestion des tags
+  
   const handleTagsChange = (e) => {
     const value = e.target.value;
     const tags = value
@@ -114,7 +113,7 @@ export default function FlashUploadPage() {
     handleInputChange("tags", tags);
   };
 
-  // ✅ Gestion des emplacements - CORRIGÉE
+  
   const toggleEmplacement = (emplacementValue) => {
     const currentEmplacements = formData.emplacement;
     if (currentEmplacements.includes(emplacementValue)) {
@@ -130,7 +129,7 @@ export default function FlashUploadPage() {
     }
   };
 
-  // ✅ Gestion de l'image
+ 
   const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -140,7 +139,7 @@ export default function FlashUploadPage() {
         "image/png",
         "image/webp",
       ];
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 10 * 1024 * 1024;
 
       if (!allowedTypes.includes(file.type)) {
         setErrors(["Format d'image non supporté. Utilisez JPG, PNG ou WebP."]);
@@ -155,11 +154,7 @@ export default function FlashUploadPage() {
       setErrors([]);
       setSelectedImage(file);
 
-      console.log("📷 Flash Upload - Image sélectionnée:", {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      });
+   
 
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -175,7 +170,7 @@ export default function FlashUploadPage() {
     setErrors([]);
   };
 
-  // ✅ Validation du formulaire
+ 
   const validateForm = () => {
     const validationErrors = [];
 
@@ -191,7 +186,7 @@ export default function FlashUploadPage() {
       validationErrors.push("Le prix ne peut pas dépasser 10 000€");
     }
 
-    // ✅ Validation du style personnalisé
+   
     if (formData.style === "autre" && !formData.styleCustom.trim()) {
       validationErrors.push("Veuillez préciser le style personnalisé");
     }
@@ -219,7 +214,7 @@ export default function FlashUploadPage() {
     return validationErrors;
   };
 
-  // ✅ Fonction pour obtenir le style final à envoyer
+ 
   const getFinalStyle = () => {
     if (formData.style === "autre" && formData.styleCustom.trim()) {
       return formData.styleCustom.trim();
@@ -227,7 +222,7 @@ export default function FlashUploadPage() {
     return formData.style;
   };
 
-  // ✅ Fonction pour obtenir le label du style pour l'affichage
+  
   const getStyleDisplayLabel = () => {
     if (formData.style === "autre" && formData.styleCustom.trim()) {
       return formData.styleCustom.trim();
@@ -236,7 +231,7 @@ export default function FlashUploadPage() {
     return option ? option.label : formData.style;
   };
 
-  // ✅ Soumission du formulaire
+  
   const handleSubmit = async () => {
     const validationErrors = validateForm();
 
@@ -249,17 +244,17 @@ export default function FlashUploadPage() {
     setErrors([]);
 
     try {
-      console.log("📤 Flash Upload - Début soumission");
+  
 
       const flashData = {
-        image: selectedImage, // File object obligatoire
-        prix: parseFloat(formData.prix.replace(",", ".")), // Convertir en nombre
+        image: selectedImage, 
+        prix: parseFloat(formData.prix.replace(",", ".")), 
         description: formData.description.trim() || undefined,
         title: formData.title.trim() || undefined,
-        style: formData.style, // ✅ Toujours envoyer le style sélectionné
+        style: formData.style, 
         styleCustom: formData.style === "autre" && formData.styleCustom && formData.styleCustom.trim() 
           ? formData.styleCustom.trim() 
-          : undefined, // ✅ Condition plus robuste
+          : undefined, 
         taille: formData.taille,
         emplacement:
           formData.emplacement.length > 0 ? formData.emplacement : undefined,
@@ -267,28 +262,17 @@ export default function FlashUploadPage() {
         disponible: formData.disponible,
       };
 
-      console.log("📤 Flash Upload - Données à envoyer:", {
-        ...flashData,
-        image: `File: ${selectedImage?.name}`, // Pour éviter d'afficher l'objet File complet
-      });
-
-      // ✅ DEBUG spécifique pour styleCustom
-      console.log("🔍 DEBUG avant envoi:", {
-        "formData.style": formData.style,
-        "formData.styleCustom": formData.styleCustom,
-        "flashData.style": flashData.style,
-        "flashData.styleCustom": flashData.styleCustom,
-        "condition": formData.style === "autre" && formData.styleCustom,
-      });
+     
+     
 
       const newFlash = await addFlash(flashData);
 
-      console.log("✅ Flash Upload - Flash créé:", newFlash);
+     
 
-      // Nettoyer le brouillon
+    
       localStorage.removeItem("flash_draft");
 
-      // Rediriger vers les Flash avec message de succès
+      
       navigate("/", {
         state: {
           message: "Flash créé avec succès !",
@@ -306,7 +290,7 @@ export default function FlashUploadPage() {
     }
   };
 
-  // ✅ Sauvegarde en brouillon
+
   const handleSaveDraft = () => {
     const draftData = {
       ...formData,
@@ -318,7 +302,7 @@ export default function FlashUploadPage() {
     alert("Brouillon Flash sauvegardé !");
   };
 
-  // ✅ Charger le brouillon au montage
+  
   React.useEffect(() => {
     const savedDraft = localStorage.getItem("flash_draft");
     if (savedDraft) {
@@ -335,7 +319,7 @@ export default function FlashUploadPage() {
             title: draftData.title || "",
             artist: draftData.artist || "",
             style: draftData.style || "autre",
-            styleCustom: draftData.styleCustom || "", // ✅ Restaurer le style personnalisé
+            styleCustom: draftData.styleCustom || "", 
             taille: draftData.taille || "moyen",
             emplacement: draftData.emplacement || [],
             tags: draftData.tags || [],
@@ -373,7 +357,7 @@ export default function FlashUploadPage() {
         </button>
       </div>
 
-      {/* ✅ Affichage des erreurs */}
+     
       {errors.length > 0 && (
         <div className="bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-100 px-4 py-3 rounded mb-6">
           <ul className="list-disc list-inside">
@@ -385,7 +369,7 @@ export default function FlashUploadPage() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* ✅ Colonne gauche - Formulaire */}
+   
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold mb-6 dark:text-white flex items-center gap-2">
@@ -394,7 +378,7 @@ export default function FlashUploadPage() {
             </h2>
 
             <div className="space-y-4">
-              {/* ✅ Image obligatoire */}
+          
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Image du Flash *
@@ -449,7 +433,7 @@ export default function FlashUploadPage() {
                 )}
               </div>
 
-              {/* ✅ Prix obligatoire */}
+             
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Prix du Flash * <Euro className="inline w-4 h-4" />
@@ -478,7 +462,7 @@ export default function FlashUploadPage() {
                 </div>
               </div>
 
-              {/* ✅ Titre  */}
+             
               <div className="grid gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -495,7 +479,7 @@ export default function FlashUploadPage() {
                 </div>
               </div>
 
-              {/* ✅ Style et taille avec style personnalisé */}
+             
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -514,7 +498,7 @@ export default function FlashUploadPage() {
                     ))}
                   </select>
                   
-                  {/* ✅ Champ de style personnalisé affiché uniquement si "autre" est sélectionné */}
+             
                   {formData.style === "autre" && (
                     <div className="mt-2">
                       <input
@@ -551,7 +535,7 @@ export default function FlashUploadPage() {
                 </div>
               </div>
 
-              {/* ✅ Emplacements CORRIGÉS */}
+            
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   <MapPin className="inline w-4 h-4 mr-1" />
@@ -578,7 +562,7 @@ export default function FlashUploadPage() {
                 </p>
               </div>
 
-              {/* ✅ Tags */}
+             
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   <Tag className="inline w-4 h-4 mr-1" />
@@ -596,7 +580,7 @@ export default function FlashUploadPage() {
                 </p>
               </div>
 
-              {/* ✅ Description */}
+             
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Description
@@ -625,7 +609,7 @@ export default function FlashUploadPage() {
                 </div>
               </div>
 
-              {/* ✅ Disponibilité */}
+              
               <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                 <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                   Disponibilité
@@ -654,7 +638,7 @@ export default function FlashUploadPage() {
           </div>
         </div>
 
-        {/* ✅ Colonne droite - Aperçu */}
+       
         <div className="space-y-6">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 sticky top-4">
             <h2 className="text-xl font-bold mb-4 dark:text-white flex items-center gap-2">
@@ -775,7 +759,7 @@ export default function FlashUploadPage() {
         </div>
       </div>
 
-      {/* ✅ Boutons d'action */}
+     
       <div className="flex justify-end space-x-4 mt-8">
         <button
           onClick={handleSaveDraft}

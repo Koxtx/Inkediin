@@ -30,7 +30,7 @@ import { Link } from "react-router-dom";
 import { FlashContext } from "../../../context/FlashContext";
 
 export default function FlashCard({
-  // ✅ Props principales (données du backend)
+  
   _id,
   id,
   idTatoueur,
@@ -52,11 +52,11 @@ export default function FlashCard({
   date,
   createdAt,
 
-  // ✅ Props calculées/dérivées du backend
+ 
   likesCount,
   commentsCount,
 
-  // ✅ Callbacks
+  
   onLike,
   onSave,
   onUpdate,
@@ -68,7 +68,7 @@ export default function FlashCard({
     isFlashSaved,
     hasUserLiked,
     getLikesCount,
-    // ✅ NOUVELLES FONCTIONS DE SYNCHRONISATION
+   
     addCommentToFlash,
     likeCommentInFlash,
     addReplyToComment,
@@ -79,10 +79,10 @@ export default function FlashCard({
     updateFlashInCache,
   } = useContext(FlashContext);
 
-  // ✅ ID unifié
+ 
   const flashId = _id || id;
 
-  // ✅ États locaux
+  
   const [localFlash, setLocalFlash] = useState({
     _id: flashId,
     id: flashId,
@@ -112,20 +112,20 @@ export default function FlashCard({
   const [localIsSaved, setLocalIsSaved] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  // ✅ NOUVEAUX ÉTATS POUR LES COMMENTAIRES
+  
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [replyInputs, setReplyInputs] = useState({});
   const [showReplies, setShowReplies] = useState({});
 
-  // ✅ NOUVEAU: Écouter les événements de mise à jour globaux
+
   useEffect(() => {
     const handleFlashUpdated = (event) => {
       const { flashId: updatedFlashId, updatedFlash } = event.detail;
       
       if (updatedFlashId === flashId) {
-        console.log("🔄 FlashCard - Mise à jour reçue:", updatedFlash);
+       
         setLocalFlash(updatedFlash);
         
         // Mettre à jour les états locaux
@@ -143,7 +143,7 @@ export default function FlashCard({
     };
   }, [flashId, hasUserLiked, isFlashSaved, currentUserId]);
 
-  // ✅ Initialiser les états selon l'API
+  
   useEffect(() => {
     // Vérifier d'abord le cache pour avoir les données les plus récentes
     const cachedFlash = getFlashFromCache(flashId);
@@ -169,7 +169,7 @@ export default function FlashCard({
     getFlashFromCache,
   ]);
 
-  // ✅ Formatage de la date
+ 
   const formatTime = (timeValue) => {
     if (!timeValue) return "?";
 
@@ -193,7 +193,7 @@ export default function FlashCard({
     }
   };
 
-  // ✅ Formatage de la date pour les commentaires
+  
   const formatCommentDate = (dateString) => {
     if (!dateString) return "Date inconnue";
 
@@ -219,7 +219,7 @@ export default function FlashCard({
     }
   };
 
-  // ✅ Fonction pour obtenir le style d'affichage
+  
   const getDisplayStyle = () => {
     if (localFlash.style === "autre" && localFlash.styleCustom) {
       return localFlash.styleCustom;
@@ -227,7 +227,7 @@ export default function FlashCard({
     return localFlash.style;
   };
 
-  // ✅ Composant ProfileImage
+  
   const ProfileImage = ({ avatar, username, size = "w-10 h-10" }) => {
     const [imgError, setImgError] = useState(false);
 
@@ -261,7 +261,7 @@ export default function FlashCard({
     );
   };
 
-  // ✅ Gestion du like
+  
   const handleLike = async () => {
     try {
       // Mise à jour optimiste
@@ -291,7 +291,7 @@ export default function FlashCard({
     }
   };
 
-  // ✅ Gestion de la sauvegarde
+  
   const handleSave = async () => {
     try {
       // Mise à jour optimiste
@@ -306,7 +306,7 @@ export default function FlashCard({
     }
   };
 
-  // ✅ NOUVELLES FONCTIONS POUR LES COMMENTAIRES AVEC SYNCHRONISATION
+  
 
   // Ajouter un commentaire
   const handleAddComment = async () => {
@@ -322,7 +322,7 @@ export default function FlashCard({
 
     try {
       setCommentLoading(true);
-      console.log("💬 FlashCard - Ajout commentaire:", newComment);
+      
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       const updatedFlash = await addCommentToFlash(flashId, newComment.trim());
@@ -330,7 +330,7 @@ export default function FlashCard({
       // Le flash local sera mis à jour automatiquement via l'événement
       setNewComment("");
 
-      console.log("✅ Commentaire ajouté depuis FlashCard");
+      
     } catch (err) {
       console.error("❌ Erreur ajout commentaire:", err);
       alert("Erreur lors de l'ajout du commentaire");
@@ -347,12 +347,12 @@ export default function FlashCard({
     }
 
     try {
-      console.log("👍 FlashCard - Like commentaire:", commentId);
+     
       
       // Utiliser la fonction du contexte qui gère la synchronisation
       await likeCommentInFlash(flashId, commentId);
       
-      console.log("✅ Commentaire liké depuis FlashCard");
+      
     } catch (err) {
       console.error("❌ Erreur like commentaire:", err);
       alert("Erreur lors du like du commentaire");
@@ -373,7 +373,7 @@ export default function FlashCard({
     }
 
     try {
-      console.log("💬 FlashCard - Ajout réponse:", replyText);
+      
       
       // Utiliser la fonction du contexte qui gère la synchronisation
       await addReplyToComment(flashId, commentId, replyText.trim());
@@ -381,7 +381,7 @@ export default function FlashCard({
       // Réinitialiser l'input de réponse
       setReplyInputs((prev) => ({ ...prev, [commentId]: "" }));
 
-      console.log("✅ Réponse ajoutée depuis FlashCard");
+      
     } catch (err) {
       console.error("❌ Erreur ajout réponse:", err);
       alert("Erreur lors de l'ajout de la réponse");
@@ -396,12 +396,12 @@ export default function FlashCard({
     }
 
     try {
-      console.log("👍 FlashCard - Like réponse:", replyId);
+      
       
       // Utiliser la fonction du contexte qui gère la synchronisation
       await likeReplyInFlash(flashId, commentId, replyId);
       
-      console.log("✅ Réponse likée depuis FlashCard");
+      
     } catch (err) {
       console.error("❌ Erreur like réponse:", err);
       alert("Erreur lors du like de la réponse");
@@ -415,12 +415,12 @@ export default function FlashCard({
     }
 
     try {
-      console.log("🗑️ FlashCard - Suppression commentaire:", commentId);
+   
       
       // Utiliser la fonction du contexte qui gère la synchronisation
       await deleteCommentFromFlash(flashId, commentId);
       
-      console.log("✅ Commentaire supprimé depuis FlashCard");
+      
     } catch (err) {
       console.error("❌ Erreur suppression commentaire:", err);
       alert("Erreur lors de la suppression du commentaire");
@@ -434,19 +434,19 @@ export default function FlashCard({
     }
 
     try {
-      console.log("🗑️ FlashCard - Suppression réponse:", replyId);
+    
       
       // Utiliser la fonction du contexte qui gère la synchronisation
       await deleteReplyFromFlash(flashId, commentId, replyId);
       
-      console.log("✅ Réponse supprimée depuis FlashCard");
+    
     } catch (err) {
       console.error("❌ Erreur suppression réponse:", err);
       alert("Erreur lors de la suppression de la réponse");
     }
   };
 
-  // ✅ Composant Commentaire
+
   const CommentComponent = ({ comment }) => {
     const isOwner = comment.userId?._id === currentUserId;
     const hasLiked = comment.likes?.some(
@@ -617,7 +617,7 @@ export default function FlashCard({
     );
   };
 
-  // ✅ Données du tatoueur
+ 
   const tatoueurData = localFlash.idTatoueur || {};
   const tatoueurNom = tatoueurData.nom || localFlash.artist || "Artiste";
   const tatoueurAvatar = tatoueurData.photoProfil || tatoueurData.avatar;
@@ -625,7 +625,7 @@ export default function FlashCard({
 
   return (
     <article className="mb-6 border-b border-gray-700 bg-gray-900">
-      {/* ✅ Header avec info tatoueur */}
+   
       <div className="flex items-center p-4">
         <div className="mr-3">
           <ProfileImage avatar={tatoueurAvatar} username={tatoueurNom} />
@@ -661,10 +661,10 @@ export default function FlashCard({
 
           {showMenu && (
             <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 min-w-48">
-              {/* ✅ Menu différent selon si c'est le propriétaire ou non */}
+              
               {tatoueurData._id === currentUserId ||
               tatoueurData.id === currentUserId ? (
-                // ✅ Menu pour le propriétaire du flash
+              
                 <>
                   <Link
                     to={`/flashedit/${flashId}`}
@@ -675,7 +675,7 @@ export default function FlashCard({
                   </Link>
                   <button
                     onClick={() => {
-                      console.log("Dupliquer flash:", flashId);
+                      
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-700 text-sm text-green-400 hover:text-green-300 flex items-center gap-3"
@@ -685,7 +685,7 @@ export default function FlashCard({
                   </button>
                   <button
                     onClick={() => {
-                      console.log("Voir stats flash:", flashId);
+                      
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-700 text-sm text-purple-400 hover:text-purple-300 flex items-center gap-3"
@@ -695,7 +695,7 @@ export default function FlashCard({
                   </button>
                   <button
                     onClick={() => {
-                      console.log("Toggle disponibilité:", flashId);
+                     
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-700 text-sm text-yellow-400 hover:text-yellow-300 flex items-center gap-3"
@@ -722,7 +722,7 @@ export default function FlashCard({
                   </button>
                 </>
               ) : (
-                // ✅ Menu pour les autres utilisateurs
+             
                 <>
                   <Link
                     to={`/profil/${tatoueurData._id || tatoueurData.id}`}
@@ -755,7 +755,7 @@ export default function FlashCard({
                   </button>
                   <button
                     onClick={() => {
-                      console.log("Toggle follow tatoueur:", tatoueurData._id);
+                     
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-700 text-sm text-blue-400 hover:text-blue-300 flex items-center gap-3"
@@ -767,7 +767,7 @@ export default function FlashCard({
                   <button
                     onClick={() => {
                       if (window.confirm("Signaler ce contenu ?")) {
-                        console.log("Signaler flash:", flashId);
+                     
                         alert("Contenu signalé. Merci !");
                       }
                       setShowMenu(false);
@@ -784,7 +784,7 @@ export default function FlashCard({
         </div>
       </div>
 
-      {/* ✅ Zone d'image avec informations overlay */}
+   
       <div className="w-full aspect-square bg-gray-700 relative overflow-hidden">
         {localFlash.image ? (
           <img
@@ -803,14 +803,13 @@ export default function FlashCard({
           </div>
         )}
 
-        {/* ✅ Prix en overlay */}
+     
         <div className="absolute top-3 left-3">
           <div className="bg-green-500 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg">
             {localFlash.prix?.toFixed(2) || "0.00"}€
           </div>
         </div>
 
-        {/* ✅ Statut en overlay */}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
           {localFlash.disponible ? (
             localFlash.reserve ? (
@@ -831,7 +830,7 @@ export default function FlashCard({
           )}
         </div>
 
-        {/* ✅ Stats en overlay bas */}
+       
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
           <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs">
             <Eye size={10} />
@@ -839,7 +838,7 @@ export default function FlashCard({
           </div>
         </div>
 
-        {/* ✅ Style et taille en overlay bas gauche */}
+        
         {(getDisplayStyle() || localFlash.taille) && (
           <div className="absolute bottom-3 left-3 flex items-center gap-2">
             {getDisplayStyle() && (
@@ -856,7 +855,7 @@ export default function FlashCard({
         )}
       </div>
 
-      {/* ✅ Actions (like, commentaire, save) */}
+      
       <div className="flex items-center p-4">
         <button
           className="mr-4 text-xl hover:scale-110 transition-transform"
@@ -884,12 +883,12 @@ export default function FlashCard({
         </button>
       </div>
 
-      {/* ✅ Likes count */}
+     
       <div className="px-4 mb-2 text-sm font-bold text-white">
         {localFlash.likesCount || localFlash.likes?.length || 0} j'aime
       </div>
 
-      {/* ✅ Titre et description */}
+     
       <div className="px-4 text-sm leading-relaxed text-white">
         <span className="font-bold">{tatoueurNom}</span>
         {localFlash.title && (
@@ -906,7 +905,7 @@ export default function FlashCard({
         )}
       </div>
 
-      {/* ✅ Tags */}
+      
       {localFlash.tags && localFlash.tags.length > 0 && (
         <div className="px-4 mt-2 flex flex-wrap gap-1">
           {localFlash.tags.slice(0, 5).map((tag, index) => (
@@ -925,7 +924,7 @@ export default function FlashCard({
         </div>
       )}
 
-      {/* ✅ Emplacements recommandés */}
+   
       {localFlash.emplacement && localFlash.emplacement.length > 0 && (
         <div className="px-4 mt-2">
           <div className="flex items-center gap-1 text-xs text-gray-400">
@@ -939,7 +938,7 @@ export default function FlashCard({
         </div>
       )}
 
-      {/* ✅ SECTION COMMENTAIRES INTÉGRÉE */}
+     
       {showComments && (
         <div className="px-4 py-4 bg-gray-800 border-t border-gray-700">
           <div className="mb-4">
@@ -948,7 +947,7 @@ export default function FlashCard({
               Commentaires ({localFlash.commentaires?.length || 0})
             </h4>
 
-            {/* Formulaire d'ajout de commentaire */}
+            
             {currentUserId ? (
               <div className="mb-4">
                 <div className="flex gap-2">
@@ -1027,7 +1026,7 @@ export default function FlashCard({
         </div>
       )}
 
-      {/* ✅ Commentaires preview (quand fermé) */}
+
       {!showComments && (localFlash.commentaires?.length || 0) > 0 && (
         <button 
           className="px-4 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors"
@@ -1038,7 +1037,7 @@ export default function FlashCard({
         </button>
       )}
 
-      {/* ✅ Date de création */}
+     
       <div className="px-4 pb-4">
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -1046,7 +1045,7 @@ export default function FlashCard({
             {formatTime(localFlash.date || localFlash.createdAt)}
           </span>
 
-          {/* ✅ Bouton "Voir les détails" */}
+         
           <Link
             to={`/flashdetail/${flashId}`}
             className="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors font-medium"

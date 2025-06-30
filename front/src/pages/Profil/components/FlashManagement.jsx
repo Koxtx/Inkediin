@@ -111,15 +111,15 @@ export default function FlashManagement() {
       }
     });
 
-  // ✅ NOUVEAU: Handler pour éditer un flash - redirige vers EditFlash
+  
   const handleEditFlash = (flashId) => {
-    console.log("🔧 FlashManagement - Redirection vers édition flash:", flashId);
+ 
     navigate(`/flashedit/${flashId}`);
   };
 
-  // ✅ NOUVEAU: Handler pour créer un nouveau flash
+
   const handleCreateFlash = () => {
-    console.log("➕ FlashManagement - Redirection vers création flash");
+   
     navigate("/flashupload");
   };
 
@@ -203,7 +203,7 @@ export default function FlashManagement() {
                 </div>
               )}
               
-              {/* ✅ MODIFIÉ: Overlay avec actions - utilise handleEditFlash */}
+              {/* Overlay avec actions - utilise handleEditFlash */}
               <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 <button 
                   onClick={() => handleLikeFlash(flashId)}
