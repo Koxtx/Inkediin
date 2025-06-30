@@ -21,7 +21,7 @@ const createTokenEmail = (email) => {
 };
 
 const signup = async (req, res) => {
-  console.log(req.body);
+  
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -94,8 +94,7 @@ const signin = async (req, res) => {
         algorithm: "HS256",
       });
 
-      console.log("🔐 Token créé pour:", user.nom);
-      console.log("🎫 Token:", token.substring(0, 20) + "...");
+     
 
       res.cookie("token", token, {
         httpOnly: false,
@@ -105,11 +104,7 @@ const signin = async (req, res) => {
         path: "/",
       });
 
-      console.log("🍪 Cookie défini avec les options:");
-      console.log("- httpOnly: false (accessible via JS pour WebSocket)");
-      console.log("- secure:", process.env.NODE_ENV === "production");
-      console.log("- sameSite: lax");
-      console.log("- maxAge: 7 jours");
+    
 
       res.status(200).json({
         ...userWithoutPassword,
@@ -125,8 +120,7 @@ const signin = async (req, res) => {
 };
 
 const updateUser = async (req, res) => {
-  console.log("📝 UpdateUser - Body reçu:", req.body);
-  console.log("📝 UpdateUser - Fichier reçu:", !!req.file);
+ 
 
   try {
     const {
@@ -151,14 +145,11 @@ const updateUser = async (req, res) => {
       followers,
     };
 
-    // ✅ AJOUT: Si un avatar a été uploadé via Cloudinary
+   
     if (req.avatarUrl) {
       updateData.photoProfil = req.avatarUrl;
       updateData.cloudinaryAvatarId = req.avatarPublicId;
-      console.log("👤 Avatar Cloudinary ajouté:", {
-        url: req.avatarUrl,
-        publicId: req.avatarPublicId,
-      });
+     
     }
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, {
@@ -166,7 +157,6 @@ const updateUser = async (req, res) => {
       runValidators: true,
     });
 
-    console.log("✅ Utilisateur mis à jour:", updatedUser.nom);
     res.status(200).json(updatedUser);
   } catch (error) {
     console.error("❌ Erreur updateUser:", error);
@@ -176,8 +166,7 @@ const updateUser = async (req, res) => {
 
 // ✅ NOUVEAU: Méthode spécifique pour l'avatar avec Cloudinary
 const updateAvatar = async (req, res) => {
-  console.log("🖼️ UpdateAvatar - Fichier reçu:", !!req.file);
-  console.log("🖼️ UpdateAvatar - Avatar URL:", req.avatarUrl);
+
 
   try {
     if (!req.avatarUrl) {
@@ -194,7 +183,7 @@ const updateAvatar = async (req, res) => {
       runValidators: true,
     });
 
-    console.log("✅ Avatar mis à jour pour:", updatedUser.nom);
+    
 
     const { password: _, ...userWithoutPassword } = updatedUser.toObject();
     res.status(200).json(userWithoutPassword);
@@ -215,7 +204,7 @@ const currentUser = async (req, res) => {
 };
 
 const logoutUser = async (req, res) => {
-  console.log("👋 Déconnexion utilisateur");
+ 
 
   res.clearCookie("token", {
     httpOnly: false,
@@ -224,26 +213,23 @@ const logoutUser = async (req, res) => {
     path: "/",
   });
 
-  console.log("🍪 Cookie token supprimé");
+  
   res.status(200).json({ message: "Déconnexion réussie" });
 };
 
 const forgotMyPassword = async (req, res) => {
-  console.log("📧 ForgotPassword - Body reçu:", req.body);
+ 
   const { email } = req.body;
   try {
     const user = await User.findOne({ email });
-    console.log(
-      "👤 Utilisateur trouvé pour forgot password:",
-      user ? "OUI" : "NON"
-    );
+    
 
     if (user) {
       const token = createTokenEmail(email);
-      console.log("🔑 Token généré:", token);
+      
 
       await sendForgotPasswordEmail(email, token);
-      console.log("📧 Email envoyé");
+      
 
       const updateResult = await User.updateOne(
         { email },
@@ -251,32 +237,32 @@ const forgotMyPassword = async (req, res) => {
           resetToken: token,
         }
       );
-      console.log("💾 Résultat de la mise à jour:", updateResult);
+     
 
       const updatedUser = await User.findOne({ email });
-      console.log("🔍 Token sauvegardé en base:", updatedUser.resetToken);
+    
     }
     res.json({ message: "Si un compte est associé, vous recevrez un mail" });
   } catch (error) {
-    console.log("❌ Erreur dans forgotMyPassword:", error);
+    
   }
 };
 
 const resetPassword = async (req, res) => {
-  console.log("🔐 Reset password - Body reçu:", req.body);
+ 
 
   const { password, token } = req.body;
   try {
-    console.log("🔍 Vérification du token:", token);
+    
 
     let decodedToken = jsonwebtoken.verify(token, process.env.SECRET_KEY);
-    console.log("✅ Token décodé:", decodedToken);
+    
 
     const user = await User.findOne({ resetToken: token });
-    console.log("👤 Utilisateur trouvé:", user ? "OUI" : "NON");
+    
 
     if (!user) {
-      console.log("❌ Aucun utilisateur avec ce token");
+     
       return res
         .status(400)
         .json({ message: "Token invalide ou utilisateur introuvable" });
@@ -288,7 +274,7 @@ const resetPassword = async (req, res) => {
     user.resetToken = null;
     await user.save();
 
-    console.log("✅ Mot de passe mis à jour avec succès");
+ 
 
     await validateNewPassword(user.email);
 
@@ -329,8 +315,7 @@ const changePassword = async (req, res) => {
 };
 
 const completeProfile = async (req, res) => {
-  console.log("📝 CompleteProfile - Body reçu:", req.body);
-  console.log("📝 CompleteProfile - Fichier reçu:", !!req.file);
+
 
   try {
     const { userType, nom, localisation, bio, styles, portfolio } = req.body;
@@ -354,14 +339,11 @@ const completeProfile = async (req, res) => {
       isProfileCompleted: true,
     };
 
-    // ✅ AJOUT: Si un avatar a été uploadé via Cloudinary
+   
     if (req.avatarUrl) {
       updateData.photoProfil = req.avatarUrl;
       updateData.cloudinaryAvatarId = req.avatarPublicId;
-      console.log("👤 Avatar Cloudinary ajouté lors de la complétion:", {
-        url: req.avatarUrl,
-        publicId: req.avatarPublicId,
-      });
+   
     }
 
     if (userType === "tatoueur") {
@@ -441,7 +423,7 @@ const getUserById = async (req, res) => {
   }
 };
 
-// ✅ NOUVEAU: Fonction pour supprimer un utilisateur et son avatar
+
 const deleteUser = async (req, res) => {
   try {
     const user = req.user;
@@ -475,10 +457,7 @@ const followUser = async (req, res) => {
     const { id: targetUserId } = req.params;
     const currentUserId = req.user._id;
 
-    console.log("📤 FollowUser:", {
-      currentUser: currentUserId,
-      targetUser: targetUserId,
-    });
+   
 
     // Vérifier qu'on ne suit pas soi-même
     if (currentUserId.toString() === targetUserId) {
@@ -521,11 +500,7 @@ const followUser = async (req, res) => {
       ? updatedTargetUser.tatoueursSuivis.length
       : 0;
 
-    console.log("✅ Suivi ajouté:", {
-      follower: currentUser.nom,
-      followed: targetUser.nom,
-      followersCount,
-    });
+    
 
     res.status(200).json({
       message: `Vous suivez maintenant ${targetUser.nom}`,
@@ -538,16 +513,13 @@ const followUser = async (req, res) => {
   }
 };
 
-// ✅ NOUVEAU: Arrêter de suivre un utilisateur (adapté au modèle existant)
+
 const unfollowUser = async (req, res) => {
   try {
     const { id: targetUserId } = req.params;
     const currentUserId = req.user._id;
 
-    console.log("📤 UnfollowUser:", {
-      currentUser: currentUserId,
-      targetUser: targetUserId,
-    });
+  
 
     // Vérifier que l'utilisateur cible existe
     const targetUser = await User.findById(targetUserId);
@@ -587,11 +559,7 @@ const unfollowUser = async (req, res) => {
       ? updatedTargetUser.tatoueursSuivis.length
       : 0;
 
-    console.log("✅ Suivi retiré:", {
-      follower: currentUser.nom,
-      unfollowed: targetUser.nom,
-      followersCount,
-    });
+    
 
     res.status(200).json({
       message: `Vous ne suivez plus ${targetUser.nom}`,
@@ -604,17 +572,13 @@ const unfollowUser = async (req, res) => {
   }
 };
 
-// ✅ NOUVEAU: Vérifier si on suit un utilisateur (adapté au modèle existant)
+
 const checkIfFollowing = async (req, res) => {
   try {
     const { id: targetUserId } = req.params;
     const currentUserId = req.user._id;
 
-    console.log("📤 CheckIfFollowing:", {
-      currentUser: currentUserId,
-      targetUser: targetUserId,
-    });
-
+    
     const currentUser = await User.findById(currentUserId);
     const targetUser = await User.findById(targetUserId);
 
@@ -642,12 +606,12 @@ const checkIfFollowing = async (req, res) => {
   }
 };
 
-// ✅ NOUVEAU: Obtenir la liste des utilisateurs suivis (adapté au modèle existant)
+
 const getFollowing = async (req, res) => {
   try {
     const currentUserId = req.user._id;
 
-    console.log("📤 GetFollowing pour:", currentUserId);
+    
 
     const currentUser = await User.findById(currentUserId)
       .populate(
@@ -666,10 +630,7 @@ const getFollowing = async (req, res) => {
 
     const following = currentUser.following || [];
 
-    console.log("✅ Following récupérés:", {
-      userId: currentUserId,
-      count: following.length,
-    });
+    
 
     res.status(200).json({
       following,
@@ -685,13 +646,13 @@ const getFollowing = async (req, res) => {
   }
 };
 
-// ✅ NOUVEAU: Obtenir la liste des followers (adapté au modèle existant)
+
 const getFollowers = async (req, res) => {
   try {
     const { id: targetUserId } = req.params;
     const userId = targetUserId || req.user._id;
 
-    console.log("📤 GetFollowers pour:", userId);
+    
 
     const user = await User.findById(userId)
       .populate(
@@ -710,11 +671,7 @@ const getFollowers = async (req, res) => {
 
     const followers = user.tatoueursSuivis || [];
 
-    console.log("✅ Followers récupérés:", {
-      userId,
-      count: followers.length,
-    });
-
+    
     res.status(200).json({
       followers,
       count: followers.length,
@@ -734,7 +691,7 @@ const getSuggestedTattooers = async (req, res) => {
     const currentUserId = req.user._id;
     const { limit = 10, location, styles } = req.query;
 
-    console.log("📤 GetSuggestedTattooers pour:", currentUserId);
+    
 
     // Récupérer l'utilisateur actuel pour voir qui il suit déjà
     const currentUser = await User.findById(currentUserId);
@@ -791,11 +748,7 @@ const getSuggestedTattooers = async (req, res) => {
       };
     });
 
-    console.log("✅ Tatoueurs suggérés récupérés:", {
-      userId: currentUserId,
-      count: enrichedTattooers.length,
-      filters: { location, styles },
-    });
+  
 
     res.status(200).json({
       suggestions: enrichedTattooers,
@@ -812,7 +765,7 @@ const getSuggestedTattooers = async (req, res) => {
   }
 };
 
-// ✅ Fonction helper pour déterminer la raison de la recommandation
+
 const getMatchReason = (
   tattooer,
   currentUser,
@@ -879,7 +832,7 @@ const getSavedPosts = async (req, res) => {
     const userId = req.user._id;
     const { page = 1, limit = 10 } = req.query;
 
-    console.log('📤 GetSavedPosts pour:', userId);
+   
 
     const user = await User.findById(userId);
     if (!user) {
@@ -890,7 +843,7 @@ const getSavedPosts = async (req, res) => {
       });
     }
 
-    // ✅ CORRECTION: Récupérer manuellement les posts par leurs IDs
+   
     const savedPostIds = user.savedPosts || [];
     let savedPosts = [];
 
@@ -908,7 +861,7 @@ const getSavedPosts = async (req, res) => {
           .populate('user', 'nom photoProfil userType')
           .sort({ createdAt: -1 });
       } catch (err) {
-        console.log('⚠️ Modèle Feed introuvable, utilisation des IDs seulement');
+       
         savedPosts = savedPostIds.slice(
           (parseInt(page) - 1) * parseInt(limit),
           parseInt(page) * parseInt(limit)
@@ -921,12 +874,7 @@ const getSavedPosts = async (req, res) => {
       }
     }
 
-    console.log('✅ Posts sauvegardés récupérés:', {
-      userId,
-      count: savedPosts.length,
-      page,
-      limit
-    });
+  
 
     res.status(200).json({
       savedPosts,
@@ -953,7 +901,7 @@ const getSavedFlashs = async (req, res) => {
     const userId = req.user._id;
     const { page = 1, limit = 12 } = req.query;
 
-    console.log('📤 GetSavedFlashs pour:', userId);
+  
 
     const user = await User.findById(userId);
     if (!user) {
@@ -964,7 +912,7 @@ const getSavedFlashs = async (req, res) => {
       });
     }
 
-    // ✅ CORRECTION: Récupérer manuellement les flashs par leurs IDs
+   
     const savedFlashIds = user.savedFlashs || [];
     let savedFlashs = [];
 
@@ -981,7 +929,7 @@ const getSavedFlashs = async (req, res) => {
           .populate('user', 'nom photoProfil userType localisation')
           .sort({ createdAt: -1 });
       } catch (err) {
-        console.log('⚠️ Modèle Flash introuvable, utilisation des IDs seulement');
+       
         savedFlashs = savedFlashIds.slice(
           (parseInt(page) - 1) * parseInt(limit),
           parseInt(page) * parseInt(limit)
@@ -995,12 +943,7 @@ const getSavedFlashs = async (req, res) => {
       }
     }
 
-    console.log('✅ Flashs sauvegardés récupérés:', {
-      userId,
-      count: savedFlashs.length,
-      page,
-      limit
-    });
+    
 
     res.status(200).json({
       savedFlashs,
@@ -1029,9 +972,9 @@ const getAllSavedContent = async (req, res) => {
     
     const { type = 'all', page = 1, limit = 10 } = req.query;
 
-    console.log('📤 GetAllSavedContent:', { userId, type, page, limit });
+    
 
-    // ✅ CHANGEMENT MAJEUR: Utiliser populate directement sur User pour récupérer toutes les données
+    
     const user = await User.findById(userId)
       .populate({
         path: 'savedPosts',
@@ -1058,83 +1001,56 @@ const getAllSavedContent = async (req, res) => {
 
     let content = [];
 
-    console.log('🔍 Données utilisateur récupérées:', {
-      savedPosts: user.savedPosts?.length || 0,
-      savedFlashs: user.savedFlashs?.length || 0
-    });
+   
 
-    // ✅ POSTS: Maintenant user.savedPosts contient les objets complets
+   
     if (type === 'all' || type === 'posts') {
       const savedPosts = user.savedPosts || [];
       
-      console.log('📝 Posts sauvegardés trouvés:', savedPosts.length);
+      
       
       if (savedPosts.length > 0) {
-        // Debug du premier post
-        if (savedPosts[0]) {
-          console.log('🔍 Premier post sauvegardé:', {
-            id: savedPosts[0]._id,
-            contenu: savedPosts[0].contenu?.substring(0, 50),
-            image: !!savedPosts[0].image,
-            auteur: savedPosts[0].idTatoueur ? {
-              nom: savedPosts[0].idTatoueur.nom,
-              photo: !!savedPosts[0].idTatoueur.photoProfil
-            } : null
-          });
-        }
-
+       
         const postsWithType = savedPosts.map(post => ({
           ...post.toObject(),
           contentType: 'post',
           savedAt: post.createdAt || post.datePublication,
-          user: post.idTatoueur, // ✅ L'auteur est déjà populé
+          user: post.idTatoueur, 
           title: post.contenu ? post.contenu.substring(0, 100) + '...' : 'Publication'
         }));
         content.push(...postsWithType);
         
-        console.log('✅ Posts traités:', postsWithType.length);
+   
       }
     }
 
-    // ✅ FLASHS: Maintenant user.savedFlashs contient les objets complets
+    
     if (type === 'all' || type === 'flashs') {
       const savedFlashs = user.savedFlashs || [];
       
-      console.log('⚡ Flashs sauvegardés trouvés:', savedFlashs.length);
+      
       
       if (savedFlashs.length > 0) {
-        // Debug du premier flash
-        if (savedFlashs[0]) {
-          console.log('🔍 Premier flash sauvegardé:', {
-            id: savedFlashs[0]._id,
-            titre: savedFlashs[0].title || savedFlashs[0].description?.substring(0, 50),
-            prix: savedFlashs[0].prix,
-            image: !!savedFlashs[0].image,
-            auteur: savedFlashs[0].idTatoueur ? {
-              nom: savedFlashs[0].idTatoueur.nom,
-              photo: !!savedFlashs[0].idTatoueur.photoProfil
-            } : null
-          });
-        }
+    
 
         const flashsWithType = savedFlashs.map(flash => ({
           ...flash.toObject(),
           contentType: 'flash',
           savedAt: flash.createdAt || flash.date,
-          user: flash.idTatoueur, // ✅ L'auteur est déjà populé
-          price: flash.prix, // ✅ Mapper prix vers price pour cohérence frontend
+          user: flash.idTatoueur, 
+          price: flash.prix, 
           title: flash.title || flash.description || 'Flash tatouage'
         }));
         content.push(...flashsWithType);
         
-        console.log('✅ Flashs traités:', flashsWithType.length);
+      
       }
     }
 
     // Trier par date de sauvegarde (plus récent en premier)
     content.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
-    console.log('📊 Contenu total avant pagination:', content.length);
+    
 
     // Pagination
     const startIndex = (parseInt(page) - 1) * parseInt(limit);
@@ -1143,27 +1059,12 @@ const getAllSavedContent = async (req, res) => {
 
     const isOwnContent = currentUserId && userId.toString() === currentUserId.toString();
 
-    console.log('✅ Contenu sauvegardé final:', {
-      userId,
-      totalContent: content.length,
-      returnedContent: paginatedContent.length,
-      type,
-      isOwn: isOwnContent,
-      sampleContent: paginatedContent.length > 0 ? {
-        firstItem: {
-          id: paginatedContent[0]._id,
-          type: paginatedContent[0].contentType,
-          hasUser: !!paginatedContent[0].user,
-          userNom: paginatedContent[0].user?.nom,
-          hasImage: !!paginatedContent[0].image
-        }
-      } : null
-    });
+  
 
     res.status(200).json({
-      success: true, // ✅ Ajout du flag success pour cohérence avec le frontend
+      success: true, 
       content: paginatedContent,
-      data: paginatedContent, // ✅ Alias pour compatibilité
+      data: paginatedContent, 
       count: paginatedContent.length,
       totalSaved: content.length,
       isOwnContent,
@@ -1180,10 +1081,10 @@ const getAllSavedContent = async (req, res) => {
   } catch (error) {
     console.error('❌ Erreur getAllSavedContent:', error);
     res.status(500).json({ 
-      success: false, // ✅ Ajout du flag success pour cohérence
+      success: false, 
       message: "Erreur lors de la récupération du contenu sauvegardé",
       content: [],
-      data: [], // ✅ Alias pour compatibilité
+      data: [], 
       count: 0
     });
   }
@@ -1195,14 +1096,14 @@ const toggleSavePost = async (req, res) => {
     const userId = req.user._id;
     const { postId } = req.params;
 
-    console.log('📤 ToggleSavePost:', { userId, postId });
+
 
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable" });
     }
 
-    // ✅ CORRECTION: Vérification optionnelle de l'existence du post
+    
     let postExists = true;
     try {
       const Feed = require('../models/feed.model');
@@ -1220,11 +1121,7 @@ const toggleSavePost = async (req, res) => {
     const result = user.toggleSavePost(postId);
     await user.save();
 
-    console.log('✅ Post sauvegardé togglé:', {
-      postId,
-      action: result.action,
-      saved: result.saved
-    });
+    
 
     res.status(200).json({
       message: result.saved ? "Post sauvegardé" : "Post retiré des sauvegardés",
@@ -1245,14 +1142,14 @@ const toggleSaveFlash = async (req, res) => {
     const userId = req.user._id;
     const { flashId } = req.params;
 
-    console.log('📤 ToggleSaveFlash:', { userId, flashId });
+   
 
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable" });
     }
 
-    // ✅ CORRECTION: Vérification optionnelle de l'existence du flash
+    
     let flashExists = true;
     try {
       const Flash = require('../models/flash.model');
@@ -1270,12 +1167,7 @@ const toggleSaveFlash = async (req, res) => {
     const result = user.toggleSaveFlash(flashId);
     await user.save();
 
-    console.log('✅ Flash sauvegardé togglé:', {
-      flashId,
-      action: result.action,
-      saved: result.saved
-    });
-
+  
     res.status(200).json({
       message: result.saved ? "Flash sauvegardé" : "Flash retiré des sauvegardés",
       saved: result.saved,
@@ -1342,7 +1234,7 @@ const getUserPreferences = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    console.log("📤 GetUserPreferences:", userId);
+    
 
     const user = await User.findById(userId);
     if (!user) {
@@ -1366,7 +1258,7 @@ const getUserPreferences = async (req, res) => {
 
     const preferences = user.preferences || defaultPreferences;
 
-    console.log("✅ Préférences récupérées:", userId);
+    
 
     res.status(200).json({
       preferences,
@@ -1385,7 +1277,7 @@ const updateUserPreferences = async (req, res) => {
     const userId = req.user._id;
     const newPreferences = req.body;
 
-    console.log("📤 UpdateUserPreferences:", { userId, newPreferences });
+    
 
     // Validation des préférences
     const allowedFields = [
@@ -1418,7 +1310,7 @@ const updateUserPreferences = async (req, res) => {
       return res.status(404).json({ message: "Utilisateur introuvable" });
     }
 
-    console.log("✅ Préférences mises à jour:", userId);
+    
 
     res.status(200).json({
       message: "Préférences mises à jour",
@@ -1439,11 +1331,7 @@ const markRecommendationInteraction = async (req, res) => {
     const userId = req.user._id;
     const { artistId, interactionType } = req.body;
 
-    console.log("📤 MarkRecommendationInteraction:", {
-      userId,
-      artistId,
-      interactionType,
-    });
+    
 
     // Validation des types d'interaction
     const validInteractions = ["view", "like", "follow", "contact", "dismiss"];
@@ -1481,7 +1369,7 @@ const markRecommendationInteraction = async (req, res) => {
 
     await user.save();
 
-    console.log("✅ Interaction enregistrée:", interaction._id);
+   
 
     res.status(200).json({
       message: "Interaction enregistrée",
@@ -1496,7 +1384,7 @@ const markRecommendationInteraction = async (req, res) => {
 };
 
 module.exports = {
-  // ===== EXPORTS EXISTANTS (gardez-les) =====
+
   signup,
   signin,
   updateUser,
@@ -1512,16 +1400,12 @@ module.exports = {
   fetchTatoueurById,
   getUserById,
   deleteUser,
-  
-  // ===== EXPORTS SUIVIS =====
   followUser,
   unfollowUser,
   checkIfFollowing,
   getFollowing,
   getFollowers,
   getSuggestedTattooers,
-  
-  // ===== NOUVEAUX EXPORTS POUR CONTENUS SAUVEGARDÉS =====
   getSavedPosts,
   getSavedFlashs,
   toggleSavePost,
@@ -1529,8 +1413,6 @@ module.exports = {
   checkPostSaved,
   checkFlashSaved,
   getAllSavedContent,
-  
-  // ===== EXPORTS PRÉFÉRENCES ET RECOMMANDATIONS =====
   getUserPreferences,
   updateUserPreferences,
   markRecommendationInteraction,

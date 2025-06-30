@@ -52,7 +52,7 @@ mongoose.connect(process.env.MONGO_URL).then(() => {
     console.log(`🚀 Serveur HTTP + WebSocket démarré sur le port ${PORT}`);
     console.log(`🔌 WebSocket disponible sur ws://localhost:${PORT}`);
     console.log(`📡 API disponible sur http://localhost:${PORT}`);
-    console.log(`🌐 CORS configuré pour: ${process.env.CLIENT_URL || "http://localhost:5173"}`);
+    console.log(`🌐 CORS configuré pour: ${process.env.CLIENT_URL }`);
   });
 }).catch((error) => {
   console.error("❌ Erreur MongoDB:", error);

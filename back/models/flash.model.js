@@ -358,10 +358,7 @@ flashSchema.pre("save", function (next) {
   next();
 });
 
-// Middleware post-save pour logging
-flashSchema.post("save", function (doc) {
-  console.log(`Flash ${doc._id} sauvegardé avec succès`);
-});
+
 
 // S'assurer que les virtuels sont inclus dans JSON
 flashSchema.set("toJSON", {

@@ -13,15 +13,7 @@ const isCloudinaryConfigured = () => {
   const { cloud_name, api_key, api_secret } = cloudinary.config();
   const isValid = cloud_name && api_key && api_secret;
   
-  if (isValid) {
-    console.log('✅ Cloudinary configuré:', { cloud_name });
-  } else {
-    console.log('❌ Cloudinary non configuré - Variables manquantes:', {
-      cloud_name: !!cloud_name,
-      api_key: !!api_key,
-      api_secret: !!api_secret
-    });
-  }
+
   
   return isValid;
 };
@@ -60,7 +52,7 @@ const uploadFlash = multer({
 // Middleware pour uploader Feed vers Cloudinary
 const uploadFeedToCloudinary = async (req, res, next) => {
   if (!req.file) {
-    console.log('📝 Feed - Pas de fichier à uploader');
+    
     return next();
   }
 
@@ -72,11 +64,7 @@ const uploadFeedToCloudinary = async (req, res, next) => {
   }
 
   try {
-    console.log('☁️ Feed - Upload vers Cloudinary:', {
-      originalName: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
+   
 
     // Convertir le buffer en base64 pour Cloudinary
     const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
@@ -96,13 +84,7 @@ const uploadFeedToCloudinary = async (req, res, next) => {
     // Upload vers Cloudinary
     const result = await cloudinary.uploader.upload(fileStr, uploadOptions);
 
-    console.log('✅ Feed - Upload Cloudinary réussi:', {
-      publicId: result.public_id,
-      url: result.secure_url,
-      width: result.width,
-      height: result.height,
-      bytes: result.bytes
-    });
+  
 
     // Ajouter les données à la requête
     req.imageUrl = result.secure_url;
@@ -121,7 +103,7 @@ const uploadFeedToCloudinary = async (req, res, next) => {
 // Middleware pour uploader Flash vers Cloudinary
 const uploadFlashToCloudinary = async (req, res, next) => {
   if (!req.file) {
-    console.log('📝 Flash - Pas de fichier à uploader');
+   
     return next();
   }
 
@@ -133,11 +115,7 @@ const uploadFlashToCloudinary = async (req, res, next) => {
   }
 
   try {
-    console.log('⚡ Flash - Upload vers Cloudinary:', {
-      originalName: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
+   
 
     const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
@@ -155,10 +133,7 @@ const uploadFlashToCloudinary = async (req, res, next) => {
 
     const result = await cloudinary.uploader.upload(fileStr, uploadOptions);
 
-    console.log('✅ Flash - Upload Cloudinary réussi:', {
-      publicId: result.public_id,
-      url: result.secure_url
-    });
+   
 
     req.imageUrl = result.secure_url;
     req.imagePublicId = result.public_id;
@@ -179,7 +154,7 @@ const deleteFromCloudinary = async (publicId) => {
 
   try {
     const result = await cloudinary.uploader.destroy(publicId);
-    console.log('🗑️ Image supprimée de Cloudinary:', { publicId, result });
+   
     return result;
   } catch (error) {
     console.error('❌ Erreur suppression Cloudinary:', error);

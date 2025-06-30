@@ -39,7 +39,7 @@ const getFlashs = async (req, res) => {
       filter.tags = { $in: tagArray };
     }
 
-    console.log("🔍 getFlashs - Filtre appliqué:", filter);
+    
 
     const flashs = await Flash.find(filter)
       .populate(
@@ -56,7 +56,7 @@ const getFlashs = async (req, res) => {
       .skip((page - 1) * limit)
       .lean();
 
-    // ✅ AJOUT: Enrichir avec des compteurs
+ 
     const flashsWithCounts = flashs.map((flash) => ({
       ...flash,
       likesCount: flash.likes ? flash.likes.length : 0,
@@ -108,18 +108,14 @@ const getFlashById = async (req, res) => {
       return res.status(404).json({ error: "Flash non trouvé" });
     }
 
-    // ✅ AJOUT: Enrichir avec des compteurs
+    
     const flashWithCounts = {
       ...flash,
       likesCount: flash.likes ? flash.likes.length : 0,
       commentsCount: flash.commentaires ? flash.commentaires.length : 0,
     };
 
-    console.log("✅ getFlashById - Flash trouvé:", {
-      id: flash._id,
-      views: flash.views,
-      likes: flash.likes?.length || 0,
-    });
+    
 
     res.status(200).json(flashWithCounts);
   } catch (error) {
@@ -137,36 +133,15 @@ const createFlash = async (req, res) => {
       title,
       artist,
       style,
-      styleCustom, // ✅ NOUVEAU CHAMP
+      styleCustom, 
       taille,
       emplacement,
       tags,
     } = req.body;
     const idTatoueur = req.user._id;
 
-    console.log("📝 createFlash - Données reçues:", {
-      prix,
-      description,
-      title,
-      artist,
-      style,
-      styleCustom, // ✅ Log du style personnalisé
-      taille,
-      emplacement,
-      tags,
-      hasImage: !!req.imageUrl,
-      imageUrl: req.imageUrl,
-      cloudinaryPublicId: req.imagePublicId,
-    });
+   
 
-    // ✅ DEBUG SPÉCIFIQUE pour styleCustom
-    console.log("🔍 DEBUG styleCustom:", {
-      style,
-      styleCustom,
-      styleCustomExists: !!styleCustom,
-      styleCustomTrimmed: styleCustom?.trim(),
-      styleCustomLength: styleCustom?.length,
-    });
 
     // Vérifier que l'utilisateur est un tatoueur
     const user = await User.findById(idTatoueur);
@@ -184,7 +159,7 @@ const createFlash = async (req, res) => {
       return res.status(400).json({ error: "Prix invalide (doit être > 0)" });
     }
 
-    // ✅ VALIDATION DU STYLE PERSONNALISÉ
+    
     if (style === "autre" && (!styleCustom || !styleCustom.trim())) {
       return res.status(400).json({ 
         error: "Le style personnalisé est requis quand 'Autre' est sélectionné" 
@@ -242,7 +217,7 @@ const createFlash = async (req, res) => {
       title: title?.trim() || "",
       artist: artist?.trim() || "",
       style: style || "autre",
-      styleCustom: style === "autre" ? styleCustom?.trim() : undefined, // ✅ Ajouter styleCustom seulement si style = "autre"
+      styleCustom: style === "autre" ? styleCustom?.trim() : undefined, 
       taille: taille || "moyen",
       emplacement: parsedEmplacement,
       tags: parsedTags,
@@ -250,10 +225,10 @@ const createFlash = async (req, res) => {
       reserve: false,
       likes: [],
       views: 0,
-      commentaires: [], // ✅ AJOUT: Initialiser les commentaires
+      commentaires: [], 
     };
 
-    console.log("📝 createFlash - Données à sauvegarder:", flashData);
+    
 
     const newFlash = new Flash(flashData);
     const savedFlash = await newFlash.save();
@@ -271,7 +246,7 @@ const createFlash = async (req, res) => {
       commentsCount: 0,
     };
 
-    console.log("✅ createFlash - Flash créé:", flashWithCounts);
+   
     res.status(201).json(flashWithCounts);
   } catch (error) {
     console.error("❌ Erreur createFlash:", error);
@@ -279,15 +254,10 @@ const createFlash = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Like/Unlike Flash
+
 const likeFlash = async (req, res) => {
   try {
-    console.log("👍 likeFlash - Début:", {
-      flashId: req.params.id,
-      userId: req.user._id,
-      userType: req.user.userType,
-    });
-
+  
     const flash = await Flash.findById(req.params.id);
     if (!flash) {
       return res.status(404).json({ message: "Flash non trouvé" });
@@ -310,7 +280,7 @@ const likeFlash = async (req, res) => {
       // Retirer le like
       flash.likes.splice(existingLikeIndex, 1);
       actionTaken = "REMOVED";
-      console.log("➖ Like retiré du Flash");
+     
     } else {
       // Ajouter le like
       flash.likes.push({
@@ -319,7 +289,7 @@ const likeFlash = async (req, res) => {
         dateLike: new Date(),
       });
       actionTaken = "ADDED";
-      console.log("➕ Like ajouté au Flash");
+     
     }
 
     // Sauvegarder avec findOneAndUpdate pour éviter les conflits de concurrence
@@ -346,10 +316,7 @@ const likeFlash = async (req, res) => {
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
     };
 
-    console.log("🎉 likeFlash - Succès:", {
-      finalLikes: flashWithCounts.likesCount,
-      action: actionTaken,
-    });
+   
 
     res.status(200).json(flashWithCounts);
   } catch (error) {
@@ -358,7 +325,7 @@ const likeFlash = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Réserver un Flash
+
 const reserveFlash = async (req, res) => {
   try {
     const flashId = req.params.id;
@@ -395,11 +362,7 @@ const reserveFlash = async (req, res) => {
       .populate("reservedBy", "nom photoProfil email telephone")
       .lean();
 
-    console.log("✅ Flash réservé avec succès:", {
-      flashId,
-      reservedBy: userId,
-      tatoueur: updatedFlash.idTatoueur?.nom,
-    });
+    
 
     res.status(200).json({
       message: "Flash réservé avec succès",
@@ -421,7 +384,7 @@ const updateFlash = async (req, res) => {
       title,
       artist,
       style,
-      styleCustom, // ✅ NOUVEAU CHAMP
+      styleCustom, 
       taille,
       emplacement,
       tags,
@@ -453,7 +416,7 @@ const updateFlash = async (req, res) => {
     if (title !== undefined) updateData.title = title.trim();
     if (artist !== undefined) updateData.artist = artist.trim();
     
-    // ✅ GESTION DU STYLE ET STYLE PERSONNALISÉ
+   
     if (style !== undefined) {
       updateData.style = style;
       
@@ -582,7 +545,7 @@ const deleteFlash = async (req, res) => {
 
     await Flash.findByIdAndDelete(id);
 
-    console.log("✅ Flash supprimé:", { id, tatoueur: req.user._id });
+  
     res.status(200).json({ message: "Flash supprimé avec succès" });
   } catch (error) {
     console.error("❌ Erreur deleteFlash:", error);
@@ -700,14 +663,14 @@ const saveFlash = async (req, res) => {
     if (!user.savedFlashs.includes(flashId)) {
       user.savedFlashs.push(flashId);
       await user.save();
-      console.log("✅ Flash sauvegardé:", { flashId, userId });
+     
       res.status(200).json({ message: "Flash sauvegardé", saved: true });
     } else {
       user.savedFlashs = user.savedFlashs.filter(
         (id) => id.toString() !== flashId
       );
       await user.save();
-      console.log("✅ Flash retiré des favoris:", { flashId, userId });
+     
       res
         .status(200)
         .json({ message: "Flash retiré des favoris", saved: false });
@@ -718,14 +681,14 @@ const saveFlash = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Récupérer les Flash sauvegardés
+
 const getSavedFlashs = async (req, res) => {
   try {
     const userId = req.user._id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
 
-    console.log("📚 getSavedFlashs - User:", userId, "Page:", page);
+    
 
     // Récupérer l'utilisateur avec ses flashs sauvegardés
     const user = await User.findById(userId).populate({
@@ -769,7 +732,7 @@ const getSavedFlashs = async (req, res) => {
 
     const savedFlashs = user.savedFlashs || [];
 
-    // ✅ AJOUT: Enrichir avec des compteurs
+    
     const savedFlashsWithCounts = savedFlashs.map((flash) => ({
       ...flash.toObject(),
       likesCount: flash.likes ? flash.likes.length : 0,
@@ -783,7 +746,7 @@ const getSavedFlashs = async (req, res) => {
 
     const total = totalSaved[0]?.count || 0;
 
-    console.log(`✅ ${savedFlashsWithCounts.length} flashs sauvegardés trouvés`);
+   
 
     res.status(200).json({
       flashs: savedFlashsWithCounts,
@@ -801,7 +764,7 @@ const getSavedFlashs = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Ajouter un commentaire à un Flash
+
 const addComment = async (req, res) => {
   try {
     const { contenu } = req.body;
@@ -837,11 +800,7 @@ const addComment = async (req, res) => {
     flash.commentaires.push(newComment);
     await flash.save();
 
-    console.log("✅ Commentaire ajouté au Flash:", {
-      flashId: flash._id,
-      userId: req.user._id,
-      contenu: contenu.trim(),
-    });
+    
 
     const updatedFlash = await Flash.findById(flash._id)
       .populate("commentaires.userId", "nom photoProfil userType")
@@ -867,7 +826,7 @@ const addComment = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Supprimer un commentaire d'un Flash
+
 const deleteComment = async (req, res) => {
   try {
     const flash = await Flash.findById(req.params.id);
@@ -891,11 +850,6 @@ const deleteComment = async (req, res) => {
     flash.commentaires.pull(req.params.commentId);
     await flash.save();
 
-    console.log("✅ Commentaire supprimé du Flash:", {
-      flashId: flash._id,
-      commentId: req.params.commentId,
-      userId: req.user._id,
-    });
 
     res.status(200).json({ message: "Commentaire supprimé" });
   } catch (error) {
@@ -904,14 +858,10 @@ const deleteComment = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Liker un commentaire d'un Flash
+
 const likeComment = async (req, res) => {
   try {
-    console.log("👍 likeComment Flash - Début:", {
-      flashId: req.params.id,
-      commentId: req.params.commentId,
-      userId: req.user._id,
-    });
+    
 
     const flash = await Flash.findById(req.params.id);
     if (!flash) {
@@ -938,7 +888,7 @@ const likeComment = async (req, res) => {
     if (existingLikeIndex !== -1) {
       // Retirer le like
       comment.likes.splice(existingLikeIndex, 1);
-      console.log("➖ Like retiré du commentaire Flash");
+      
     } else {
       // Ajouter le like
       comment.likes.push({
@@ -946,7 +896,7 @@ const likeComment = async (req, res) => {
         userType,
         dateLike: new Date(),
       });
-      console.log("➕ Like ajouté au commentaire Flash");
+      
     }
 
     // Marquer comme modifié et sauvegarder
@@ -972,7 +922,6 @@ const likeComment = async (req, res) => {
         : 0,
     };
 
-    console.log("🎉 likeComment Flash - Succès");
     res.status(200).json(flashWithCounts);
   } catch (error) {
     console.error("❌ Erreur likeComment Flash:", error);
@@ -980,13 +929,13 @@ const likeComment = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Ajouter une réponse à un commentaire
+
 const addReplyToComment = async (req, res) => {
   try {
     const { contenu } = req.body;
     const { id: flashId, commentId } = req.params;
 
-    console.log("📝 addReplyToComment Flash:", { flashId, commentId, contenu });
+   
 
     const flash = await Flash.findById(flashId);
     if (!flash) {
@@ -1026,7 +975,7 @@ const addReplyToComment = async (req, res) => {
     comment.replies.push(newReply);
     await flash.save();
 
-    console.log("✅ Réponse ajoutée au commentaire Flash");
+  
 
     // Retourner le flash mis à jour avec populate
     const updatedFlash = await Flash.findById(flash._id)
@@ -1053,12 +1002,12 @@ const addReplyToComment = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Liker une réponse à un commentaire
+
 const likeReply = async (req, res) => {
   try {
     const { id: flashId, commentId, replyId } = req.params;
 
-    console.log("👍 likeReply Flash:", { flashId, commentId, replyId });
+    
 
     const flash = await Flash.findById(flashId);
     if (!flash) {
@@ -1089,7 +1038,7 @@ const likeReply = async (req, res) => {
       reply.likes = reply.likes.filter(
         (like) => like.userId.toString() !== userId.toString()
       );
-      console.log("➖ Like retiré de la réponse Flash");
+      
     } else {
       // Ajouter le like
       reply.likes.push({
@@ -1097,7 +1046,7 @@ const likeReply = async (req, res) => {
         userType,
         dateLike: new Date(),
       });
-      console.log("➕ Like ajouté à la réponse Flash");
+     
     }
 
     await flash.save();
@@ -1127,7 +1076,7 @@ const likeReply = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLE FONCTION: Supprimer une réponse à un commentaire
+
 const deleteReply = async (req, res) => {
   try {
     const { id: flashId, commentId, replyId } = req.params;
@@ -1158,12 +1107,7 @@ const deleteReply = async (req, res) => {
     comment.replies.pull(replyId);
     await flash.save();
 
-    console.log("✅ Réponse supprimée du Flash:", {
-      flashId,
-      commentId,
-      replyId,
-      userId: req.user._id,
-    });
+  
 
     res.status(200).json({ message: "Réponse supprimée avec succès" });
   } catch (error) {
@@ -1180,10 +1124,8 @@ module.exports = {
   deleteFlash,
   getFlashsByTatoueur,
   toggleReserve,
-  // ✅ NOUVELLES FONCTIONS
   likeFlash,
   reserveFlash,
-  // ✅ FONCTIONS SAVE ET COMMENTAIRES
   saveFlash,
   getSavedFlashs,
   addComment,

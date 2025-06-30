@@ -276,14 +276,6 @@ const createFeed = async (req, res) => {
     const { contenu, tags } = req.body;
     const idTatoueur = req.user._id;
 
-    console.log("📝 createFeed - Données reçues:", {
-      contenu,
-      tags,
-      idTatoueur,
-      hasFile: !!req.file,
-      imageUrl: req.imageUrl,
-      imagePublicId: req.imagePublicId,
-    });
 
     const user = await User.findById(idTatoueur);
     if (!user) {
@@ -333,7 +325,7 @@ const createFeed = async (req, res) => {
       datePublication: new Date(),
     };
 
-    console.log("📝 createFeed - Données à sauvegarder:", feedData);
+    
 
     const feed = new Feed(feedData);
     await feed.save();
@@ -351,7 +343,7 @@ const createFeed = async (req, res) => {
       commentsCount: 0,
     };
 
-    console.log("✅ createFeed - Publication créée:", feedWithCounts);
+   
     res.status(201).json(feedWithCounts);
   } catch (error) {
     console.error("❌ Erreur createFeed:", error);
@@ -435,11 +427,7 @@ const deleteFeed = async (req, res) => {
 
 const likeFeed = async (req, res) => {
   try {
-    console.log("👍 likeFeed - Début:", {
-      feedId: req.params.id,
-      userId: req.user._id,
-      userType: req.user.userType,
-    });
+   
 
     const feed = await Feed.findById(req.params.id);
     if (!feed) {
@@ -449,16 +437,12 @@ const likeFeed = async (req, res) => {
     const userId = req.user._id;
     const userType = req.user.userType || "client";
 
-    console.log("📝 Publication trouvée:", {
-      feedId: feed._id,
-      likesActuels: feed.likes?.length || 0,
-      likesArray: feed.likes,
-    });
+    
 
     // ✅ CORRECTION: Initialiser likes si undefined
     if (!feed.likes) {
       feed.likes = [];
-      console.log("🔧 Initialisation array likes publication");
+      
     }
 
     // ✅ CORRECTION: Chercher le like avec toString() pour éviter les problèmes d'ObjectId
@@ -466,18 +450,14 @@ const likeFeed = async (req, res) => {
       (like) => like.userId.toString() === userId.toString()
     );
 
-    console.log("🔍 Like existant index:", existingLikeIndex);
-    console.log("🔍 Détail recherche like:", {
-      userId: userId.toString(),
-      likesUserIds: feed.likes.map((like) => like.userId.toString()),
-    });
+   
 
     let actionTaken = "";
     if (existingLikeIndex !== -1) {
       // Retirer le like
       feed.likes.splice(existingLikeIndex, 1);
       actionTaken = "REMOVED";
-      console.log("➖ Like retiré de la publication");
+      
     } else {
       // Ajouter le like
       feed.likes.push({
@@ -486,14 +466,10 @@ const likeFeed = async (req, res) => {
         dateLike: new Date(),
       });
       actionTaken = "ADDED";
-      console.log("➕ Like ajouté à la publication");
+      
     }
 
-    console.log("💾 Nouveaux likes publication après modification:", {
-      count: feed.likes.length,
-      action: actionTaken,
-      likesArray: feed.likes,
-    });
+   
 
     // ✅ CORRECTION MAJEURE: Utiliser findOneAndUpdate pour éviter les problèmes de concurrence
     const updatedFeed = await Feed.findOneAndUpdate(
@@ -522,16 +498,7 @@ const likeFeed = async (req, res) => {
         .json({ message: "Publication non trouvée après mise à jour" });
     }
 
-    console.log("✅ Publication mise à jour avec findOneAndUpdate");
-    console.log("🔍 Vérification finale:", {
-      feedId: updatedFeed._id,
-      finalLikesCount: updatedFeed.likes?.length || 0,
-      finalLikesArray: updatedFeed.likes,
-      userStillInLikes: updatedFeed.likes?.some(
-        (like) =>
-          (like.userId._id || like.userId).toString() === userId.toString()
-      ),
-    });
+  ;
 
     const feedWithCounts = {
       ...updatedFeed,
@@ -541,11 +508,7 @@ const likeFeed = async (req, res) => {
         : 0,
     };
 
-    console.log("🎉 likeFeed - Succès final:", {
-      finalLikes: feedWithCounts.likesCount,
-      action: actionTaken,
-      success: true,
-    });
+   
 
     res.status(200).json(feedWithCounts);
   } catch (error) {
@@ -736,12 +699,7 @@ const deleteComment = async (req, res) => {
 
 const likeComment = async (req, res) => {
   try {
-    console.log("👍 likeComment - Début:", {
-      feedId: req.params.id,
-      commentId: req.params.commentId,
-      userId: req.user._id,
-      userType: req.user.userType,
-    });
+   
 
     const feed = await Feed.findById(req.params.id);
     if (!feed) {
@@ -756,28 +714,24 @@ const likeComment = async (req, res) => {
     const userId = req.user._id;
     const userType = req.user.userType || "client";
 
-    console.log("📝 Commentaire trouvé:", {
-      commentId: comment._id,
-      likesActuels: comment.likes?.length || 0,
-      likesArray: comment.likes,
-    });
+   
 
     // ✅ CORRECTION: Initialiser likes si undefined
     if (!comment.likes) {
       comment.likes = [];
-      console.log("🔧 Initialisation array likes");
+      
     }
 
     const existingLikeIndex = comment.likes.findIndex(
       (like) => like.userId.toString() === userId.toString()
     );
 
-    console.log("🔍 Like existant index:", existingLikeIndex);
+    
 
     if (existingLikeIndex !== -1) {
       // Retirer le like
       comment.likes.splice(existingLikeIndex, 1);
-      console.log("➖ Like retiré");
+      
     } else {
       // Ajouter le like
       comment.likes.push({
@@ -785,20 +739,20 @@ const likeComment = async (req, res) => {
         userType,
         dateLike: new Date(),
       });
-      console.log("➕ Like ajouté");
+      
     }
 
-    console.log("💾 Nouveaux likes:", comment.likes.length);
+    
 
-    // ✅ CORRECTION: Marquer le commentaire comme modifié
+   
     comment.markModified("likes");
     feed.markModified("commentaires");
 
     await feed.save();
 
-    console.log("✅ Feed sauvegardé");
+  
 
-    // ✅ CORRECTION: Retourner le feed complet avec populate
+   
     const updatedFeed = await Feed.findById(feed._id)
       .populate("commentaires.userId", "nom photoProfil userType")
       .populate("commentaires.likes.userId", "nom photoProfil userType")
@@ -822,12 +776,7 @@ const likeComment = async (req, res) => {
         : 0,
     };
 
-    console.log("🎉 likeComment - Succès:", {
-      commentLikes:
-        feedWithCounts.commentaires.find(
-          (c) => c._id.toString() === req.params.commentId
-        )?.likes?.length || 0,
-    });
+    
 
     res.status(200).json(feedWithCounts);
   } catch (error) {
@@ -836,14 +785,14 @@ const likeComment = async (req, res) => {
   }
 };
 
-// ✅ NOUVELLES FONCTIONS: Gestion des réponses aux commentaires
+
 
 const addReplyToComment = async (req, res) => {
   try {
     const { contenu } = req.body;
     const { id: feedId, commentId } = req.params;
 
-    console.log("📝 addReplyToComment:", { feedId, commentId, contenu });
+   
 
     const feed = await Feed.findById(feedId);
     if (!feed) {
@@ -877,7 +826,7 @@ const addReplyToComment = async (req, res) => {
     comment.replies.push(newReply);
     await feed.save();
 
-    console.log("✅ Réponse ajoutée avec succès");
+    
 
     // Retourner le feed mis à jour avec populate
     const updatedFeed = await Feed.findById(feed._id)
@@ -907,7 +856,7 @@ const likeReply = async (req, res) => {
   try {
     const { id: feedId, commentId, replyId } = req.params;
 
-    console.log("👍 likeReply:", { feedId, commentId, replyId });
+    
 
     const feed = await Feed.findById(feedId);
     if (!feed) {
@@ -938,7 +887,7 @@ const likeReply = async (req, res) => {
       reply.likes = reply.likes.filter(
         (like) => like.userId.toString() !== userId.toString()
       );
-      console.log("➖ Like retiré de la réponse");
+      
     } else {
       // Ajouter le like
       reply.likes.push({
@@ -946,7 +895,7 @@ const likeReply = async (req, res) => {
         userType,
         dateLike: new Date(),
       });
-      console.log("➕ Like ajouté à la réponse");
+    
     }
 
     await feed.save();
@@ -1029,7 +978,6 @@ module.exports = {
   saveFeed,
   unsaveFeed,
   searchFeedsByTag,
-  // ✅ AJOUT: Nouvelles fonctions
   addReplyToComment,
   likeReply,
   deleteReply,

@@ -13,13 +13,7 @@ const isCloudinaryConfigured = () => {
   const { cloud_name, api_key, api_secret } = cloudinary.config();
   const isValid = cloud_name && api_key && api_secret;
   
-  if (!isValid) {
-    console.log('❌ Cloudinary non configuré pour User - Variables manquantes:', {
-      cloud_name: !!cloud_name,
-      api_key: !!api_key,
-      api_secret: !!api_secret
-    });
-  }
+
   
   return isValid;
 };
@@ -49,7 +43,7 @@ const uploadAvatar = multer({
 // Middleware pour uploader avatar vers Cloudinary
 const uploadAvatarToCloudinary = async (req, res, next) => {
   if (!req.file) {
-    console.log('📝 Avatar - Pas de fichier à uploader');
+   
     return next();
   }
 
@@ -61,12 +55,7 @@ const uploadAvatarToCloudinary = async (req, res, next) => {
   }
 
   try {
-    console.log('👤 Avatar - Upload vers Cloudinary:', {
-      originalName: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      userId: req.user?._id
-    });
+ 
 
     // Convertir le buffer en base64 pour Cloudinary
     const fileStr = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
@@ -87,7 +76,7 @@ const uploadAvatarToCloudinary = async (req, res, next) => {
     if (req.user.cloudinaryAvatarId) {
       try {
         await cloudinary.uploader.destroy(req.user.cloudinaryAvatarId);
-        console.log('🗑️ Ancien avatar supprimé:', req.user.cloudinaryAvatarId);
+       
       } catch (deleteError) {
         console.warn('⚠️ Erreur suppression ancien avatar:', deleteError.message);
       }
@@ -96,13 +85,7 @@ const uploadAvatarToCloudinary = async (req, res, next) => {
     // Upload vers Cloudinary
     const result = await cloudinary.uploader.upload(fileStr, uploadOptions);
 
-    console.log('✅ Avatar - Upload Cloudinary réussi:', {
-      publicId: result.public_id,
-      url: result.secure_url,
-      width: result.width,
-      height: result.height,
-      bytes: result.bytes
-    });
+   
 
     // Ajouter les données à la requête
     req.avatarUrl = result.secure_url;
@@ -124,7 +107,7 @@ const deleteAvatarFromCloudinary = async (publicId) => {
 
   try {
     const result = await cloudinary.uploader.destroy(publicId);
-    console.log('🗑️ Avatar supprimé de Cloudinary:', { publicId, result });
+
     return result;
   } catch (error) {
     console.error('❌ Erreur suppression avatar Cloudinary:', error);
