@@ -34,7 +34,7 @@ const handleApiError = async (response) => {
    
     if (response.status === 401) {
       // Rediriger vers la page de connexion
-      window.location.href = '/login';
+      window.location.href = '/signin';
     }
 
     throw new Error(

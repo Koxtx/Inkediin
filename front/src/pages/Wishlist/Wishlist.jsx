@@ -84,7 +84,7 @@ function SavedFlashCard({ flash, onRemove, onNavigate }) {
   return (
     <div
       onClick={handleClick}
-      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 cursor-pointer"
+      className="rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 cursor-pointer"
     >
       {/* Image du flash */}
       <div className="h-48 bg-gradient-to-br from-yellow-400 to-orange-500 relative overflow-hidden">
@@ -275,7 +275,7 @@ function SavedPostCard({ post, onRemove, onNavigate }) {
   return (
     <div
       onClick={handleClick}
-      className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 cursor-pointer"
+      className=" rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700 cursor-pointer"
     >
       {/* Image du post */}
       <div className="h-48 bg-gradient-to-br from-blue-400 to-purple-500 relative overflow-hidden">
@@ -548,7 +548,7 @@ export default function Wishlist() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen  flex items-center justify-center">
         <div className="text-center">
           <AlertCircle size={48} className="mx-auto text-red-500 mb-4" />
           <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
@@ -570,7 +570,7 @@ export default function Wishlist() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen ">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">
             Ma Wishlist
@@ -590,12 +590,12 @@ export default function Wishlist() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen ">
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-8">
             Ma Wishlist
           </h1>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className=" rounded-lg shadow-md p-6">
             <div className="text-center text-red-500">
               <AlertCircle size={48} className="mx-auto mb-4" />
               <p className="mb-4 text-gray-900 dark:text-gray-100">
@@ -615,7 +615,7 @@ export default function Wishlist() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen ">
       <div className="container mx-auto px-4 py-8">
         {/* Header avec titre et statistiques */}
         <div className="flex justify-between items-center mb-8">

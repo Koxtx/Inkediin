@@ -52,7 +52,6 @@ export default function FlashDetail() {
     getFlashFromCache,
   } = useContext(FlashContext);
 
-
   const [flash, setFlash] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,22 +63,19 @@ export default function FlashDetail() {
   const [showMenu, setShowMenu] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [replyInputs, setReplyInputs] = useState({});
   const [showReplies, setShowReplies] = useState({});
 
-
   useEffect(() => {
     const handleFlashUpdated = (event) => {
       const { flashId: updatedFlashId, updatedFlash } = event.detail;
-      
+
       if (updatedFlashId === id) {
-    
         setFlash(updatedFlash);
-        
+
         // Mettre à jour les états locaux
         if (currentUserId) {
           setIsLiked(hasUserLiked(updatedFlash));
@@ -89,28 +85,24 @@ export default function FlashDetail() {
       }
     };
 
-    window.addEventListener('flashUpdated', handleFlashUpdated);
-    
+    window.addEventListener("flashUpdated", handleFlashUpdated);
+
     return () => {
-      window.removeEventListener('flashUpdated', handleFlashUpdated);
+      window.removeEventListener("flashUpdated", handleFlashUpdated);
     };
   }, [id, currentUserId, hasUserLiked, isFlashSaved, getLikesCount]);
 
-  
   useEffect(() => {
     const loadFlash = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        
-
         // Vérifier d'abord le cache
         const cachedFlash = getFlashFromCache(id);
         if (cachedFlash) {
-         
           setFlash(cachedFlash);
-          
+
           // Calculer les états utilisateur
           if (currentUserId) {
             const userLiked = hasUserLiked(cachedFlash);
@@ -125,11 +117,9 @@ export default function FlashDetail() {
 
         // Sinon, charger depuis l'API
         const flashData = await getFlashById(id);
-     
 
         setFlash(flashData);
 
-      
         if (currentUserId) {
           const userLiked = hasUserLiked(flashData);
           const userSaved = isFlashSaved(flashData._id || flashData.id);
@@ -160,7 +150,6 @@ export default function FlashDetail() {
     getFlashFromCache,
   ]);
 
-
   const handleLike = async () => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour liker un Flash");
@@ -168,8 +157,6 @@ export default function FlashDetail() {
     }
 
     try {
-  
-
       // Mise à jour optimiste
       const wasLiked = isLiked;
       setIsLiked(!wasLiked);
@@ -179,7 +166,6 @@ export default function FlashDetail() {
       const updatedFlash = await toggleLikeFlash(id);
 
       // Les états seront mis à jour automatiquement via l'événement
-    
     } catch (err) {
       console.error("❌ Erreur like Flash:", err);
       // Rollback en cas d'erreur
@@ -189,7 +175,6 @@ export default function FlashDetail() {
     }
   };
 
-
   const handleSave = async () => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour sauvegarder un Flash");
@@ -197,8 +182,6 @@ export default function FlashDetail() {
     }
 
     try {
-  
-
       // Mise à jour optimiste
       setIsSaved(!isSaved);
 
@@ -218,12 +201,8 @@ export default function FlashDetail() {
     }
 
     try {
-     
-
       const response = await reserveFlash(id);
-     
 
-   
       setShowReservationModal(false);
       alert("Flash réservé avec succès !");
     } catch (err) {
@@ -232,17 +211,13 @@ export default function FlashDetail() {
     }
   };
 
- 
   const handleDelete = async () => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce Flash ?")) {
       return;
     }
 
     try {
-    
-
       await deleteFlash(id);
-  
 
       alert("Flash supprimé avec succès");
       navigate("/flash");
@@ -252,7 +227,6 @@ export default function FlashDetail() {
     }
   };
 
- 
   const handleAddComment = async () => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour commenter");
@@ -266,15 +240,12 @@ export default function FlashDetail() {
 
     try {
       setCommentLoading(true);
-    
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       await addCommentToFlash(id, newComment.trim());
 
       // Le flash sera mis à jour automatiquement via l'événement
       setNewComment("");
-
-     
     } catch (err) {
       console.error("❌ Erreur ajout commentaire:", err);
       alert("Erreur lors de l'ajout du commentaire");
@@ -283,7 +254,6 @@ export default function FlashDetail() {
     }
   };
 
-
   const handleLikeComment = async (commentId) => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour liker un commentaire");
@@ -291,18 +261,13 @@ export default function FlashDetail() {
     }
 
     try {
-     
-
       // Utiliser la fonction du contexte qui gère la synchronisation
       await likeCommentInFlash(id, commentId);
-
-  
     } catch (err) {
       console.error("❌ Erreur like commentaire:", err);
       alert("Erreur lors du like du commentaire");
     }
   };
-
 
   const handleAddReply = async (commentId) => {
     if (!currentUserId) {
@@ -317,21 +282,17 @@ export default function FlashDetail() {
     }
 
     try {
-     
-
       // Utiliser la fonction du contexte qui gère la synchronisation
       await addReplyToComment(id, commentId, replyText.trim());
 
       // Réinitialiser l'input de réponse
       setReplyInputs((prev) => ({ ...prev, [commentId]: "" }));
-
     } catch (err) {
       console.error("❌ Erreur ajout réponse:", err);
       alert("Erreur lors de l'ajout de la réponse");
     }
   };
 
-  
   const handleLikeReply = async (commentId, replyId) => {
     if (!currentUserId) {
       alert("Vous devez être connecté pour liker une réponse");
@@ -339,56 +300,43 @@ export default function FlashDetail() {
     }
 
     try {
-
-
       // Utiliser la fonction du contexte qui gère la synchronisation
       await likeReplyInFlash(id, commentId, replyId);
-
-
     } catch (err) {
       console.error("❌ Erreur like réponse:", err);
       alert("Erreur lors du like de la réponse");
     }
   };
 
-  
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")) {
+    if (
+      !window.confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")
+    ) {
       return;
     }
 
     try {
-
-
       // Utiliser la fonction du contexte qui gère la synchronisation
       await deleteCommentFromFlash(id, commentId);
-
-    
     } catch (err) {
       console.error("❌ Erreur suppression commentaire:", err);
       alert("Erreur lors de la suppression du commentaire");
     }
   };
 
- 
   const handleDeleteReply = async (commentId, replyId) => {
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette réponse ?")) {
       return;
     }
 
     try {
-
-
       // Utiliser la fonction du contexte qui gère la synchronisation
       await deleteReplyFromFlash(id, commentId, replyId);
-
-
     } catch (err) {
       console.error("❌ Erreur suppression réponse:", err);
       alert("Erreur lors de la suppression de la réponse");
     }
   };
-
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -407,7 +355,6 @@ export default function FlashDetail() {
     }
   };
 
-
   const formatDate = (dateString) => {
     if (!dateString) return "Date inconnue";
 
@@ -423,7 +370,6 @@ export default function FlashDetail() {
     }
   };
 
- 
   const formatCommentDate = (dateString) => {
     if (!dateString) return "Date inconnue";
 
@@ -449,7 +395,6 @@ export default function FlashDetail() {
     }
   };
 
-  
   const ProfileImage = ({ avatar, username, size = "w-12 h-12" }) => {
     const [imgError, setImgError] = useState(false);
 
@@ -483,7 +428,6 @@ export default function FlashDetail() {
     );
   };
 
-  
   const getDisplayStyle = () => {
     if (flash && flash.style === "autre" && flash.styleCustom) {
       return flash.styleCustom;
@@ -491,7 +435,6 @@ export default function FlashDetail() {
     return flash?.style;
   };
 
-  
   const CommentComponent = ({ comment }) => {
     const isOwner = comment.userId?._id === currentUserId;
     const hasLiked = comment.likes?.some(
@@ -620,7 +563,9 @@ export default function FlashDetail() {
                           </span>
                           {replyIsOwner && (
                             <button
-                              onClick={() => handleDeleteReply(comment._id, reply._id)}
+                              onClick={() =>
+                                handleDeleteReply(comment._id, reply._id)
+                              }
                               className="text-red-400 hover:text-red-300 text-xs"
                             >
                               <Trash2 size={10} />
@@ -955,7 +900,9 @@ export default function FlashDetail() {
                 </div>
                 <div>
                   <span className="text-gray-400">Commentaires</span>
-                  <p className="font-medium">{flash.commentaires?.length || 0}</p>
+                  <p className="font-medium">
+                    {flash.commentaires?.length || 0}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1011,7 +958,6 @@ export default function FlashDetail() {
           </div>
         </div>
 
-       
         {showComments && (
           <div className="mt-12 bg-gray-800 rounded-lg p-6">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -1056,7 +1002,7 @@ export default function FlashDetail() {
                 <MessageCircle size={48} className="mx-auto mb-4 opacity-50" />
                 <p className="mb-4">Connectez-vous pour commenter ce Flash</p>
                 <Link
-                  to="/login"
+                  to="/signin"
                   className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition-colors"
                 >
                   Se connecter
@@ -1072,9 +1018,14 @@ export default function FlashDetail() {
                 ))
               ) : (
                 <div className="text-center py-12 text-gray-400">
-                  <MessageCircle size={48} className="mx-auto mb-4 opacity-50" />
+                  <MessageCircle
+                    size={48}
+                    className="mx-auto mb-4 opacity-50"
+                  />
                   <p>Aucun commentaire pour le moment</p>
-                  <p className="text-sm">Soyez le premier à commenter ce Flash !</p>
+                  <p className="text-sm">
+                    Soyez le premier à commenter ce Flash !
+                  </p>
                 </div>
               )}
             </div>

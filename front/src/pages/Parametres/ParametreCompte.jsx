@@ -77,7 +77,7 @@ export default function ParametreCompte() {
   );
 
   const Section = ({ title, children }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-6">
+    <div className="rounded-lg shadow-md overflow-hidden mb-6">
       <div className="bg-gray-100 dark:bg-gray-700 py-3 px-4 font-bold text-gray-700 dark:text-gray-200">
         {title}
       </div>

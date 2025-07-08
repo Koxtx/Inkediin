@@ -12,7 +12,7 @@ import { SocketProvider } from "./components/providers/SocketProvider";
 
 function App() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-prim dark:text-white w-full">
+    <div className="min-h-screen flex flex-col bg-gray-100 text-black dark:bg-prim dark:text-white w-full">
       <ThemeProvider>
         <AuthProvider>
           <SocketProvider>

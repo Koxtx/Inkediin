@@ -5,7 +5,7 @@ import Post from "./components/Post";
 import FlashCard from "./components/FlashCard";
 import { FlashContext } from "../../context/FlashContext";
 import { PublicationContext } from "../../context/PublicationContext";
-import { AuthContext } from "../../context/AuthContext"; 
+import { AuthContext } from "../../context/AuthContext";
 
 export default function Feed() {
   const [activeTab, setActiveTab] = useState("publication");
@@ -14,17 +14,13 @@ export default function Feed() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  
   const authContext = useContext(AuthContext);
   const { user } = authContext || {};
 
-  
-  const isTatoueur = user?.userType === 'tatoueur';
+  const isTatoueur = user?.userType === "tatoueur";
 
-  
   const flashContext = useContext(FlashContext);
   const publicationContext = useContext(PublicationContext);
-
 
   const {
     followedFlashes = [],
@@ -40,7 +36,6 @@ export default function Feed() {
     clearError: clearFlashError,
   } = flashContext || {};
 
-  
   const {
     followedPosts = [],
     recommendedPosts = [],
@@ -59,12 +54,9 @@ export default function Feed() {
     currentUserId: postCurrentUserId = null,
   } = publicationContext || {};
 
-  e
-  const currentUserId = flashCurrentUserId || postCurrentUserId || user?._id || user?.id;
+  const currentUserId =
+    flashCurrentUserId || postCurrentUserId || user?._id || user?.id;
 
- 
-
- 
   useEffect(() => {
     if (location.state?.message) {
       showNotification(location.state.message, "success");
@@ -72,7 +64,6 @@ export default function Feed() {
     }
   }, [location.state]);
 
- 
   const showNotification = (message, type = "info") => {
     const notification = document.createElement("div");
     const bgColor =
@@ -96,7 +87,6 @@ export default function Feed() {
     }, 3000);
   };
 
-  
   const formatDate = (dateString) => {
     if (!dateString) return "Date inconnue";
 
@@ -129,7 +119,6 @@ export default function Feed() {
     }
   };
 
-  
   const hasUserLiked = (likes, userId) => {
     if (!likes || !Array.isArray(likes) || !userId) {
       return false;
@@ -149,7 +138,6 @@ export default function Feed() {
     });
   };
 
-  
   const isUserOwner = (post, userId) => {
     if (!userId || !post?.idTatoueur) return false;
 
@@ -160,25 +148,28 @@ export default function Feed() {
     return isOwner;
   };
 
- 
   const adaptComments = (commentaires) => {
     if (!commentaires || !Array.isArray(commentaires)) return [];
 
     return commentaires.map((comment) => {
-      const adaptedReplies = comment.replies ? comment.replies.map((reply) => ({
-        id: reply._id || reply.id,
-        username: reply.userId?.nom || reply.username || "Utilisateur",
-        userAvatar: reply.userId?.photoProfil || reply.userId?.avatar || null,
-        text: reply.contenu || reply.text || "",
-        time: formatDate(reply.dateReponse || reply.createdAt),
-        likes: reply.likes || [],
-        isLiked: hasUserLiked(reply.likes, currentUserId),
-      })) : [];
+      const adaptedReplies = comment.replies
+        ? comment.replies.map((reply) => ({
+            id: reply._id || reply.id,
+            username: reply.userId?.nom || reply.username || "Utilisateur",
+            userAvatar:
+              reply.userId?.photoProfil || reply.userId?.avatar || null,
+            text: reply.contenu || reply.text || "",
+            time: formatDate(reply.dateReponse || reply.createdAt),
+            likes: reply.likes || [],
+            isLiked: hasUserLiked(reply.likes, currentUserId),
+          }))
+        : [];
 
       return {
         id: comment._id || comment.id,
         username: comment.userId?.nom || comment.username || "Utilisateur",
-        userAvatar: comment.userId?.photoProfil || comment.userId?.avatar || null,
+        userAvatar:
+          comment.userId?.photoProfil || comment.userId?.avatar || null,
         text: comment.contenu || comment.text || "",
         time: formatDate(comment.dateCommentaire || comment.createdAt),
         likes: comment.likes || [],
@@ -188,15 +179,13 @@ export default function Feed() {
     });
   };
 
-  
   const isPostSaved = (postId) => {
     if (!savedPosts || !Array.isArray(savedPosts)) return false;
-    return savedPosts.some(savedPost => 
-      (savedPost._id || savedPost.id) === postId
+    return savedPosts.some(
+      (savedPost) => (savedPost._id || savedPost.id) === postId
     );
   };
 
- 
   const adaptPostData = (post) => {
     const likesCount = post.likesCount || post.likes?.length || 0;
     const isLiked = hasUserLiked(post.likes, currentUserId);
@@ -206,7 +195,8 @@ export default function Feed() {
     return {
       id: post._id || post.id,
       username: post.idTatoueur?.nom || post.username || "Utilisateur",
-      userAvatar: post.idTatoueur?.photoProfil || post.idTatoueur?.avatar || null,
+      userAvatar:
+        post.idTatoueur?.photoProfil || post.idTatoueur?.avatar || null,
       time: formatDate(post.datePublication || post.createdAt),
       likes: likesCount,
       caption: post.contenu || "",
@@ -221,7 +211,6 @@ export default function Feed() {
     };
   };
 
- 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -250,10 +239,12 @@ export default function Feed() {
     }
   };
 
-  
   const handleCreateContent = () => {
     if (!isTatoueur) {
-      showNotification("Cette fonctionnalité est réservée aux tatoueurs", "error");
+      showNotification(
+        "Cette fonctionnalité est réservée aux tatoueurs",
+        "error"
+      );
       return;
     }
 
@@ -264,14 +255,16 @@ export default function Feed() {
     }
   };
 
-
   const handleLoadMore = async (type) => {
     try {
       if (activeTab === "publication") {
         if (loadMorePosts) {
-          const currentPage = Math.ceil(
-            (type === "followed" ? followedPosts.length : recommendedPosts.length) / 10
-          ) + 1;
+          const currentPage =
+            Math.ceil(
+              (type === "followed"
+                ? followedPosts.length
+                : recommendedPosts.length) / 10
+            ) + 1;
           await loadMorePosts(type, currentPage);
         }
       } else {
@@ -285,7 +278,6 @@ export default function Feed() {
     }
   };
 
-  
   const handleLikeFlash = async (flashId) => {
     if (!toggleLikeFlash) {
       showNotification("Fonctionnalité non disponible", "error");
@@ -293,16 +285,13 @@ export default function Feed() {
     }
 
     try {
-      
       await toggleLikeFlash(flashId);
-     
     } catch (error) {
-      console.error('❌ Feed - Erreur like flash:', error);
+      console.error("❌ Feed - Erreur like flash:", error);
       showNotification("Erreur lors du like", "error");
     }
   };
 
- 
   const handleSaveFlash = async (flash) => {
     if (!toggleSaveFlash) {
       showNotification("Fonctionnalité non disponible", "error");
@@ -310,15 +299,12 @@ export default function Feed() {
     }
 
     try {
-      
       await toggleSaveFlash(flash);
-    
     } catch (error) {
-      console.error('❌ Feed - Erreur save flash:', error);
+      console.error("❌ Feed - Erreur save flash:", error);
       showNotification("Erreur lors de la sauvegarde", "error");
     }
   };
-
 
   const handleLikePost = async (postId) => {
     if (!toggleLikePost) {
@@ -327,15 +313,12 @@ export default function Feed() {
     }
 
     try {
-     
       await toggleLikePost(postId);
-     
     } catch (error) {
-      console.error('❌ Feed - Erreur like post:', error);
+      console.error("❌ Feed - Erreur like post:", error);
       showNotification("Erreur lors du like", "error");
     }
   };
-
 
   const handleSavePost = async (post) => {
     if (!toggleSavePost) {
@@ -344,95 +327,84 @@ export default function Feed() {
     }
 
     try {
-      
       await toggleSavePost(post);
       showNotification("Publication sauvegardée", "success");
     } catch (error) {
-      console.error('❌ Feed - Erreur save post:', error);
+      console.error("❌ Feed - Erreur save post:", error);
       showNotification("Erreur lors de la sauvegarde", "error");
     }
   };
 
-  
   const handleLikeComment = async (postId, commentId) => {
     if (!toggleLikeComment) {
-      console.error('❌ toggleLikeComment non disponible dans le contexte');
+      console.error("❌ toggleLikeComment non disponible dans le contexte");
       showNotification("Fonctionnalité non disponible", "error");
       return;
     }
 
     try {
-     
       await toggleLikeComment(postId, commentId);
-      
     } catch (error) {
-      console.error('❌ Feed - Erreur like commentaire:', error);
+      console.error("❌ Feed - Erreur like commentaire:", error);
       showNotification("Erreur lors du like du commentaire", "error");
     }
   };
 
- 
   const handleLikeReply = async (postId, commentId, replyId) => {
     if (!toggleLikeReply) {
-      console.error('❌ toggleLikeReply non disponible dans le contexte');
+      console.error("❌ toggleLikeReply non disponible dans le contexte");
       showNotification("Fonctionnalité non disponible", "error");
       return;
     }
 
     try {
-     
       await toggleLikeReply(postId, commentId, replyId);
       showNotification("Réponse likée", "success");
     } catch (error) {
-      console.error('❌ Feed - Erreur like réponse:', error);
+      console.error("❌ Feed - Erreur like réponse:", error);
       showNotification("Erreur lors du like de la réponse", "error");
     }
   };
 
-  
   const handleAddComment = async (postId, commentData) => {
     if (!addComment) {
-      console.error('❌ addComment non disponible dans le contexte');
+      console.error("❌ addComment non disponible dans le contexte");
       showNotification("Fonctionnalité non disponible", "error");
       return;
     }
 
     try {
-      
       await addComment(postId, commentData);
-     
     } catch (error) {
-      console.error('❌ Feed - Erreur ajout commentaire:', error);
+      console.error("❌ Feed - Erreur ajout commentaire:", error);
       showNotification("Erreur lors de l'ajout du commentaire", "error");
     }
   };
 
- 
   const handleAddReply = async (postId, commentId, replyData) => {
     if (!addReplyToComment) {
-      console.error('❌ addReplyToComment non disponible dans le contexte');
+      console.error("❌ addReplyToComment non disponible dans le contexte");
       showNotification("Fonctionnalité non disponible", "error");
       return;
     }
 
     try {
-      
       await addReplyToComment(postId, commentId, replyData);
       showNotification("Réponse ajoutée", "success");
     } catch (error) {
-      console.error('❌ Feed - Erreur ajout réponse:', error);
+      console.error("❌ Feed - Erreur ajout réponse:", error);
       showNotification("Erreur lors de l'ajout de la réponse", "error");
     }
   };
 
-  
-  const currentLoading = activeTab === "publication" ? postLoading : flashLoading;
+  const currentLoading =
+    activeTab === "publication" ? postLoading : flashLoading;
   const currentError = activeTab === "publication" ? postError : flashError;
-  const currentContent = activeTab === "publication" 
-    ? { followed: followedPosts, recommended: recommendedPosts }
-    : { followed: followedFlashes, recommended: recommendedFlashes };
+  const currentContent =
+    activeTab === "publication"
+      ? { followed: followedPosts, recommended: recommendedPosts }
+      : { followed: followedFlashes, recommended: recommendedFlashes };
 
-  
   if (!flashContext || !publicationContext) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -440,14 +412,14 @@ export default function Feed() {
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-red-500 border-t-transparent mx-auto mb-4"></div>
           <p className="text-gray-400">Chargement des contextes...</p>
           <p className="text-gray-500 text-sm mt-2">
-            Flash: {flashContext ? "✅" : "❌"} | Publication: {publicationContext ? "✅" : "❌"}
+            Flash: {flashContext ? "✅" : "❌"} | Publication:{" "}
+            {publicationContext ? "✅" : "❌"}
           </p>
         </div>
       </div>
     );
   }
 
- 
   const ErrorMessage = ({ error, onRetry }) => (
     <div className="flex flex-col items-center justify-center py-8 px-4">
       <AlertCircle className="text-red-500 mb-4" size={48} />
@@ -461,14 +433,12 @@ export default function Feed() {
     </div>
   );
 
-  
   const LoadingSpinner = () => (
     <div className="flex justify-center items-center py-8">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-500"></div>
     </div>
   );
 
-  
   const LoadMoreButton = ({ type, loading = false }) => (
     <div className="flex justify-center py-4">
       <button
@@ -489,10 +459,10 @@ export default function Feed() {
   );
 
   return (
-    <div className="min-h-screen pb-16 bg-black text-white">
+    <div className="min-h-screen pb-16 ">
       <div className="max-w-md md:max-w-lg lg:max-w-xl mx-auto">
         {/* Header avec boutons de création et rafraîchissement */}
-        <div className="sticky top-0 bg-black/90 backdrop-blur-sm z-10 border-b border-gray-700">
+        <div className="sticky top-0  backdrop-blur-sm z-10 border-b border-gray-400 dark:border-gray-700">
           <div className="flex items-center justify-between p-4">
             <h1 className="text-xl font-bold">Feed</h1>
             <div className="flex items-center gap-2">
@@ -507,7 +477,7 @@ export default function Feed() {
                   className={isRefreshing ? "animate-spin" : ""}
                 />
               </button>
-           
+
               {isTatoueur && (
                 <button
                   onClick={handleCreateContent}
@@ -581,10 +551,18 @@ export default function Feed() {
                       {...adaptedPost}
                       onLike={() => handleLikePost(adaptedPost.id)}
                       onSave={() => handleSavePost(post)}
-                      onLikeComment={(commentId) => handleLikeComment(adaptedPost.id, commentId)}
-                      onLikeReply={(commentId, replyId) => handleLikeReply(adaptedPost.id, commentId, replyId)}
-                      onAddComment={(commentData) => handleAddComment(adaptedPost.id, commentData)}
-                      onAddReply={(commentId, replyData) => handleAddReply(adaptedPost.id, commentId, replyData)}
+                      onLikeComment={(commentId) =>
+                        handleLikeComment(adaptedPost.id, commentId)
+                      }
+                      onLikeReply={(commentId, replyId) =>
+                        handleLikeReply(adaptedPost.id, commentId, replyId)
+                      }
+                      onAddComment={(commentData) =>
+                        handleAddComment(adaptedPost.id, commentData)
+                      }
+                      onAddReply={(commentId, replyData) =>
+                        handleAddReply(adaptedPost.id, commentId, replyData)
+                      }
                     />
                   );
                 })}
@@ -603,7 +581,7 @@ export default function Feed() {
                     onSave={() => handleSaveFlash(flash)}
                   />
                 ))}
-                {(currentContent.followed.length >= 10 && flashHasMore) && (
+                {currentContent.followed.length >= 10 && flashHasMore && (
                   <LoadMoreButton type="followed" loading={currentLoading} />
                 )}
               </div>
@@ -630,10 +608,18 @@ export default function Feed() {
                       {...adaptedPost}
                       onLike={() => handleLikePost(adaptedPost.id)}
                       onSave={() => handleSavePost(post)}
-                      onLikeComment={(commentId) => handleLikeComment(adaptedPost.id, commentId)}
-                      onLikeReply={(commentId, replyId) => handleLikeReply(adaptedPost.id, commentId, replyId)}
-                      onAddComment={(commentData) => handleAddComment(adaptedPost.id, commentData)}
-                      onAddReply={(commentId, replyData) => handleAddReply(adaptedPost.id, commentId, replyData)}
+                      onLikeComment={(commentId) =>
+                        handleLikeComment(adaptedPost.id, commentId)
+                      }
+                      onLikeReply={(commentId, replyId) =>
+                        handleLikeReply(adaptedPost.id, commentId, replyId)
+                      }
+                      onAddComment={(commentData) =>
+                        handleAddComment(adaptedPost.id, commentData)
+                      }
+                      onAddReply={(commentId, replyData) =>
+                        handleAddReply(adaptedPost.id, commentId, replyData)
+                      }
                     />
                   );
                 })}
@@ -652,7 +638,7 @@ export default function Feed() {
                     onSave={() => handleSaveFlash(flash)}
                   />
                 ))}
-                {(currentContent.recommended.length >= 10 && flashHasMore) && (
+                {currentContent.recommended.length >= 10 && flashHasMore && (
                   <LoadMoreButton type="recommended" loading={currentLoading} />
                 )}
               </div>
@@ -676,7 +662,7 @@ export default function Feed() {
                   ? "Suivez des tatoueurs pour voir leurs publications ici"
                   : "Suivez des tatoueurs pour voir leurs flashs ici"}
               </p>
-             
+
               {isTatoueur && (
                 <button
                   onClick={handleCreateContent}
@@ -687,7 +673,7 @@ export default function Feed() {
                     : "Créer votre premier flash"}
                 </button>
               )}
-              
+
               {!isTatoueur && (
                 <p className="text-gray-600 text-sm italic">
                   Seuls les tatoueurs peuvent créer du contenu

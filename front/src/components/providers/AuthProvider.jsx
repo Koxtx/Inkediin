@@ -322,7 +322,7 @@ export default function AuthProvider({ children }) {
 
     checkIsFirstLogin,
     validateUserData,
-    debugUser,
+   
     getUserInfo,
     isProfileComplete,
     getUserAvatar,

@@ -41,7 +41,7 @@ const router = require("express").Router();
 
 // ===== ROUTES D'AUTHENTIFICATION =====
 router.post("/", signup);
-router.post("/login", signin);
+router.post("/sigin", signin);
 router.post("/forgotPassword", forgotMyPassword);
 router.post("/resetPassword", resetPassword);
 router.post("/changePassword", auth, changePassword);

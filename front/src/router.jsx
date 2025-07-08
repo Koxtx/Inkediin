@@ -36,8 +36,6 @@ import PublicationUploadPage from "./pages/Feed/PublicationUploadPage";
 import FlashEdit from "./pages/flash/FlashEdit";
 import FlashManagementPage from "./pages/Profil/components/FlashManagement";
 import ModifierProfil from "./pages/Parametres/components/ModifierProfil";
-
-// ✅ AJOUT: Import du composant PostDetail
 import PostDetail from "./pages/Feed/PostDetail";
 
 export const router = createBrowserRouter([
@@ -54,6 +52,7 @@ export const router = createBrowserRouter([
           </UserNotConnected>
         ),
       },
+      
       {
         path: "/signin",
         element: (
@@ -78,7 +77,7 @@ export const router = createBrowserRouter([
           </UserNotConnected>
         ),
       },
-      // Route protégée pour le setup de profil
+    
       {
         path: "/setupprofil",
         element: (
@@ -87,7 +86,7 @@ export const router = createBrowserRouter([
           </ProtectedSetupRoute>
         ),
       },
-      // Toutes les autres routes nécessitent un profil complet
+
       {
         path: "/tatoueur",
         element: (
@@ -233,7 +232,7 @@ export const router = createBrowserRouter([
           </UserConnected>
         ),
       },
-      // ✅ ROUTE EXISTANTE: FlashDetail avec paramètre ID (déjà corrigée)
+   
       {
         path: "/flashdetail/:id",
         element: (
@@ -298,7 +297,7 @@ export const router = createBrowserRouter([
           </UserConnected>
         ),
       },
-      // ✅ AJOUT: Nouvelle route pour le détail de post
+
       {
         path: "/post/:id",
         element: (

@@ -21,7 +21,6 @@ const createTokenEmail = (email) => {
 };
 
 const signup = async (req, res) => {
-  
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -60,7 +59,7 @@ const verifyMail = async (req, res) => {
     await newUser.save();
     await TempUser.deleteOne({ email: tempUser.email });
     await sendValidationAccount(tempUser.email);
-    res.redirect(`${process.env.CLIENT_URL}/login?message=success`);
+    res.redirect(`${process.env.CLIENT_URL}/sigin?message=success`);
   } catch (error) {
     if (
       error.name === "TokenExpiredError" ||
@@ -94,8 +93,6 @@ const signin = async (req, res) => {
         algorithm: "HS256",
       });
 
-     
-
       res.cookie("token", token, {
         httpOnly: false,
         secure: process.env.NODE_ENV === "production",
@@ -103,8 +100,6 @@ const signin = async (req, res) => {
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/",
       });
-
-    
 
       res.status(200).json({
         ...userWithoutPassword,
@@ -120,8 +115,6 @@ const signin = async (req, res) => {
 };
 
 const updateUser = async (req, res) => {
- 
-
   try {
     const {
       email,
@@ -145,11 +138,9 @@ const updateUser = async (req, res) => {
       followers,
     };
 
-   
     if (req.avatarUrl) {
       updateData.photoProfil = req.avatarUrl;
       updateData.cloudinaryAvatarId = req.avatarPublicId;
-     
     }
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, {
@@ -166,8 +157,6 @@ const updateUser = async (req, res) => {
 
 // ✅ NOUVEAU: Méthode spécifique pour l'avatar avec Cloudinary
 const updateAvatar = async (req, res) => {
-
-
   try {
     if (!req.avatarUrl) {
       return res.status(400).json({ message: "Aucun fichier d'avatar fourni" });
@@ -182,8 +171,6 @@ const updateAvatar = async (req, res) => {
       new: true,
       runValidators: true,
     });
-
-    
 
     const { password: _, ...userWithoutPassword } = updatedUser.toObject();
     res.status(200).json(userWithoutPassword);
@@ -204,8 +191,6 @@ const currentUser = async (req, res) => {
 };
 
 const logoutUser = async (req, res) => {
- 
-
   res.clearCookie("token", {
     httpOnly: false,
     secure: process.env.NODE_ENV === "production",
@@ -213,23 +198,18 @@ const logoutUser = async (req, res) => {
     path: "/",
   });
 
-  
   res.status(200).json({ message: "Déconnexion réussie" });
 };
 
 const forgotMyPassword = async (req, res) => {
- 
   const { email } = req.body;
   try {
     const user = await User.findOne({ email });
-    
 
     if (user) {
       const token = createTokenEmail(email);
-      
 
       await sendForgotPasswordEmail(email, token);
-      
 
       const updateResult = await User.updateOne(
         { email },
@@ -237,32 +217,21 @@ const forgotMyPassword = async (req, res) => {
           resetToken: token,
         }
       );
-     
 
       const updatedUser = await User.findOne({ email });
-    
     }
     res.json({ message: "Si un compte est associé, vous recevrez un mail" });
-  } catch (error) {
-    
-  }
+  } catch (error) {}
 };
 
 const resetPassword = async (req, res) => {
- 
-
   const { password, token } = req.body;
   try {
-    
-
     let decodedToken = jsonwebtoken.verify(token, process.env.SECRET_KEY);
-    
 
     const user = await User.findOne({ resetToken: token });
-    
 
     if (!user) {
-     
       return res
         .status(400)
         .json({ message: "Token invalide ou utilisateur introuvable" });
@@ -273,8 +242,6 @@ const resetPassword = async (req, res) => {
     user.password = hashedPassword;
     user.resetToken = null;
     await user.save();
-
- 
 
     await validateNewPassword(user.email);
 
@@ -315,8 +282,6 @@ const changePassword = async (req, res) => {
 };
 
 const completeProfile = async (req, res) => {
-
-
   try {
     const { userType, nom, localisation, bio, styles, portfolio } = req.body;
 
@@ -339,11 +304,9 @@ const completeProfile = async (req, res) => {
       isProfileCompleted: true,
     };
 
-   
     if (req.avatarUrl) {
       updateData.photoProfil = req.avatarUrl;
       updateData.cloudinaryAvatarId = req.avatarPublicId;
-   
     }
 
     if (userType === "tatoueur") {
@@ -423,7 +386,6 @@ const getUserById = async (req, res) => {
   }
 };
 
-
 const deleteUser = async (req, res) => {
   try {
     const user = req.user;
@@ -456,8 +418,6 @@ const followUser = async (req, res) => {
   try {
     const { id: targetUserId } = req.params;
     const currentUserId = req.user._id;
-
-   
 
     // Vérifier qu'on ne suit pas soi-même
     if (currentUserId.toString() === targetUserId) {
@@ -500,8 +460,6 @@ const followUser = async (req, res) => {
       ? updatedTargetUser.tatoueursSuivis.length
       : 0;
 
-    
-
     res.status(200).json({
       message: `Vous suivez maintenant ${targetUser.nom}`,
       isFollowing: true,
@@ -513,13 +471,10 @@ const followUser = async (req, res) => {
   }
 };
 
-
 const unfollowUser = async (req, res) => {
   try {
     const { id: targetUserId } = req.params;
     const currentUserId = req.user._id;
-
-  
 
     // Vérifier que l'utilisateur cible existe
     const targetUser = await User.findById(targetUserId);
@@ -559,8 +514,6 @@ const unfollowUser = async (req, res) => {
       ? updatedTargetUser.tatoueursSuivis.length
       : 0;
 
-    
-
     res.status(200).json({
       message: `Vous ne suivez plus ${targetUser.nom}`,
       isFollowing: false,
@@ -572,13 +525,11 @@ const unfollowUser = async (req, res) => {
   }
 };
 
-
 const checkIfFollowing = async (req, res) => {
   try {
     const { id: targetUserId } = req.params;
     const currentUserId = req.user._id;
 
-    
     const currentUser = await User.findById(currentUserId);
     const targetUser = await User.findById(targetUserId);
 
@@ -606,12 +557,9 @@ const checkIfFollowing = async (req, res) => {
   }
 };
 
-
 const getFollowing = async (req, res) => {
   try {
     const currentUserId = req.user._id;
-
-    
 
     const currentUser = await User.findById(currentUserId)
       .populate(
@@ -630,8 +578,6 @@ const getFollowing = async (req, res) => {
 
     const following = currentUser.following || [];
 
-    
-
     res.status(200).json({
       following,
       count: following.length,
@@ -646,13 +592,10 @@ const getFollowing = async (req, res) => {
   }
 };
 
-
 const getFollowers = async (req, res) => {
   try {
     const { id: targetUserId } = req.params;
     const userId = targetUserId || req.user._id;
-
-    
 
     const user = await User.findById(userId)
       .populate(
@@ -671,7 +614,6 @@ const getFollowers = async (req, res) => {
 
     const followers = user.tatoueursSuivis || [];
 
-    
     res.status(200).json({
       followers,
       count: followers.length,
@@ -690,8 +632,6 @@ const getSuggestedTattooers = async (req, res) => {
   try {
     const currentUserId = req.user._id;
     const { limit = 10, location, styles } = req.query;
-
-    
 
     // Récupérer l'utilisateur actuel pour voir qui il suit déjà
     const currentUser = await User.findById(currentUserId);
@@ -748,8 +688,6 @@ const getSuggestedTattooers = async (req, res) => {
       };
     });
 
-  
-
     res.status(200).json({
       suggestions: enrichedTattooers,
       count: enrichedTattooers.length,
@@ -764,7 +702,6 @@ const getSuggestedTattooers = async (req, res) => {
     });
   }
 };
-
 
 const getMatchReason = (
   tattooer,
@@ -832,49 +769,49 @@ const getSavedPosts = async (req, res) => {
     const userId = req.user._id;
     const { page = 1, limit = 10 } = req.query;
 
-   
-
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         message: "Utilisateur introuvable",
         savedPosts: [],
-        count: 0
+        count: 0,
       });
     }
 
-   
     const savedPostIds = user.savedPosts || [];
     let savedPosts = [];
 
     if (savedPostIds.length > 0) {
       // Assumant que vous avez un modèle Feed/Post
       try {
-        const Feed = require('../models/feed.model'); // Ajustez selon votre structure
-        
+        const Feed = require("../models/feed.model"); // Ajustez selon votre structure
+
         // Pagination manuelle
         const startIndex = (parseInt(page) - 1) * parseInt(limit);
         const endIndex = startIndex + parseInt(limit);
         const paginatedIds = savedPostIds.slice(startIndex, endIndex);
-        
+
         savedPosts = await Feed.find({ _id: { $in: paginatedIds } })
-          .populate('user', 'nom photoProfil userType')
+          .populate("user", "nom photoProfil userType")
           .sort({ createdAt: -1 });
       } catch (err) {
-       
-        savedPosts = savedPostIds.slice(
-          (parseInt(page) - 1) * parseInt(limit),
-          parseInt(page) * parseInt(limit)
-        ).map(id => ({
-          _id: id,
-          title: "Post sauvegardé",
-          description: "Contenu sauvegardé",
-          user: { nom: "Utilisateur", photoProfil: null, userType: "tatoueur" }
-        }));
+        savedPosts = savedPostIds
+          .slice(
+            (parseInt(page) - 1) * parseInt(limit),
+            parseInt(page) * parseInt(limit)
+          )
+          .map((id) => ({
+            _id: id,
+            title: "Post sauvegardé",
+            description: "Contenu sauvegardé",
+            user: {
+              nom: "Utilisateur",
+              photoProfil: null,
+              userType: "tatoueur",
+            },
+          }));
       }
     }
-
-  
 
     res.status(200).json({
       savedPosts,
@@ -882,15 +819,14 @@ const getSavedPosts = async (req, res) => {
       totalSaved: savedPostIds.length,
       page: parseInt(page),
       limit: parseInt(limit),
-      hasMore: savedPosts.length === parseInt(limit)
+      hasMore: savedPosts.length === parseInt(limit),
     });
-
   } catch (error) {
-    console.error('❌ Erreur getSavedPosts:', error);
-    res.status(500).json({ 
+    console.error("❌ Erreur getSavedPosts:", error);
+    res.status(500).json({
       message: "Erreur lors de la récupération des posts sauvegardés",
       savedPosts: [],
-      count: 0
+      count: 0,
     });
   }
 };
@@ -901,49 +837,50 @@ const getSavedFlashs = async (req, res) => {
     const userId = req.user._id;
     const { page = 1, limit = 12 } = req.query;
 
-  
-
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         message: "Utilisateur introuvable",
         savedFlashs: [],
-        count: 0
+        count: 0,
       });
     }
 
-   
     const savedFlashIds = user.savedFlashs || [];
     let savedFlashs = [];
 
     if (savedFlashIds.length > 0) {
       try {
-        const Flash = require('../models/flash.model'); // Ajustez selon votre structure
-        
+        const Flash = require("../models/flash.model"); // Ajustez selon votre structure
+
         // Pagination manuelle
         const startIndex = (parseInt(page) - 1) * parseInt(limit);
         const endIndex = startIndex + parseInt(limit);
         const paginatedIds = savedFlashIds.slice(startIndex, endIndex);
-        
+
         savedFlashs = await Flash.find({ _id: { $in: paginatedIds } })
-          .populate('user', 'nom photoProfil userType localisation')
+          .populate("user", "nom photoProfil userType localisation")
           .sort({ createdAt: -1 });
       } catch (err) {
-       
-        savedFlashs = savedFlashIds.slice(
-          (parseInt(page) - 1) * parseInt(limit),
-          parseInt(page) * parseInt(limit)
-        ).map(id => ({
-          _id: id,
-          title: "Flash sauvegardé",
-          style: "Tatouage flash",
-          price: 100,
-          user: { nom: "Tatoueur", photoProfil: null, userType: "tatoueur", localisation: "France" }
-        }));
+        savedFlashs = savedFlashIds
+          .slice(
+            (parseInt(page) - 1) * parseInt(limit),
+            parseInt(page) * parseInt(limit)
+          )
+          .map((id) => ({
+            _id: id,
+            title: "Flash sauvegardé",
+            style: "Tatouage flash",
+            price: 100,
+            user: {
+              nom: "Tatoueur",
+              photoProfil: null,
+              userType: "tatoueur",
+              localisation: "France",
+            },
+          }));
       }
     }
-
-    
 
     res.status(200).json({
       savedFlashs,
@@ -951,15 +888,14 @@ const getSavedFlashs = async (req, res) => {
       totalSaved: savedFlashIds.length,
       page: parseInt(page),
       limit: parseInt(limit),
-      hasMore: savedFlashs.length === parseInt(limit)
+      hasMore: savedFlashs.length === parseInt(limit),
     });
-
   } catch (error) {
-    console.error('❌ Erreur getSavedFlashs:', error);
-    res.status(500).json({ 
+    console.error("❌ Erreur getSavedFlashs:", error);
+    res.status(500).json({
       message: "Erreur lors de la récupération des flashs sauvegardés",
       savedFlashs: [],
-      count: 0
+      count: 0,
     });
   }
 };
@@ -969,102 +905,83 @@ const getAllSavedContent = async (req, res) => {
     const { id: targetUserId } = req.params;
     const currentUserId = req.user?._id;
     const userId = targetUserId || currentUserId;
-    
-    const { type = 'all', page = 1, limit = 10 } = req.query;
 
-    
+    const { type = "all", page = 1, limit = 10 } = req.query;
 
-    
     const user = await User.findById(userId)
       .populate({
-        path: 'savedPosts',
+        path: "savedPosts",
         populate: {
-          path: 'idTatoueur',
-          select: 'nom photoProfil userType'
-        }
+          path: "idTatoueur",
+          select: "nom photoProfil userType",
+        },
       })
       .populate({
-        path: 'savedFlashs',
+        path: "savedFlashs",
         populate: {
-          path: 'idTatoueur',
-          select: 'nom photoProfil userType localisation'
-        }
+          path: "idTatoueur",
+          select: "nom photoProfil userType localisation",
+        },
       });
 
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         message: "Utilisateur introuvable",
         content: [],
-        count: 0
+        count: 0,
       });
     }
 
     let content = [];
 
-   
-
-   
-    if (type === 'all' || type === 'posts') {
+    if (type === "all" || type === "posts") {
       const savedPosts = user.savedPosts || [];
-      
-      
-      
+
       if (savedPosts.length > 0) {
-       
-        const postsWithType = savedPosts.map(post => ({
+        const postsWithType = savedPosts.map((post) => ({
           ...post.toObject(),
-          contentType: 'post',
+          contentType: "post",
           savedAt: post.createdAt || post.datePublication,
-          user: post.idTatoueur, 
-          title: post.contenu ? post.contenu.substring(0, 100) + '...' : 'Publication'
+          user: post.idTatoueur,
+          title: post.contenu
+            ? post.contenu.substring(0, 100) + "..."
+            : "Publication",
         }));
         content.push(...postsWithType);
-        
-   
       }
     }
 
-    
-    if (type === 'all' || type === 'flashs') {
+    if (type === "all" || type === "flashs") {
       const savedFlashs = user.savedFlashs || [];
-      
-      
-      
-      if (savedFlashs.length > 0) {
-    
 
-        const flashsWithType = savedFlashs.map(flash => ({
+      if (savedFlashs.length > 0) {
+        const flashsWithType = savedFlashs.map((flash) => ({
           ...flash.toObject(),
-          contentType: 'flash',
+          contentType: "flash",
           savedAt: flash.createdAt || flash.date,
-          user: flash.idTatoueur, 
-          price: flash.prix, 
-          title: flash.title || flash.description || 'Flash tatouage'
+          user: flash.idTatoueur,
+          price: flash.prix,
+          title: flash.title || flash.description || "Flash tatouage",
         }));
         content.push(...flashsWithType);
-        
-      
       }
     }
 
     // Trier par date de sauvegarde (plus récent en premier)
     content.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
-    
-
     // Pagination
     const startIndex = (parseInt(page) - 1) * parseInt(limit);
     const endIndex = startIndex + parseInt(limit);
     const paginatedContent = content.slice(startIndex, endIndex);
 
-    const isOwnContent = currentUserId && userId.toString() === currentUserId.toString();
-
-  
+    const isOwnContent =
+      currentUserId && userId.toString() === currentUserId.toString();
 
     res.status(200).json({
-      success: true, 
+      success: true,
       content: paginatedContent,
-      data: paginatedContent, 
+      data: paginatedContent,
       count: paginatedContent.length,
       totalSaved: content.length,
       isOwnContent,
@@ -1074,18 +991,17 @@ const getAllSavedContent = async (req, res) => {
       stats: {
         totalPosts: (user.savedPosts || []).length,
         totalFlashs: (user.savedFlashs || []).length,
-        total: (user.savedPosts || []).length + (user.savedFlashs || []).length
-      }
+        total: (user.savedPosts || []).length + (user.savedFlashs || []).length,
+      },
     });
-
   } catch (error) {
-    console.error('❌ Erreur getAllSavedContent:', error);
-    res.status(500).json({ 
-      success: false, 
+    console.error("❌ Erreur getAllSavedContent:", error);
+    res.status(500).json({
+      success: false,
       message: "Erreur lors de la récupération du contenu sauvegardé",
       content: [],
-      data: [], 
-      count: 0
+      data: [],
+      count: 0,
     });
   }
 };
@@ -1096,21 +1012,20 @@ const toggleSavePost = async (req, res) => {
     const userId = req.user._id;
     const { postId } = req.params;
 
-
-
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable" });
     }
 
-    
     let postExists = true;
     try {
-      const Feed = require('../models/feed.model');
+      const Feed = require("../models/feed.model");
       const post = await Feed.findById(postId);
       postExists = !!post;
     } catch (err) {
-      console.log('⚠️ Impossible de vérifier l\'existence du post, on continue...');
+      console.log(
+        "⚠️ Impossible de vérifier l'existence du post, on continue..."
+      );
     }
 
     if (!postExists) {
@@ -1121,17 +1036,14 @@ const toggleSavePost = async (req, res) => {
     const result = user.toggleSavePost(postId);
     await user.save();
 
-    
-
     res.status(200).json({
       message: result.saved ? "Post sauvegardé" : "Post retiré des sauvegardés",
       saved: result.saved,
       action: result.action,
-      totalSaved: user.savedPostsCount
+      totalSaved: user.savedPostsCount,
     });
-
   } catch (error) {
-    console.error('❌ Erreur toggleSavePost:', error);
+    console.error("❌ Erreur toggleSavePost:", error);
     res.status(500).json({ message: "Erreur lors de la sauvegarde du post" });
   }
 };
@@ -1142,21 +1054,20 @@ const toggleSaveFlash = async (req, res) => {
     const userId = req.user._id;
     const { flashId } = req.params;
 
-   
-
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable" });
     }
 
-    
     let flashExists = true;
     try {
-      const Flash = require('../models/flash.model');
+      const Flash = require("../models/flash.model");
       const flash = await Flash.findById(flashId);
       flashExists = !!flash;
     } catch (err) {
-      console.log('⚠️ Impossible de vérifier l\'existence du flash, on continue...');
+      console.log(
+        "⚠️ Impossible de vérifier l'existence du flash, on continue..."
+      );
     }
 
     if (!flashExists) {
@@ -1167,16 +1078,16 @@ const toggleSaveFlash = async (req, res) => {
     const result = user.toggleSaveFlash(flashId);
     await user.save();
 
-  
     res.status(200).json({
-      message: result.saved ? "Flash sauvegardé" : "Flash retiré des sauvegardés",
+      message: result.saved
+        ? "Flash sauvegardé"
+        : "Flash retiré des sauvegardés",
       saved: result.saved,
       action: result.action,
-      totalSaved: user.savedFlashsCount
+      totalSaved: user.savedFlashsCount,
     });
-
   } catch (error) {
-    console.error('❌ Erreur toggleSaveFlash:', error);
+    console.error("❌ Erreur toggleSaveFlash:", error);
     res.status(500).json({ message: "Erreur lors de la sauvegarde du flash" });
   }
 };
@@ -1196,11 +1107,10 @@ const checkPostSaved = async (req, res) => {
 
     res.status(200).json({
       saved: isSaved,
-      postId
+      postId,
     });
-
   } catch (error) {
-    console.error('❌ Erreur checkPostSaved:', error);
+    console.error("❌ Erreur checkPostSaved:", error);
     res.status(500).json({ saved: false });
   }
 };
@@ -1220,11 +1130,10 @@ const checkFlashSaved = async (req, res) => {
 
     res.status(200).json({
       saved: isSaved,
-      flashId
+      flashId,
     });
-
   } catch (error) {
-    console.error('❌ Erreur checkFlashSaved:', error);
+    console.error("❌ Erreur checkFlashSaved:", error);
     res.status(500).json({ saved: false });
   }
 };
@@ -1233,8 +1142,6 @@ const checkFlashSaved = async (req, res) => {
 const getUserPreferences = async (req, res) => {
   try {
     const userId = req.user._id;
-
-    
 
     const user = await User.findById(userId);
     if (!user) {
@@ -1258,8 +1165,6 @@ const getUserPreferences = async (req, res) => {
 
     const preferences = user.preferences || defaultPreferences;
 
-    
-
     res.status(200).json({
       preferences,
       hasCustomPreferences: !!user.preferences,
@@ -1276,8 +1181,6 @@ const updateUserPreferences = async (req, res) => {
   try {
     const userId = req.user._id;
     const newPreferences = req.body;
-
-    
 
     // Validation des préférences
     const allowedFields = [
@@ -1310,8 +1213,6 @@ const updateUserPreferences = async (req, res) => {
       return res.status(404).json({ message: "Utilisateur introuvable" });
     }
 
-    
-
     res.status(200).json({
       message: "Préférences mises à jour",
       preferences: user.preferences,
@@ -1330,8 +1231,6 @@ const markRecommendationInteraction = async (req, res) => {
   try {
     const userId = req.user._id;
     const { artistId, interactionType } = req.body;
-
-    
 
     // Validation des types d'interaction
     const validInteractions = ["view", "like", "follow", "contact", "dismiss"];
@@ -1369,8 +1268,6 @@ const markRecommendationInteraction = async (req, res) => {
 
     await user.save();
 
-   
-
     res.status(200).json({
       message: "Interaction enregistrée",
       interaction,
@@ -1384,7 +1281,6 @@ const markRecommendationInteraction = async (req, res) => {
 };
 
 module.exports = {
-
   signup,
   signin,
   updateUser,

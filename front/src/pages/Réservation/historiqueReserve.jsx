@@ -14,7 +14,7 @@ export default function HistoriqueReservations() {
       tattooStyle: "Réaliste",
       date: "23 avril 2025 à 14h30",
       location: "Studio InkMaster, 15 rue des Arts, Paris",
-      payment: "Acompte payé: 75€ / 250€",
+    
       actions: [
         { type: "secondary", text: "Modifier" },
         { type: "primary", text: "Contacter" }
@@ -29,7 +29,7 @@ export default function HistoriqueReservations() {
       tattooStyle: "Old School",
       date: "30 avril 2025 à 10h00",
       location: "InkVibes Tattoo, 7 avenue Victor Hugo, Lyon",
-      payment: "Devis: 180€ (acompte à payer: 50€)",
+     
       actions: [
         { type: "secondary", text: "Annuler" },
         { type: "primary", text: "Payer l'acompte" }
@@ -48,7 +48,7 @@ export default function HistoriqueReservations() {
       tattooStyle: "Géométrique",
       date: "12 mars 2025 à 11h00",
       location: "Geometrix Studio, 23 rue Saint-Martin, Paris",
-      payment: "Montant payé: 220€",
+     
       actions: [
         { type: "secondary", text: "Voir détails" },
         { type: "primary", text: "Laisser un avis" }
@@ -63,7 +63,7 @@ export default function HistoriqueReservations() {
       tattooStyle: "Tribal",
       date: "28 février 2025 à 15h00",
       location: "Tribal Ink, 5 boulevard Gambetta, Marseille",
-      payment: "Acompte remboursé: 100€",
+    
       actions: [
         { type: "secondary", text: "Voir détails" },
         { type: "primary", text: "Réserver à nouveau" }
@@ -78,7 +78,7 @@ export default function HistoriqueReservations() {
       tattooStyle: "Flash",
       date: "15 janvier 2025 à 16h30",
       location: "Studio InkMaster, 15 rue des Arts, Paris",
-      payment: "Montant payé: 80€",
+
       actions: [
         { type: "secondary", text: "Voir détails" },
         { type: "primary", text: "Laisser un avis" }

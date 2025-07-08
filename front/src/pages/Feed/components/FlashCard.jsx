@@ -30,7 +30,6 @@ import { Link } from "react-router-dom";
 import { FlashContext } from "../../../context/FlashContext";
 
 export default function FlashCard({
-  
   _id,
   id,
   idTatoueur,
@@ -52,11 +51,9 @@ export default function FlashCard({
   date,
   createdAt,
 
- 
   likesCount,
   commentsCount,
 
-  
   onLike,
   onSave,
   onUpdate,
@@ -68,7 +65,7 @@ export default function FlashCard({
     isFlashSaved,
     hasUserLiked,
     getLikesCount,
-   
+
     addCommentToFlash,
     likeCommentInFlash,
     addReplyToComment,
@@ -79,10 +76,8 @@ export default function FlashCard({
     updateFlashInCache,
   } = useContext(FlashContext);
 
- 
   const flashId = _id || id;
 
-  
   const [localFlash, setLocalFlash] = useState({
     _id: flashId,
     id: flashId,
@@ -112,22 +107,19 @@ export default function FlashCard({
   const [localIsSaved, setLocalIsSaved] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  
   const [showComments, setShowComments] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [commentLoading, setCommentLoading] = useState(false);
   const [replyInputs, setReplyInputs] = useState({});
   const [showReplies, setShowReplies] = useState({});
 
-
   useEffect(() => {
     const handleFlashUpdated = (event) => {
       const { flashId: updatedFlashId, updatedFlash } = event.detail;
-      
+
       if (updatedFlashId === flashId) {
-       
         setLocalFlash(updatedFlash);
-        
+
         // Mettre à jour les états locaux
         if (currentUserId) {
           setLocalIsLiked(hasUserLiked(updatedFlash));
@@ -136,14 +128,13 @@ export default function FlashCard({
       }
     };
 
-    window.addEventListener('flashUpdated', handleFlashUpdated);
-    
+    window.addEventListener("flashUpdated", handleFlashUpdated);
+
     return () => {
-      window.removeEventListener('flashUpdated', handleFlashUpdated);
+      window.removeEventListener("flashUpdated", handleFlashUpdated);
     };
   }, [flashId, hasUserLiked, isFlashSaved, currentUserId]);
 
-  
   useEffect(() => {
     // Vérifier d'abord le cache pour avoir les données les plus récentes
     const cachedFlash = getFlashFromCache(flashId);
@@ -161,15 +152,8 @@ export default function FlashCard({
       const userSaved = isFlashSaved(flashId);
       setLocalIsSaved(userSaved);
     }
-  }, [
-    currentUserId,
-    flashId,
-    hasUserLiked,
-    isFlashSaved,
-    getFlashFromCache,
-  ]);
+  }, [currentUserId, flashId, hasUserLiked, isFlashSaved, getFlashFromCache]);
 
- 
   const formatTime = (timeValue) => {
     if (!timeValue) return "?";
 
@@ -193,7 +177,6 @@ export default function FlashCard({
     }
   };
 
-  
   const formatCommentDate = (dateString) => {
     if (!dateString) return "Date inconnue";
 
@@ -219,7 +202,6 @@ export default function FlashCard({
     }
   };
 
-  
   const getDisplayStyle = () => {
     if (localFlash.style === "autre" && localFlash.styleCustom) {
       return localFlash.styleCustom;
@@ -227,7 +209,6 @@ export default function FlashCard({
     return localFlash.style;
   };
 
-  
   const ProfileImage = ({ avatar, username, size = "w-10 h-10" }) => {
     const [imgError, setImgError] = useState(false);
 
@@ -261,21 +242,20 @@ export default function FlashCard({
     );
   };
 
-  
   const handleLike = async () => {
     try {
       // Mise à jour optimiste
       const wasLiked = localIsLiked;
       setLocalIsLiked(!wasLiked);
-      
+
       // Mettre à jour le flash local
-      const updatedLikes = wasLiked 
+      const updatedLikes = wasLiked
         ? (localFlash.likesCount || localFlash.likes?.length || 0) - 1
         : (localFlash.likesCount || localFlash.likes?.length || 0) + 1;
-      
-      setLocalFlash(prev => ({
+
+      setLocalFlash((prev) => ({
         ...prev,
-        likesCount: updatedLikes
+        likesCount: updatedLikes,
       }));
 
       // Appel API via le contexte (qui gère la synchronisation)
@@ -283,15 +263,14 @@ export default function FlashCard({
     } catch (error) {
       // Rollback en cas d'erreur
       setLocalIsLiked(localIsLiked);
-      setLocalFlash(prev => ({
+      setLocalFlash((prev) => ({
         ...prev,
-        likesCount: localFlash.likesCount || localFlash.likes?.length || 0
+        likesCount: localFlash.likesCount || localFlash.likes?.length || 0,
       }));
       console.error("Erreur like Flash:", error);
     }
   };
 
-  
   const handleSave = async () => {
     try {
       // Mise à jour optimiste
@@ -305,8 +284,6 @@ export default function FlashCard({
       console.error("Erreur save Flash:", error);
     }
   };
-
-  
 
   // Ajouter un commentaire
   const handleAddComment = async () => {
@@ -322,15 +299,12 @@ export default function FlashCard({
 
     try {
       setCommentLoading(true);
-      
 
       // Utiliser la fonction du contexte qui gère la synchronisation
       const updatedFlash = await addCommentToFlash(flashId, newComment.trim());
-      
+
       // Le flash local sera mis à jour automatiquement via l'événement
       setNewComment("");
-
-      
     } catch (err) {
       console.error("❌ Erreur ajout commentaire:", err);
       alert("Erreur lors de l'ajout du commentaire");
@@ -347,12 +321,8 @@ export default function FlashCard({
     }
 
     try {
-     
-      
       // Utiliser la fonction du contexte qui gère la synchronisation
       await likeCommentInFlash(flashId, commentId);
-      
-      
     } catch (err) {
       console.error("❌ Erreur like commentaire:", err);
       alert("Erreur lors du like du commentaire");
@@ -373,15 +343,11 @@ export default function FlashCard({
     }
 
     try {
-      
-      
       // Utiliser la fonction du contexte qui gère la synchronisation
       await addReplyToComment(flashId, commentId, replyText.trim());
 
       // Réinitialiser l'input de réponse
       setReplyInputs((prev) => ({ ...prev, [commentId]: "" }));
-
-      
     } catch (err) {
       console.error("❌ Erreur ajout réponse:", err);
       alert("Erreur lors de l'ajout de la réponse");
@@ -396,12 +362,8 @@ export default function FlashCard({
     }
 
     try {
-      
-      
       // Utiliser la fonction du contexte qui gère la synchronisation
       await likeReplyInFlash(flashId, commentId, replyId);
-      
-      
     } catch (err) {
       console.error("❌ Erreur like réponse:", err);
       alert("Erreur lors du like de la réponse");
@@ -410,17 +372,15 @@ export default function FlashCard({
 
   // Supprimer un commentaire
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")) {
+    if (
+      !window.confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")
+    ) {
       return;
     }
 
     try {
-   
-      
       // Utiliser la fonction du contexte qui gère la synchronisation
       await deleteCommentFromFlash(flashId, commentId);
-      
-      
     } catch (err) {
       console.error("❌ Erreur suppression commentaire:", err);
       alert("Erreur lors de la suppression du commentaire");
@@ -434,18 +394,13 @@ export default function FlashCard({
     }
 
     try {
-    
-      
       // Utiliser la fonction du contexte qui gère la synchronisation
       await deleteReplyFromFlash(flashId, commentId, replyId);
-      
-    
     } catch (err) {
       console.error("❌ Erreur suppression réponse:", err);
       alert("Erreur lors de la suppression de la réponse");
     }
   };
-
 
   const CommentComponent = ({ comment }) => {
     const isOwner = comment.userId?._id === currentUserId;
@@ -519,7 +474,8 @@ export default function FlashCard({
                   ) : (
                     <ChevronDown size={10} />
                   )}
-                  {comment.replies.length} réponse{comment.replies.length > 1 ? "s" : ""}
+                  {comment.replies.length} réponse
+                  {comment.replies.length > 1 ? "s" : ""}
                 </button>
               )}
             </div>
@@ -579,7 +535,9 @@ export default function FlashCard({
                           </span>
                           {replyIsOwner && (
                             <button
-                              onClick={() => handleDeleteReply(comment._id, reply._id)}
+                              onClick={() =>
+                                handleDeleteReply(comment._id, reply._id)
+                              }
                               className="text-red-400 hover:text-red-300 text-xs"
                             >
                               <Trash2 size={8} />
@@ -617,22 +575,20 @@ export default function FlashCard({
     );
   };
 
- 
   const tatoueurData = localFlash.idTatoueur || {};
   const tatoueurNom = tatoueurData.nom || localFlash.artist || "Artiste";
   const tatoueurAvatar = tatoueurData.photoProfil || tatoueurData.avatar;
   const tatoueurVille = tatoueurData.ville || tatoueurData.localisation;
 
   return (
-    <article className="mb-6 border-b border-gray-700 bg-gray-900">
-   
+    <article className="mb-6 border-b ">
       <div className="flex items-center p-4">
         <div className="mr-3">
           <ProfileImage avatar={tatoueurAvatar} username={tatoueurNom} />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <div className="font-bold text-white">{tatoueurNom}</div>
+            <div className="font-bold ">{tatoueurNom}</div>
             <span className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1">
               <Zap size={8} />
               FLASH
@@ -661,10 +617,8 @@ export default function FlashCard({
 
           {showMenu && (
             <div className="absolute right-0 top-8 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-10 min-w-48">
-              
               {tatoueurData._id === currentUserId ||
               tatoueurData.id === currentUserId ? (
-              
                 <>
                   <Link
                     to={`/flashedit/${flashId}`}
@@ -675,7 +629,6 @@ export default function FlashCard({
                   </Link>
                   <button
                     onClick={() => {
-                      
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-700 text-sm text-green-400 hover:text-green-300 flex items-center gap-3"
@@ -685,7 +638,6 @@ export default function FlashCard({
                   </button>
                   <button
                     onClick={() => {
-                      
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-700 text-sm text-purple-400 hover:text-purple-300 flex items-center gap-3"
@@ -695,12 +647,15 @@ export default function FlashCard({
                   </button>
                   <button
                     onClick={() => {
-                     
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-700 text-sm text-yellow-400 hover:text-yellow-300 flex items-center gap-3"
                   >
-                    {localFlash.disponible ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {localFlash.disponible ? (
+                      <EyeOff size={16} />
+                    ) : (
+                      <Eye size={16} />
+                    )}
                     {localFlash.disponible ? "Masquer" : "Rendre visible"}
                   </button>
                   <hr className="border-gray-600 my-1" />
@@ -722,7 +677,6 @@ export default function FlashCard({
                   </button>
                 </>
               ) : (
-             
                 <>
                   <Link
                     to={`/profil/${tatoueurData._id || tatoueurData.id}`}
@@ -755,7 +709,6 @@ export default function FlashCard({
                   </button>
                   <button
                     onClick={() => {
-                     
                       setShowMenu(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-gray-700 text-sm text-blue-400 hover:text-blue-300 flex items-center gap-3"
@@ -767,7 +720,6 @@ export default function FlashCard({
                   <button
                     onClick={() => {
                       if (window.confirm("Signaler ce contenu ?")) {
-                     
                         alert("Contenu signalé. Merci !");
                       }
                       setShowMenu(false);
@@ -784,7 +736,6 @@ export default function FlashCard({
         </div>
       </div>
 
-   
       <div className="w-full aspect-square bg-gray-700 relative overflow-hidden">
         {localFlash.image ? (
           <img
@@ -803,7 +754,6 @@ export default function FlashCard({
           </div>
         )}
 
-     
         <div className="absolute top-3 left-3">
           <div className="bg-green-500 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg">
             {localFlash.prix?.toFixed(2) || "0.00"}€
@@ -830,7 +780,6 @@ export default function FlashCard({
           )}
         </div>
 
-       
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
           <div className="flex items-center gap-1 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs">
             <Eye size={10} />
@@ -838,7 +787,6 @@ export default function FlashCard({
           </div>
         </div>
 
-        
         {(getDisplayStyle() || localFlash.taille) && (
           <div className="absolute bottom-3 left-3 flex items-center gap-2">
             {getDisplayStyle() && (
@@ -848,14 +796,17 @@ export default function FlashCard({
             )}
             {localFlash.taille && (
               <div className="bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full text-white text-xs capitalize">
-                {localFlash.taille === "petit" ? "S" : localFlash.taille === "moyen" ? "M" : "L"}
+                {localFlash.taille === "petit"
+                  ? "S"
+                  : localFlash.taille === "moyen"
+                  ? "M"
+                  : "L"}
               </div>
             )}
           </div>
         )}
       </div>
 
-      
       <div className="flex items-center p-4">
         <button
           className="mr-4 text-xl hover:scale-110 transition-transform"
@@ -866,7 +817,7 @@ export default function FlashCard({
             color={localIsLiked ? "#ef4444" : "currentColor"}
           />
         </button>
-        <button 
+        <button
           className="mr-4 text-xl hover:scale-110 transition-transform"
           onClick={() => setShowComments(!showComments)}
         >
@@ -883,29 +834,28 @@ export default function FlashCard({
         </button>
       </div>
 
-     
-      <div className="px-4 mb-2 text-sm font-bold text-white">
+      <div className="px-4 mb-2 text-sm font-bold ">
         {localFlash.likesCount || localFlash.likes?.length || 0} j'aime
       </div>
 
-     
-      <div className="px-4 text-sm leading-relaxed text-white">
+      <div className="px-4 text-sm leading-relaxed ">
         <span className="font-bold">{tatoueurNom}</span>
         {localFlash.title && (
           <>
             {" "}
-            <span className="font-semibold text-red-400">{localFlash.title}</span>
+            <span className="font-semibold text-red-400">
+              {localFlash.title}
+            </span>
           </>
         )}
         {localFlash.description && (
           <>
             {" "}
-            <span className="text-gray-300">{localFlash.description}</span>
+            <span className="text-gray-500">{localFlash.description}</span>
           </>
         )}
       </div>
 
-      
       {localFlash.tags && localFlash.tags.length > 0 && (
         <div className="px-4 mt-2 flex flex-wrap gap-1">
           {localFlash.tags.slice(0, 5).map((tag, index) => (
@@ -924,38 +874,32 @@ export default function FlashCard({
         </div>
       )}
 
-   
       {localFlash.emplacement && localFlash.emplacement.length > 0 && (
         <div className="px-4 mt-2">
-          <div className="flex items-center gap-1 text-xs text-gray-400">
+          <div className="flex items-center gap-1 text-xs text-gray-500">
             <MapPin size={12} />
             <span>Recommandé pour: </span>
-            <span className="text-gray-300">
+            <span className="text-gray-500">
               {localFlash.emplacement.slice(0, 3).join(", ")}
-              {localFlash.emplacement.length > 3 && ` +${localFlash.emplacement.length - 3}`}
+              {localFlash.emplacement.length > 3 &&
+                ` +${localFlash.emplacement.length - 3}`}
             </span>
           </div>
         </div>
       )}
 
-     
       {showComments && (
-        <div className="px-4 py-4 bg-gray-800 border-t border-gray-700">
+        <div className="px-4 py-4 ">
           <div className="mb-4">
             <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
               <MessageCircle size={14} className="text-red-500" />
               Commentaires ({localFlash.commentaires?.length || 0})
             </h4>
 
-            
             {currentUserId ? (
               <div className="mb-4">
                 <div className="flex gap-2">
-                  <ProfileImage
-                    avatar={null}
-                    username="Vous"
-                    size="w-8 h-8"
-                  />
+                  <ProfileImage avatar={null} username="Vous" size="w-8 h-8" />
                   <div className="flex-1 flex gap-2">
                     <input
                       type="text"
@@ -987,7 +931,7 @@ export default function FlashCard({
               <div className="mb-4 text-center py-4 text-gray-400 bg-gray-700 rounded-lg">
                 <p className="text-sm mb-2">Connectez-vous pour commenter</p>
                 <Link
-                  to="/login"
+                  to="/signin"
                   className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded text-sm transition-colors"
                 >
                   Se connecter
@@ -998,37 +942,43 @@ export default function FlashCard({
             {/* Liste des commentaires */}
             <div className="space-y-3 max-h-80 overflow-y-auto">
               {localFlash.commentaires && localFlash.commentaires.length > 0 ? (
-                localFlash.commentaires.slice(0, 5).map((comment) => (
-                  <CommentComponent key={comment._id} comment={comment} />
-                ))
+                localFlash.commentaires
+                  .slice(0, 5)
+                  .map((comment) => (
+                    <CommentComponent key={comment._id} comment={comment} />
+                  ))
               ) : (
                 <div className="text-center py-6 text-gray-400">
-                  <MessageCircle size={24} className="mx-auto mb-2 opacity-50" />
+                  <MessageCircle
+                    size={24}
+                    className="mx-auto mb-2 opacity-50"
+                  />
                   <p className="text-sm">Aucun commentaire</p>
                   <p className="text-xs">Soyez le premier à commenter !</p>
                 </div>
               )}
-              
+
               {/* Lien pour voir tous les commentaires si il y en a plus de 5 */}
-              {localFlash.commentaires && localFlash.commentaires.length > 5 && (
-                <div className="text-center pt-3 border-t border-gray-600">
-                  <Link
-                    to={`/flashdetail/${flashId}`}
-                    className="text-red-400 hover:text-red-300 text-sm flex items-center justify-center gap-1"
-                  >
-                    <MessageCircle size={12} />
-                    Voir tous les {localFlash.commentaires.length} commentaires
-                  </Link>
-                </div>
-              )}
+              {localFlash.commentaires &&
+                localFlash.commentaires.length > 5 && (
+                  <div className="text-center pt-3 border-t border-gray-600">
+                    <Link
+                      to={`/flashdetail/${flashId}`}
+                      className="text-red-400 hover:text-red-300 text-sm flex items-center justify-center gap-1"
+                    >
+                      <MessageCircle size={12} />
+                      Voir tous les {localFlash.commentaires.length}{" "}
+                      commentaires
+                    </Link>
+                  </div>
+                )}
             </div>
           </div>
         </div>
       )}
 
-
       {!showComments && (localFlash.commentaires?.length || 0) > 0 && (
-        <button 
+        <button
           className="px-4 py-2 text-sm text-gray-500 hover:text-gray-300 transition-colors"
           onClick={() => setShowComments(true)}
         >
@@ -1037,7 +987,6 @@ export default function FlashCard({
         </button>
       )}
 
-     
       <div className="px-4 pb-4">
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -1045,7 +994,6 @@ export default function FlashCard({
             {formatTime(localFlash.date || localFlash.createdAt)}
           </span>
 
-         
           <Link
             to={`/flashdetail/${flashId}`}
             className="inline-flex items-center gap-2 text-sm text-red-400 hover:text-red-300 transition-colors font-medium"
