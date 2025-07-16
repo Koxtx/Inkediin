@@ -6,11 +6,8 @@ const {
   deleteFlash,
   getFlashsByTatoueur,
   toggleReserve,
-  // ✅ NOUVELLES FONCTIONS
   likeFlash,
-
   reserveFlash,
-  // ✅ FONCTIONS SAVE ET COMMENTAIRES
   saveFlash,
   getSavedFlashs,
   addComment,
@@ -19,6 +16,7 @@ const {
   addReplyToComment,
   likeReply,
   deleteReply,
+  unsaveFlash
 } = require("../controllers/flash.controllers");
 
 const router = require("express").Router();
@@ -28,21 +26,20 @@ const {
   uploadFlashToCloudinary,
 } = require("../middlewares/uplodCloudinary");
 
-// ⚠️ ORDRE IMPORTANT : Routes spécifiques AVANT les routes avec paramètres
 
-// 1. Routes publiques spécifiques (sans paramètres)
+
+
 router.get("/", getFlashs);
 
-// 2. Routes protégées spécifiques (sans paramètres)
+
 router.get("/saved", authentification, getSavedFlashs);
 
-// 3. Route de recherche et filtres
-router.get("/search", getFlashs); // Utilise les mêmes filtres que getFlashs
 
-// 4. Routes avec préfixe spécifique + paramètre
+router.get("/search", getFlashs); 
+
+
 router.get("/tatoueur/:tatoueurId", getFlashsByTatoueur);
 
-// 5. Routes de création avec upload Cloudinary
 router.post(
   "/",
   authentification,
@@ -51,7 +48,7 @@ router.post(
   createFlash
 );
 
-// 6. Routes avec paramètre simple - APRÈS toutes les routes spécifiques
+
 router.get("/:id", getFlashById);
 router.put(
   "/:id",
@@ -68,16 +65,15 @@ router.post("/:id/like", authentification, likeFlash);
 router.post("/:id/reserve", authentification, reserveFlash);
 router.patch("/:id/reserve", authentification, toggleReserve);
 
-// ✅ NOUVELLES ROUTES: Sauvegarde
 router.post("/:id/save", authentification, saveFlash);
-router.delete("/:id/save", authentification, saveFlash); // Même fonction, toggle automatique
+router.delete("/:id/save", authentification, unsaveFlash); 
 
-// ✅ NOUVELLES ROUTES: Commentaires
+
 router.post("/:id/comments", authentification, addComment);
 router.delete("/:id/comments/:commentId", authentification, deleteComment);
 router.post("/:id/comments/:commentId/like", authentification, likeComment);
 
-// ✅ NOUVELLES ROUTES: Réponses aux commentaires
+
 router.post(
   "/:id/comments/:commentId/replies",
   authentification,

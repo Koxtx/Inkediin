@@ -39,8 +39,6 @@ const getFlashs = async (req, res) => {
       filter.tags = { $in: tagArray };
     }
 
-    
-
     const flashs = await Flash.find(filter)
       .populate(
         "idTatoueur",
@@ -56,7 +54,6 @@ const getFlashs = async (req, res) => {
       .skip((page - 1) * limit)
       .lean();
 
- 
     const flashsWithCounts = flashs.map((flash) => ({
       ...flash,
       likesCount: flash.likes ? flash.likes.length : 0,
@@ -108,14 +105,11 @@ const getFlashById = async (req, res) => {
       return res.status(404).json({ error: "Flash non trouvé" });
     }
 
-    
     const flashWithCounts = {
       ...flash,
       likesCount: flash.likes ? flash.likes.length : 0,
       commentsCount: flash.commentaires ? flash.commentaires.length : 0,
     };
-
-    
 
     res.status(200).json(flashWithCounts);
   } catch (error) {
@@ -133,15 +127,12 @@ const createFlash = async (req, res) => {
       title,
       artist,
       style,
-      styleCustom, 
+      styleCustom,
       taille,
       emplacement,
       tags,
     } = req.body;
     const idTatoueur = req.user._id;
-
-   
-
 
     // Vérifier que l'utilisateur est un tatoueur
     const user = await User.findById(idTatoueur);
@@ -159,16 +150,15 @@ const createFlash = async (req, res) => {
       return res.status(400).json({ error: "Prix invalide (doit être > 0)" });
     }
 
-    
     if (style === "autre" && (!styleCustom || !styleCustom.trim())) {
-      return res.status(400).json({ 
-        error: "Le style personnalisé est requis quand 'Autre' est sélectionné" 
+      return res.status(400).json({
+        error: "Le style personnalisé est requis quand 'Autre' est sélectionné",
       });
     }
 
     if (styleCustom && styleCustom.length > 50) {
-      return res.status(400).json({ 
-        error: "Le style personnalisé ne peut pas dépasser 50 caractères" 
+      return res.status(400).json({
+        error: "Le style personnalisé ne peut pas dépasser 50 caractères",
       });
     }
 
@@ -217,7 +207,7 @@ const createFlash = async (req, res) => {
       title: title?.trim() || "",
       artist: artist?.trim() || "",
       style: style || "autre",
-      styleCustom: style === "autre" ? styleCustom?.trim() : undefined, 
+      styleCustom: style === "autre" ? styleCustom?.trim() : undefined,
       taille: taille || "moyen",
       emplacement: parsedEmplacement,
       tags: parsedTags,
@@ -225,10 +215,8 @@ const createFlash = async (req, res) => {
       reserve: false,
       likes: [],
       views: 0,
-      commentaires: [], 
+      commentaires: [],
     };
-
-    
 
     const newFlash = new Flash(flashData);
     const savedFlash = await newFlash.save();
@@ -246,7 +234,6 @@ const createFlash = async (req, res) => {
       commentsCount: 0,
     };
 
-   
     res.status(201).json(flashWithCounts);
   } catch (error) {
     console.error("❌ Erreur createFlash:", error);
@@ -254,10 +241,8 @@ const createFlash = async (req, res) => {
   }
 };
 
-
 const likeFlash = async (req, res) => {
   try {
-  
     const flash = await Flash.findById(req.params.id);
     if (!flash) {
       return res.status(404).json({ message: "Flash non trouvé" });
@@ -280,7 +265,6 @@ const likeFlash = async (req, res) => {
       // Retirer le like
       flash.likes.splice(existingLikeIndex, 1);
       actionTaken = "REMOVED";
-     
     } else {
       // Ajouter le like
       flash.likes.push({
@@ -289,7 +273,6 @@ const likeFlash = async (req, res) => {
         dateLike: new Date(),
       });
       actionTaken = "ADDED";
-     
     }
 
     // Sauvegarder avec findOneAndUpdate pour éviter les conflits de concurrence
@@ -316,15 +299,12 @@ const likeFlash = async (req, res) => {
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
     };
 
-   
-
     res.status(200).json(flashWithCounts);
   } catch (error) {
     console.error("❌ Erreur likeFlash:", error);
     res.status(500).json({ error: error.message });
   }
 };
-
 
 const reserveFlash = async (req, res) => {
   try {
@@ -362,8 +342,6 @@ const reserveFlash = async (req, res) => {
       .populate("reservedBy", "nom photoProfil email telephone")
       .lean();
 
-    
-
     res.status(200).json({
       message: "Flash réservé avec succès",
       flash: updatedFlash,
@@ -384,7 +362,7 @@ const updateFlash = async (req, res) => {
       title,
       artist,
       style,
-      styleCustom, 
+      styleCustom,
       taille,
       emplacement,
       tags,
@@ -415,21 +393,21 @@ const updateFlash = async (req, res) => {
     if (description !== undefined) updateData.description = description.trim();
     if (title !== undefined) updateData.title = title.trim();
     if (artist !== undefined) updateData.artist = artist.trim();
-    
-   
+
     if (style !== undefined) {
       updateData.style = style;
-      
+
       // Si on passe à "autre", on peut ajouter un styleCustom
       if (style === "autre" && styleCustom !== undefined) {
         if (!styleCustom.trim()) {
-          return res.status(400).json({ 
-            error: "Le style personnalisé est requis quand 'Autre' est sélectionné" 
+          return res.status(400).json({
+            error:
+              "Le style personnalisé est requis quand 'Autre' est sélectionné",
           });
         }
         if (styleCustom.length > 50) {
-          return res.status(400).json({ 
-            error: "Le style personnalisé ne peut pas dépasser 50 caractères" 
+          return res.status(400).json({
+            error: "Le style personnalisé ne peut pas dépasser 50 caractères",
           });
         }
         updateData.styleCustom = styleCustom.trim();
@@ -441,19 +419,19 @@ const updateFlash = async (req, res) => {
       // Si on modifie seulement le styleCustom
       if (flash.style === "autre") {
         if (!styleCustom.trim()) {
-          return res.status(400).json({ 
-            error: "Le style personnalisé ne peut pas être vide" 
+          return res.status(400).json({
+            error: "Le style personnalisé ne peut pas être vide",
           });
         }
         if (styleCustom.length > 50) {
-          return res.status(400).json({ 
-            error: "Le style personnalisé ne peut pas dépasser 50 caractères" 
+          return res.status(400).json({
+            error: "Le style personnalisé ne peut pas dépasser 50 caractères",
           });
         }
         updateData.styleCustom = styleCustom.trim();
       }
     }
-    
+
     if (taille !== undefined) updateData.taille = taille;
     if (disponible !== undefined) updateData.disponible = disponible;
 
@@ -514,7 +492,9 @@ const updateFlash = async (req, res) => {
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      commentsCount: updatedFlash.commentaires ? updatedFlash.commentaires.length : 0,
+      commentsCount: updatedFlash.commentaires
+        ? updatedFlash.commentaires.length
+        : 0,
     };
 
     res.status(200).json(flashWithCounts);
@@ -545,7 +525,6 @@ const deleteFlash = async (req, res) => {
 
     await Flash.findByIdAndDelete(id);
 
-  
     res.status(200).json({ message: "Flash supprimé avec succès" });
   } catch (error) {
     console.error("❌ Erreur deleteFlash:", error);
@@ -637,7 +616,9 @@ const toggleReserve = async (req, res) => {
     const flashWithCounts = {
       ...updatedFlash,
       likesCount: updatedFlash.likes ? updatedFlash.likes.length : 0,
-      commentsCount: updatedFlash.commentaires ? updatedFlash.commentaires.length : 0,
+      commentsCount: updatedFlash.commentaires
+        ? updatedFlash.commentaires.length
+        : 0,
     };
 
     res.status(200).json(flashWithCounts);
@@ -660,27 +641,62 @@ const saveFlash = async (req, res) => {
     const user = await User.findById(userId);
     if (!user.savedFlashs) user.savedFlashs = [];
 
-    if (!user.savedFlashs.includes(flashId)) {
-      user.savedFlashs.push(flashId);
-      await user.save();
-     
-      res.status(200).json({ message: "Flash sauvegardé", saved: true });
-    } else {
-      user.savedFlashs = user.savedFlashs.filter(
-        (id) => id.toString() !== flashId
-      );
-      await user.save();
-     
-      res
-        .status(200)
-        .json({ message: "Flash retiré des favoris", saved: false });
+    if (user.savedFlashs.includes(flashId)) {
+      return res.status(400).json({
+        message: "Flash déjà sauvegardé",
+        saved: true,
+      });
     }
+
+    user.savedFlashs.push(flashId);
+    await user.save();
+
+    console.log("✅ Flash sauvegardé:", flashId);
+    res.status(200).json({
+      message: "Flash sauvegardé avec succès",
+      saved: true,
+    });
   } catch (error) {
     console.error("❌ Erreur saveFlash:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
+const unsaveFlash = async (req, res) => {
+  try {
+    const flashId = req.params.id;
+    const userId = req.user._id;
+
+    const flash = await Flash.findById(flashId);
+    if (!flash) {
+      return res.status(404).json({ message: "Flash non trouvé" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user.savedFlashs) user.savedFlashs = [];
+
+    if (!user.savedFlashs.includes(flashId)) {
+      return res.status(400).json({
+        message: "Flash non présent dans les favoris",
+        saved: false,
+      });
+    }
+
+    user.savedFlashs = user.savedFlashs.filter(
+      (id) => id.toString() !== flashId
+    );
+    await user.save();
+
+    console.log("✅ Flash retiré des favoris:", flashId);
+    res.status(200).json({
+      message: "Flash retiré des favoris avec succès",
+      saved: false,
+    });
+  } catch (error) {
+    console.error("❌ Erreur unsaveFlash:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
 
 const getSavedFlashs = async (req, res) => {
   try {
@@ -688,9 +704,6 @@ const getSavedFlashs = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
 
-    
-
-    // Récupérer l'utilisateur avec ses flashs sauvegardés
     const user = await User.findById(userId).populate({
       path: "savedFlashs",
       populate: [
@@ -732,7 +745,6 @@ const getSavedFlashs = async (req, res) => {
 
     const savedFlashs = user.savedFlashs || [];
 
-    
     const savedFlashsWithCounts = savedFlashs.map((flash) => ({
       ...flash.toObject(),
       likesCount: flash.likes ? flash.likes.length : 0,
@@ -745,8 +757,6 @@ const getSavedFlashs = async (req, res) => {
     ]);
 
     const total = totalSaved[0]?.count || 0;
-
-   
 
     res.status(200).json({
       flashs: savedFlashsWithCounts,
@@ -764,7 +774,6 @@ const getSavedFlashs = async (req, res) => {
   }
 };
 
-
 const addComment = async (req, res) => {
   try {
     const { contenu } = req.body;
@@ -781,11 +790,9 @@ const addComment = async (req, res) => {
     }
 
     if (contenu.trim().length > 1000) {
-      return res
-        .status(400)
-        .json({
-          message: "Le commentaire ne peut pas dépasser 1000 caractères",
-        });
+      return res.status(400).json({
+        message: "Le commentaire ne peut pas dépasser 1000 caractères",
+      });
     }
 
     const newComment = {
@@ -799,8 +806,6 @@ const addComment = async (req, res) => {
 
     flash.commentaires.push(newComment);
     await flash.save();
-
-    
 
     const updatedFlash = await Flash.findById(flash._id)
       .populate("commentaires.userId", "nom photoProfil userType")
@@ -826,7 +831,6 @@ const addComment = async (req, res) => {
   }
 };
 
-
 const deleteComment = async (req, res) => {
   try {
     const flash = await Flash.findById(req.params.id);
@@ -850,7 +854,6 @@ const deleteComment = async (req, res) => {
     flash.commentaires.pull(req.params.commentId);
     await flash.save();
 
-
     res.status(200).json({ message: "Commentaire supprimé" });
   } catch (error) {
     console.error("❌ Erreur deleteComment Flash:", error);
@@ -858,11 +861,8 @@ const deleteComment = async (req, res) => {
   }
 };
 
-
 const likeComment = async (req, res) => {
   try {
-    
-
     const flash = await Flash.findById(req.params.id);
     if (!flash) {
       return res.status(404).json({ message: "Flash non trouvé" });
@@ -888,7 +888,6 @@ const likeComment = async (req, res) => {
     if (existingLikeIndex !== -1) {
       // Retirer le like
       comment.likes.splice(existingLikeIndex, 1);
-      
     } else {
       // Ajouter le like
       comment.likes.push({
@@ -896,7 +895,6 @@ const likeComment = async (req, res) => {
         userType,
         dateLike: new Date(),
       });
-      
     }
 
     // Marquer comme modifié et sauvegarder
@@ -929,13 +927,10 @@ const likeComment = async (req, res) => {
   }
 };
 
-
 const addReplyToComment = async (req, res) => {
   try {
     const { contenu } = req.body;
     const { id: flashId, commentId } = req.params;
-
-   
 
     const flash = await Flash.findById(flashId);
     if (!flash) {
@@ -975,8 +970,6 @@ const addReplyToComment = async (req, res) => {
     comment.replies.push(newReply);
     await flash.save();
 
-  
-
     // Retourner le flash mis à jour avec populate
     const updatedFlash = await Flash.findById(flash._id)
       .populate("commentaires.userId", "nom photoProfil userType")
@@ -1002,12 +995,9 @@ const addReplyToComment = async (req, res) => {
   }
 };
 
-
 const likeReply = async (req, res) => {
   try {
     const { id: flashId, commentId, replyId } = req.params;
-
-    
 
     const flash = await Flash.findById(flashId);
     if (!flash) {
@@ -1038,7 +1028,6 @@ const likeReply = async (req, res) => {
       reply.likes = reply.likes.filter(
         (like) => like.userId.toString() !== userId.toString()
       );
-      
     } else {
       // Ajouter le like
       reply.likes.push({
@@ -1046,7 +1035,6 @@ const likeReply = async (req, res) => {
         userType,
         dateLike: new Date(),
       });
-     
     }
 
     await flash.save();
@@ -1075,7 +1063,6 @@ const likeReply = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 const deleteReply = async (req, res) => {
   try {
@@ -1107,8 +1094,6 @@ const deleteReply = async (req, res) => {
     comment.replies.pull(replyId);
     await flash.save();
 
-  
-
     res.status(200).json({ message: "Réponse supprimée avec succès" });
   } catch (error) {
     console.error("❌ Erreur deleteReply Flash:", error);
@@ -1134,4 +1119,5 @@ module.exports = {
   addReplyToComment,
   likeReply,
   deleteReply,
+  unsaveFlash,
 };
