@@ -49,7 +49,7 @@ app.get('/test', (req, res) => {
 app.use(express.static(path.join(__DIRNAME, "front/dist")));
 
 // Route catch-all pour React Router (UNE SEULE FOIS, EN DERNIER)
-app.get('*', (req, res) => {
+app.get(/(.*)/, (req, res) => {
   res.sendFile(path.join(__DIRNAME, "front/dist/index.html"));
 });
 
