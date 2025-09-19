@@ -26,7 +26,8 @@ const ProfileImage = ({ user, size = 'default' }) => {
       return imagePath;
     }
 
-    const baseUrl = "http://localhost:3000";
+    // const baseUrl = "http://localhost:3000";
+    const baseUrl = "https://inkediin.onrender.com";
     const cleanPath = imagePath.replace(/\\/g, "/");
     const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
     return `${baseUrl}${finalPath}`;

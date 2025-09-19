@@ -198,7 +198,8 @@ export default function Post({
     }
 
     // Fallback pour les anciennes images locales
-    const baseUrl = "http://localhost:3000";
+    // const baseUrl = "http://localhost:3000";
+    const baseUrl = "https://inkediin.onrender.com";
     const cleanPath = imagePath.replace(/\\/g, "/");
     const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
     const fallbackUrl = `${baseUrl}${finalPath}`;
@@ -231,7 +232,8 @@ export default function Post({
     }
 
   
-    const baseUrl = "http://localhost:3000";
+    // const baseUrl = "http://localhost:3000";
+    const baseUrl = "https://inkediin.onrender.com";
     const cleanPath = imagePath.replace(/\\/g, "/");
     const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
 

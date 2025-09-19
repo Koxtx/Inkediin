@@ -45,7 +45,8 @@ export default function ProfileAvatar({
 
     // Fallback pour les anciennes images locales
 
-    const baseUrl = "http://localhost:3000";
+    // const baseUrl = "http://localhost:3000";
+    const baseUrl = "https://inkediin.onrender.com";
     const cleanPath = imagePath.replace(/\\/g, "/");
     const finalPath = cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
 

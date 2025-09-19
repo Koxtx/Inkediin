@@ -33,7 +33,9 @@ export default function TattooGallery({
     }
     
     // Construire l'URL avec le serveur backend
-    const baseUrl = "http://localhost:3000";
+    // const baseUrl = "http://localhost:3000";
+    const baseUrl = "https://inkediin.onrender.com";
+
     
     // Nettoyer le chemin (remplacer \ par /)
     const cleanPath = imagePath.replace(/\\/g, '/');
