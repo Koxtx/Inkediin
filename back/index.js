@@ -19,6 +19,10 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+const __DIRNAME = path.resolve();
+
+app.use(express.static(path.join(__DIRNAME, "/front/dist")));
+
 // Routes
 const feedRoutes = require("./routes/feed.routes");
 const flashRoutes = require("./routes/flash.routes");
@@ -42,6 +46,12 @@ app.get('/test', (req, res) => {
     port: PORT 
   });
 });
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__DIRNAME, "/front/dist")));
+  app.get(/(.*)/, (req, res) => {
+    res.sendFile(path.join(__DIRNAME, "../front", "dist", "index.html"));
+  });}
 
 // Connexion MongoDB et démarrage serveur
 mongoose.connect(process.env.MONGO_URL).then(() => {
