@@ -185,7 +185,7 @@ export async function signin(values) {
   try {
    
 
-    const response = await fetch(`${BASE_URL}/users/sigin`, {
+    const response = await fetch(`${BASE_URL}/users/signin`, {
       method: "POST",
       body: JSON.stringify(values),
       headers: {
