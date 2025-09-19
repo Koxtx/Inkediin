@@ -12,6 +12,7 @@
       "url": "git+https://github.com/Koxtx/Inkediin.git"
    },
    "dependencies": {
+      "cookie-parser": "^1.4.7",
       "cors": "^2.8.5",
       "dotenv": "^17.2.2",
       "express": "^5.1.0",
