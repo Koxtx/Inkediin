@@ -8,10 +8,10 @@ export default function ProtectedSetupRoute({ children }) {
   const location = useLocation();
 
   useEffect(() => {
-    // Attendre que le chargement soit terminé
+   
     if (loading) return;
 
-    // Si pas d'utilisateur connecté, rediriger vers signin
+   
     if (!user) {
       navigate("/signin");
       return;

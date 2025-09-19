@@ -23,7 +23,7 @@ export default function FlashProvider({ children }) {
   const [hasMore, setHasMore] = useState(true);
 
   const updateFlashInAllLists = useCallback((flashId, updatedFlash) => {
-    const updateFlashInList = (flashList, setFlashList) => {
+    const updateFlashInList = (setFlashList) => {
       setFlashList((prev) =>
         prev.map((flash) =>
           (flash._id === flashId || flash.id === flashId) ? updatedFlash : flash
@@ -31,11 +31,11 @@ export default function FlashProvider({ children }) {
       );
     };
 
-    updateFlashInList(allFlashes, setAllFlashes);
-    updateFlashInList(followedFlashes, setFollowedFlashes);
-    updateFlashInList(recommendedFlashes, setRecommendedFlashes);
-    updateFlashInList(savedFlashes, setSavedFlashes);
-  }, [allFlashes, followedFlashes, recommendedFlashes, savedFlashes]);
+    updateFlashInList(setAllFlashes);
+    updateFlashInList(setFollowedFlashes);
+    updateFlashInList(setRecommendedFlashes);
+    updateFlashInList(setSavedFlashes);
+  }, []);
 
   const updateFlashInCache = useCallback((flashId, updatedFlash) => {
     // Mettre à jour le cache
@@ -52,7 +52,7 @@ export default function FlashProvider({ children }) {
     window.dispatchEvent(new CustomEvent('flashUpdated', {
       detail: { flashId, updatedFlash }
     }));
-  }, [updateFlashInAllLists]);
+  }, []); // Suppression de la dépendance pour éviter les re-rendus excessifs
 
  
   useEffect(() => {
@@ -197,7 +197,7 @@ export default function FlashProvider({ children }) {
     const userId = getCurrentUser();
     setCurrentUserId(userId);
     
-  }, [getCurrentUser]);
+  }, []); // Suppression de la dépendance getCurrentUser pour éviter la boucle
 
 
   useEffect(() => {
@@ -208,7 +208,7 @@ export default function FlashProvider({ children }) {
      
       loadInitialFlashes();
     }
-  }, [currentUserId, loadInitialFlashes, loadSavedFlashes]);
+  }, [currentUserId]); // Suppression des dépendances de fonction pour éviter la boucle
 
 
   const getFlashesByTatoueur = useCallback(async (tatoueurId, params = {}) => {

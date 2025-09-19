@@ -50,10 +50,8 @@ export default function FlashManagement() {
         handleSearch();
       }, 300);
       return () => clearTimeout(timeoutId);
-    } else {
-      // Si recherche vide, recharger toutes les données
-      refreshData();
     }
+    // Suppression de l'appel refreshData pour éviter la boucle infinie
   }, [searchTerm]);
 
   // Fonction de recherche

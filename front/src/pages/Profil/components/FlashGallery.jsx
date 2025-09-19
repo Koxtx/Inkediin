@@ -52,12 +52,12 @@ export default function FlashGallery({
     } finally {
       setLoading(false);
     }
-  }, [displayUser?._id, displayUser?.id, isOwnProfile, getFlashesByTatoueur]);
+  }, [displayUser?._id, displayUser?.id, isOwnProfile]); // Suppression de getFlashesByTatoueur pour éviter la boucle
 
   
   useEffect(() => {
     loadUserFlashs();
-  }, [loadUserFlashs]); 
+  }, [displayUser?._id, displayUser?.id, isOwnProfile]); // Utilisation des mêmes dépendances 
 
 
   const displayedFlashs = userFlashs.slice(0, isOwnProfile ? 6 : 8);

@@ -36,14 +36,7 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/users", userRoutes);
 
-// Route de test
-app.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Serveur HTTP + WebSocket fonctionne !', 
-    timestamp: new Date().toISOString(),
-    port: PORT 
-  });
-});
+
 
 // Servir les fichiers statiques React (UNE SEULE FOIS)
 app.use(express.static(path.join(__DIRNAME, "front/dist")));

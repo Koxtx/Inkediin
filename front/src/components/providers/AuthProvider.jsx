@@ -15,26 +15,9 @@ export default function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const location = useLocation();
 
-  // Vérification de l'utilisateur connecté au chargement
+  // Vérification de l'utilisateur connecté au chargement initial seulement
   useEffect(() => {
     const checkCurrentUser = async () => {
-      // Pages publiques où on n'a pas besoin de vérifier l'authentification
-      const publicPaths = [
-        "/signin",
-        "/signup",
-        "/forgotpassword",
-        "/reset-password",
-      ];
-      const isPublicPath = publicPaths.some((path) =>
-        location.pathname.startsWith(path)
-      );
-
-      // Si on est sur une page publique, pas besoin de vérifier l'auth
-      if (isPublicPath) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const currentUser = await getCurrentUser();
         if (currentUser) {
@@ -53,7 +36,7 @@ export default function AuthProvider({ children }) {
     };
 
     checkCurrentUser();
-  }, [location.pathname]);
+  }, []); // Suppression de location.pathname pour éviter les re-vérifications inutiles
 
   const checkIsFirstLogin = useCallback((user) => {
     console.group("🔍 AuthProvider - Vérification première connexion");
@@ -322,7 +305,7 @@ export default function AuthProvider({ children }) {
 
     checkIsFirstLogin,
     validateUserData,
-   
+
     getUserInfo,
     isProfileComplete,
     getUserAvatar,

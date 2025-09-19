@@ -35,21 +35,36 @@ const {
 } = require("../controllers/user.controllers");
 
 const auth = require("../middlewares/auth");
-const { uploadAvatar, uploadAvatarToCloudinary } = require("../middlewares/userUpload");
+const {
+  uploadAvatar,
+  uploadAvatarToCloudinary,
+} = require("../middlewares/userUpload");
 
 const router = require("express").Router();
 
 // ===== ROUTES D'AUTHENTIFICATION =====
 router.post("/", signup);
-router.post("/sigin", signin);
+router.post("/signin", signin);
 router.post("/forgotPassword", forgotMyPassword);
 router.post("/resetPassword", resetPassword);
 router.post("/changePassword", auth, changePassword);
-router.post("/completeProfile", auth, uploadAvatar, uploadAvatarToCloudinary, completeProfile);
+router.post(
+  "/completeProfile",
+  auth,
+  uploadAvatar,
+  uploadAvatarToCloudinary,
+  completeProfile
+);
 
 // ===== ROUTES DE PROFIL =====
 router.put("/", auth, uploadAvatar, uploadAvatarToCloudinary, updateUser);
-router.put("/avatar", auth, uploadAvatar, uploadAvatarToCloudinary, updateAvatar);
+router.put(
+  "/avatar",
+  auth,
+  uploadAvatar,
+  uploadAvatarToCloudinary,
+  updateAvatar
+);
 router.get("/currentUser", auth, currentUser);
 router.get("/verifyMail/:token", verifyMail);
 router.delete("/deleteToken", auth, logoutUser);
@@ -71,7 +86,11 @@ router.get("/preferences", auth, getUserPreferences);
 router.put("/preferences", auth, updateUserPreferences);
 
 // ===== ROUTES RECOMMENDATIONS =====
-router.post("/recommendations/interaction", auth, markRecommendationInteraction);
+router.post(
+  "/recommendations/interaction",
+  auth,
+  markRecommendationInteraction
+);
 
 // ===== ROUTES DE SUIVI =====
 router.post("/:id/follow", auth, followUser);

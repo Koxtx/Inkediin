@@ -116,7 +116,7 @@ export default function PublicationProvider({ children }) {
     if (currentUserId) {
       loadInitialData();
     }
-  }, [currentUserId]);
+  }, [currentUserId]); // Suppression de loadInitialData pour éviter la boucle infinie
 
   const loadInitialData = async () => {
     setLoading(true);

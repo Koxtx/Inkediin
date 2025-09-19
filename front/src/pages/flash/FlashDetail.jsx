@@ -90,7 +90,7 @@ export default function FlashDetail() {
     return () => {
       window.removeEventListener("flashUpdated", handleFlashUpdated);
     };
-  }, [id, currentUserId, hasUserLiked, isFlashSaved, getLikesCount]);
+  }, [id, currentUserId]); // Suppression des fonctions pour éviter la boucle infinie
 
   useEffect(() => {
     const loadFlash = async () => {
@@ -142,13 +142,8 @@ export default function FlashDetail() {
     }
   }, [
     id,
-    getFlashById,
     currentUserId,
-    hasUserLiked,
-    isFlashSaved,
-    getLikesCount,
-    getFlashFromCache,
-  ]);
+  ]); // Suppression des fonctions pour éviter la boucle infinie
 
   const handleLike = async () => {
     if (!currentUserId) {

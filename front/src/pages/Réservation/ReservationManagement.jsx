@@ -222,7 +222,7 @@ export default function ReservationManagement() {
     if (refreshReservations) {
       refreshReservations();
     }
-  }, [refreshReservations]);
+  }, []); // Suppression de la dépendance refreshReservations pour éviter la boucle infinie
 
   // Get reservations for active tab with memoization
   const currentReservations = useMemo(() => {
@@ -258,7 +258,7 @@ export default function ReservationManagement() {
         setIsRefreshing(false);
       }
     }
-  }, [refreshReservations]);
+  }, []); // Suppression de refreshReservations pour éviter la boucle infinie
 
   const handleConfirmReservation = useCallback(async () => {
     if (!selectedReservation || !confirmReservation) return;

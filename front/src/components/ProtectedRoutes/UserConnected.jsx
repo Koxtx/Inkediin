@@ -68,7 +68,7 @@ export default function UserConnected({ children }) {
   };
 
   if (isProfileIncomplete()) {
-    return null; // La redirection va se faire dans useEffect
+    return null; 
   }
 
   return children;
