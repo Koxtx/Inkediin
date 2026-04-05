@@ -44,6 +44,59 @@ const signup = async (req, res) => {
   }
 };
 
+// export const register = async (req, res) => {
+//   try {
+//     const { username, email, password } = req.body;
+
+//     // Vérifier si déjà inscrit
+//     const existingUserMail = await User.findOne({ email });
+   
+//     const existingTempUserMail = await TempUser.findOne({ email });
+    
+
+//     if (existingUserMail) {
+//       return res.status(400).json({ message: "Déjà inscrit" });
+//     } else if (existingTempUserMail ) {
+//       return res.status(400).json({ message: "Vérifiez vos emails" });
+//     }
+
+//     // Générer token
+//     const token = createTokenEmail(email);
+
+//     // Hasher mot de passe
+//     const hashedPassword = await bcrypt.hash(password, 10);
+
+//     // Sauvegarder en temporaire
+//     const tempUser = new TempUser({
+//       username,
+//       email,
+//       password: hashedPassword,
+//       token,
+//     });
+//     await tempUser.save();
+//     console.log("✅ TempUser enregistré en DB:", tempUser);
+
+//     // Essayer d’envoyer l’email APRÈS sauvegarde
+//     try {
+//       await sendConfirmationEmail(email, token);
+//       console.log("📧 Email envoyé avec SendGrid à:", email);
+//     } catch (mailError) {
+//       console.error(
+//         "⚠️ Erreur envoi email:",
+//         mailError.response?.body || mailError
+//       );
+//       // On n’empêche pas la réponse côté client
+//     }
+
+//     res.status(200).json({
+//       message: "Utilisateur enregistré en attente de confirmation email",
+//     });
+//   } catch (error) {
+//     console.error("❌ Erreur REGISTER:", error);
+//     res.status(500).json({ message: "Erreur serveur" });
+//   }
+// };
+
 const verifyMail = async (req, res) => {
   const { token } = req.params;
   try {
@@ -336,7 +389,7 @@ const fetchTatoueur = async (req, res) => {
     const tattooers = await User.find({
       userType: "tatoueur",
     }).select(
-      "nom localisation styles photoProfil portfolio bio followers createdAt"
+      "nom localisation styles photoProfil portfolio bio followers createdAt userType" // ✅ Ajoutez userType
     );
 
     res.json(tattooers);

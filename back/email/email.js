@@ -1,66 +1,61 @@
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 
-const transporter = nodemailer.createTransport({
-  service: "Gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+const FROM = process.env.SENDGRID_SENDER; // ex: "noreply@tondomaine.com" (doit être vérifié dans SendGrid)
 
 const sendConfirmationEmail = async (email, token) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "Confirmation d'inscription",
-    html: `<p>Bienvenue sur notre site ! Cliquez sur le lien suivant pour confirmer l'inscription : <a href="${process.env.API_URL}/api/users/verifyMail/${token}">Confirmer l'inscription</a></p>`,
-  };
+  const backUrl = process.env.NODE_ENV === "production"
+    ? process.env.DEPLOY_BACK_URL
+    : process.env.API_URL;
 
-  await transporter.sendMail(mailOptions);
+  await sgMail.send({
+    to: email,
+    from: FROM,
+    subject: "Confirmation d'inscription",
+    html: `<p>Bienvenue ! Cliquez sur le lien suivant pour confirmer votre inscription : 
+      <a href="${backUrl}/api/users/verifyMail/${token}">Confirmer l'inscription</a></p>`,
+  });
 };
 
 const sendValidationAccount = async (email) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
+  await sgMail.send({
     to: email,
+    from: FROM,
     subject: "Inscription validée",
-    html: `<p>Bienvenue sur notre site ! Cliquez sur le lien suivant pour vous connecter : <a href="${process.env.CLIENT_URL}/signin">Se connecter</a></p>`,
-  };
-
-  await transporter.sendMail(mailOptions);
+    html: `<p>Bienvenue sur notre site ! Votre compte est confirmé. 
+      <a href="${process.env.CLIENT_URL}/signin">Se connecter</a></p>`,
+  });
 };
 
 const sendInvalidEmailToken = async (email) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
+  await sgMail.send({
     to: email,
+    from: FROM,
     subject: "Problème lors de la validation",
-    html: `<p>Token expiré ! Veuillez vous réinscrire : <a href="${process.env.CLIENT_URL}/signup">S'inscrire'</a></p>`,
-  };
-
-  await transporter.sendMail(mailOptions);
+    html: `<p>Votre lien a expiré. Veuillez vous réinscrire : 
+      <a href="${process.env.CLIENT_URL}/signup">S'inscrire</a></p>`,
+  });
 };
 
 const sendForgotPasswordEmail = async (email, token) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
+  await sgMail.send({
     to: email,
+    from: FROM,
     subject: "Modification du mot de passe",
-    html: `<p>Cliquez ici pour modifier votre mot de passe <a href="${process.env.CLIENT_URL}/resetpassword/${token}">Lien sécurisé</a></p>`,
-  };
-
-  await transporter.sendMail(mailOptions);
+    html: `<p>Cliquez ici pour modifier votre mot de passe : 
+      <a href="${process.env.CLIENT_URL}/resetpassword/${token}">Lien sécurisé</a></p>`,
+  });
 };
 
 const validateNewPassword = async (email) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
+  await sgMail.send({
     to: email,
+    from: FROM,
     subject: "Modification du mot de passe réussie",
-    html: `<p>Votre mot de passe a bien été modifié. Veuillez vous connecter</p>`,
-  };
-
-  await transporter.sendMail(mailOptions);
+    html: `<p>Votre mot de passe a bien été modifié. 
+      <a href="${process.env.CLIENT_URL}/signin">Se connecter</a></p>`,
+  });
 };
 
 module.exports = {

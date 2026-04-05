@@ -73,13 +73,13 @@ const userSchema = new mongoose.Schema(
     }],
    savedPosts: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Feed', // ✅ Référence vers le modèle Feed
+    ref: 'Feed', 
     default: []
   }],
   
   savedFlashs: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Flash', // ✅ Référence vers le modèle Flash
+    ref: 'Flash', 
     default: []
   }],
 
@@ -194,7 +194,7 @@ const userSchema = new mongoose.Schema(
 );
 
 // Index pour améliorer les performances
-userSchema.index({ email: 1 });
+
 userSchema.index({ userType: 1 });
 userSchema.index({ localisation: 1 });
 userSchema.index({ ville: 1 });
@@ -404,7 +404,6 @@ userSchema.set('toJSON', {
   }
 });
 
-userSchema.set('toJSON', { virtuals: true });
-userSchema.set('toObject', { virtuals: true });
 
-module.exports = mongoose.model("User", userSchema);
+
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);
