@@ -60,7 +60,7 @@ export default function SignUp() {
   } = useForm({
     defaultValues,
     resolver: yupResolver(schema),
-    mode: "onChange",
+   
   });
 
   const submit = async (values) => {

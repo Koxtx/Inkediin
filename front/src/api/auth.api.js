@@ -1,6 +1,6 @@
 import { BASE_URL } from "../utils/url";
 
-// ✅ FONCTION AMÉLIORÉE: Normaliser les données utilisateur avec debug
+// Normaliser les données utilisateur avec debug
 export function normalizeUserData(userData) {
   if (!userData) {
     console.warn("⚠️ normalizeUserData - userData est null/undefined");
@@ -10,7 +10,7 @@ export function normalizeUserData(userData) {
 
 
 
-  // ✅ AMÉLIORATION: Chercher la photo de profil dans tous les champs possibles
+  // Chercher la photo de profil dans tous les champs possibles
   const photoProfil =
     userData.photoProfil ||
     userData.avatar ||
@@ -143,8 +143,6 @@ const getCoordinatesFromLocation = (location) => {
 
 export async function signup(values) {
   try {
-    
-
     const response = await fetch(`${BASE_URL}/users`, {
       method: "POST",
       body: JSON.stringify(values),
@@ -183,8 +181,6 @@ export async function signup(values) {
 
 export async function signin(values) {
   try {
-   
-
     const response = await fetch(`${BASE_URL}/users/signin`, {
       method: "POST",
       body: JSON.stringify(values),
@@ -195,16 +191,10 @@ export async function signin(values) {
     });
 
     const data = await response.json();
-   
-
     if (response.ok) {
      
       const rawUser = data.user || data;
-     
-
       const normalizedUser = normalizeUserData(rawUser);
-     
-
       return {
         success: true,
         user: normalizedUser,

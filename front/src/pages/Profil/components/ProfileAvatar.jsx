@@ -19,7 +19,7 @@ export default function ProfileAvatar({
       .slice(0, 2);
   };
 
-  // ✅ NOUVELLE FONCTION: Gestion des URLs Cloudinary
+  //  Gestion des URLs Cloudinary
   const getProfileImageUrl = (imagePath) => {
     if (!imagePath) return null;
 

@@ -23,7 +23,7 @@ export default function TattooGallery({
   const [selectedPublication, setSelectedPublication] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // ✅ AJOUT: Fonction pour construire l'URL de l'image (même logique que Post.js)
+  //  Fonction pour construire l'URL de l'image (même logique que Post.js)
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
     
